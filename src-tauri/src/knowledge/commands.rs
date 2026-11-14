@@ -1,7 +1,8 @@
 use tauri::State;
 use crate::db::Database;
 use super::models::{
-    CreateRecordPayload, KnowledgeRecord, KnowledgeRecordSummary, TagItem, UpdateRecordPayload,
+    CreateRecordPayload, CreateRelationshipPayload, KnowledgeRecord, KnowledgeRecordSummary,
+    RecordRelationshipItem, RecordRelationshipsResponse, TagItem, UpdateRecordPayload,
 };
 use super::repository::KnowledgeRepository;
 
@@ -67,4 +68,31 @@ pub fn list_tags(
 ) -> Result<Vec<TagItem>, String> {
     let conn = db.conn.lock().map_err(|e| format!("Mutex lock error: {}", e))?;
     KnowledgeRepository::list_tags(&conn)
+}
+
+#[tauri::command]
+pub fn create_relationship(
+    db: State<'_, Database>,
+    payload: CreateRelationshipPayload,
+) -> Result<RecordRelationshipItem, String> {
+    let mut conn = db.conn.lock().map_err(|e| format!("Mutex lock error: {}", e))?;
+    KnowledgeRepository::create_relationship(&mut conn, payload)
+}
+
+#[tauri::command]
+pub fn delete_relationship(
+    db: State<'_, Database>,
+    id: String,
+) -> Result<bool, String> {
+    let mut conn = db.conn.lock().map_err(|e| format!("Mutex lock error: {}", e))?;
+    KnowledgeRepository::delete_relationship(&mut conn, &id)
+}
+
+#[tauri::command]
+pub fn get_record_relationships(
+    db: State<'_, Database>,
+    record_id: String,
+) -> Result<RecordRelationshipsResponse, String> {
+    let conn = db.conn.lock().map_err(|e| format!("Mutex lock error: {}", e))?;
+    KnowledgeRepository::get_record_relationships(&conn, &record_id)
 }

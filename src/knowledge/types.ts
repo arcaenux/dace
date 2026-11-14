@@ -36,3 +36,37 @@ export interface TagItem {
 }
 
 export type SaveStatus = "saved" | "saving" | "unsaved" | "error";
+
+export type RelationType =
+  | "related_to"
+  | "builds_on"
+  | "depends_on"
+  | "explains"
+  | "example_of"
+  | "part_of"
+  | "contrasts_with"
+  | "applies_to";
+
+export interface RecordRelationshipItem {
+  id: string;
+  source_id: string;
+  source_title: string;
+  target_id: string;
+  target_title: string;
+  relation_type: string;
+  description: string | null;
+  created_at: string;
+  is_outgoing: boolean;
+}
+
+export interface RecordRelationshipsResponse {
+  outgoing: RecordRelationshipItem[];
+  incoming: RecordRelationshipItem[];
+}
+
+export interface CreateRelationshipPayload {
+  source_id: string;
+  target_id: string;
+  relation_type: string;
+  description?: string | null;
+}
