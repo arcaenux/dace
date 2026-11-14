@@ -8,6 +8,7 @@ import {
   KeyboardEvent,
 } from "react";
 import { KnowledgeRecord, SaveStatus } from "./types";
+import { RecordRelationshipsPanel } from "./RecordRelationshipsPanel";
 
 export interface RecordEditorHandle {
   flushSave: () => Promise<boolean>;
@@ -23,6 +24,11 @@ export interface RecordEditorProps {
   isFocusSpace: boolean;
   onToggleRecordList: () => void;
   isListOpen: boolean;
+  onNavigateToRecord: (targetId: string) => void;
+  onShowNotice: (msg: string) => void;
+  canNavigateBack?: boolean;
+  onNavigateBack?: () => void;
+  previousRecordTitle?: string | null;
 }
 
 export const RecordEditor = forwardRef<RecordEditorHandle, RecordEditorProps>(function RecordEditor(
@@ -33,6 +39,11 @@ export const RecordEditor = forwardRef<RecordEditorHandle, RecordEditorProps>(fu
     isFocusSpace,
     onToggleRecordList,
     isListOpen,
+    onNavigateToRecord,
+    onShowNotice,
+    canNavigateBack,
+    onNavigateBack,
+    previousRecordTitle,
   },
   ref
 ) {
@@ -261,6 +272,18 @@ export const RecordEditor = forwardRef<RecordEditorHandle, RecordEditorProps>(fu
       {/* Editor Meta & Control Bar */}
       <div className="editor-meta-bar">
         <div className="editor-meta-left">
+          {canNavigateBack && onNavigateBack && (
+            <button
+              type="button"
+              className="desk-btn"
+              onClick={onNavigateBack}
+              title={`Return to '${previousRecordTitle || "previous concept"}'`}
+            >
+              <span className="btn-icon">←</span>
+              <span>Back</span>
+            </button>
+          )}
+
           <button
             type="button"
             className="desk-btn"
@@ -367,6 +390,14 @@ export const RecordEditor = forwardRef<RecordEditorHandle, RecordEditorProps>(fu
           value={content}
           onChange={(e) => handleContentChange(e.target.value)}
           aria-label="Record content"
+        />
+
+        {/* Connected Concepts Section */}
+        <RecordRelationshipsPanel
+          recordId={record.id}
+          recordTitle={title}
+          onNavigateToRecord={onNavigateToRecord}
+          onShowNotice={onShowNotice}
         />
       </div>
     </div>

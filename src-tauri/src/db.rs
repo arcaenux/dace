@@ -133,6 +133,38 @@ impl Database {
             }
         }
 
+        // Migration 2: Knowledge Relationships Schema
+        if current_version < 2 {
+            let tx = conn.unchecked_transaction()?;
+
+            tx.execute_batch(
+                "CREATE TABLE IF NOT EXISTS record_relationships (
+                    id TEXT PRIMARY KEY,
+                    source_id TEXT NOT NULL,
+                    target_id TEXT NOT NULL,
+                    relation_type TEXT NOT NULL,
+                    description TEXT,
+                    created_at TEXT NOT NULL,
+                    FOREIGN KEY (source_id) REFERENCES records (id) ON DELETE CASCADE,
+                    FOREIGN KEY (target_id) REFERENCES records (id) ON DELETE CASCADE,
+                    CHECK (source_id != target_id),
+                    UNIQUE (source_id, target_id, relation_type)
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_relationships_source ON record_relationships(source_id);
+                CREATE INDEX IF NOT EXISTS idx_relationships_target ON record_relationships(target_id);
+                CREATE INDEX IF NOT EXISTS idx_relationships_type ON record_relationships(relation_type);"
+            )?;
+
+            let now = chrono::Utc::now().to_rfc3339();
+            tx.execute(
+                "INSERT INTO schema_migrations (version, applied_at) VALUES (?1, ?2)",
+                params![2, now],
+            )?;
+
+            tx.commit()?;
+        }
+
         Ok(has_fts5)
     }
 }

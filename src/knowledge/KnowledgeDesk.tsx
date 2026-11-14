@@ -24,6 +24,9 @@ export const KnowledgeDesk: FC<KnowledgeDeskProps> = ({ onShowNotice }) => {
   const [closeErrorModalOpen, setCloseErrorModalOpen] = useState<boolean>(false);
   const [closeErrorMessage, setCloseErrorMessage] = useState<string | null>(null);
 
+  // Navigation History Stack for Relationship Back-Tracking
+  const [navigationHistory, setNavigationHistory] = useState<string[]>([]);
+
   const editorRef = useRef<RecordEditorHandle>(null);
   const isSwitchingRef = useRef<boolean>(false);
   const pendingSwitchTargetRef = useRef<string | null>(null);
@@ -216,6 +219,32 @@ export const KnowledgeDesk: FC<KnowledgeDeskProps> = ({ onShowNotice }) => {
     [activeRecord?.id, onShowNotice]
   );
 
+  // Navigate to a connected concept, preserving history
+  const handleNavigateToRecord = useCallback(
+    async (targetId: string) => {
+      if (activeRecord && activeRecord.id !== targetId) {
+        setNavigationHistory((prev) => [...prev, activeRecord.id]);
+      }
+      await handleSelectRecord(targetId);
+    },
+    [activeRecord, handleSelectRecord]
+  );
+
+  // Return to previous concept in history stack
+  const handleNavigateBack = useCallback(async () => {
+    if (navigationHistory.length === 0) return;
+    const prevHistory = [...navigationHistory];
+    const prevId = prevHistory.pop()!;
+    setNavigationHistory(prevHistory);
+    await handleSelectRecord(prevId);
+  }, [navigationHistory, handleSelectRecord]);
+
+  const previousRecordId =
+    navigationHistory.length > 0 ? navigationHistory[navigationHistory.length - 1] : null;
+  const previousRecordTitle = previousRecordId
+    ? records.find((r) => r.id === previousRecordId)?.title || "Previous Concept"
+    : null;
+
   // Create a brand new record after flushing any active dirty record
   const handleCreateNewRecord = useCallback(async () => {
     if (isSwitchingRef.current) return;
@@ -342,6 +371,11 @@ export const KnowledgeDesk: FC<KnowledgeDeskProps> = ({ onShowNotice }) => {
             isFocusSpace={isFocusSpace}
             onToggleRecordList={() => setIsListOpen((prev) => !prev)}
             isListOpen={isListOpen}
+            onNavigateToRecord={handleNavigateToRecord}
+            onShowNotice={onShowNotice}
+            canNavigateBack={navigationHistory.length > 0}
+            onNavigateBack={handleNavigateBack}
+            previousRecordTitle={previousRecordTitle}
           />
         ) : (
           <div className="desk-empty-state">

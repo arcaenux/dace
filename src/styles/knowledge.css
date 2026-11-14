@@ -570,3 +570,310 @@
   gap: var(--space-3);
   margin-top: var(--space-2);
 }
+
+/* ==========================================================================
+   Knowledge Relationships Panel & Connected Concepts
+   ========================================================================== */
+
+.relationships-panel {
+  margin-top: var(--space-8);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.relationships-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.relationships-toggle-btn {
+  background: none;
+  border: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+  padding: 4px 0;
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-sm);
+  transition: color var(--duration-fast);
+}
+
+.relationships-toggle-btn:hover {
+  color: var(--text-primary);
+}
+
+.toggle-icon {
+  font-size: 10px;
+  color: var(--text-dim);
+}
+
+.relationships-title {
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.relationships-count-badge {
+  background-color: var(--bg-surface-elevated);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-full);
+  padding: 1px 7px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+}
+
+.relationships-empty-state {
+  padding: var(--space-4) var(--space-6);
+  background-color: var(--bg-surface);
+  border: 1px dashed var(--border-medium);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.empty-hint {
+  font-size: var(--font-size-xs);
+  color: var(--text-dim);
+  line-height: var(--line-height-relaxed);
+}
+
+.relationships-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.relationships-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.section-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+}
+
+.relationship-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.relationship-card {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  gap: var(--space-1);
+  position: relative;
+  transition: border-color var(--duration-fast), background-color var(--duration-fast);
+}
+
+.relationship-card:hover {
+  border-color: var(--border-medium);
+  background-color: var(--bg-surface-elevated);
+}
+
+.rel-card-main {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.rel-badge {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  background-color: var(--accent-subtle);
+  color: var(--accent-text);
+  border: 1px solid var(--border-active);
+  white-space: nowrap;
+}
+
+.rel-badge.incoming {
+  background-color: var(--bg-surface-active);
+  color: var(--text-secondary);
+  border-color: var(--border-medium);
+}
+
+.rel-target-link {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: left;
+  transition: color var(--duration-fast);
+}
+
+.rel-target-link:hover {
+  color: var(--accent-primary);
+  text-decoration: underline;
+}
+
+.rel-description {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  padding-left: calc(var(--space-2) + 2px);
+  border-left: 2px solid var(--border-subtle);
+  margin-top: 2px;
+  line-height: 1.4;
+}
+
+.rel-actions {
+  position: absolute;
+  right: var(--space-3);
+  top: var(--space-3);
+  opacity: 0;
+  transition: opacity var(--duration-fast);
+}
+
+.relationship-card:hover .rel-actions {
+  opacity: 1;
+}
+
+.rel-delete-btn {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+  border-radius: var(--radius-sm);
+}
+
+.rel-delete-btn:hover {
+  color: var(--danger);
+  background-color: var(--danger-subtle);
+}
+
+/* ==========================================================================
+   Add Relationship Dialog & Form
+   ========================================================================== */
+
+.add-relationship-dialog {
+  width: 500px;
+  max-width: 92vw;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  box-shadow: var(--shadow-elevated);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.relationship-form-error {
+  padding: var(--space-2) var(--space-3);
+  background-color: var(--danger-subtle);
+  color: var(--danger);
+  font-size: var(--font-size-xs);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--danger-border);
+}
+
+.relationship-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.form-label {
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.relationship-search-input,
+.relationship-desc-input,
+.relationship-type-dropdown {
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  background-color: var(--bg-app);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  outline: none;
+  transition: border-color var(--duration-fast);
+}
+
+.relationship-search-input:focus,
+.relationship-desc-input:focus,
+.relationship-type-dropdown:focus {
+  border-color: var(--accent-primary);
+}
+
+.candidate-records-select-container {
+  max-height: 160px;
+  overflow-y: auto;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-app);
+  margin-top: 4px;
+}
+
+.candidate-record-item {
+  padding: var(--space-2) var(--space-3);
+  cursor: pointer;
+  border-bottom: 1px solid var(--border-subtle);
+  transition: background-color var(--duration-fast);
+}
+
+.candidate-record-item:last-child {
+  border-bottom: none;
+}
+
+.candidate-record-item:hover {
+  background-color: var(--bg-surface-elevated);
+}
+
+.candidate-record-item.selected {
+  background-color: var(--accent-subtle);
+  border-left: 3px solid var(--accent-primary);
+}
+
+.candidate-title {
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.candidate-preview {
+  font-size: 11px;
+  color: var(--text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.candidate-empty {
+  padding: var(--space-4);
+  text-align: center;
+  font-size: var(--font-size-xs);
+  color: var(--text-dim);
+}
