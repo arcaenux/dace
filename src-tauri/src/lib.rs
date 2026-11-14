@@ -28,6 +28,16 @@ fn is_fullscreen(window: tauri::Window) -> Result<bool, String> {
     window.is_fullscreen().map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+fn close_window(window: tauri::Window) -> Result<(), String> {
+    window.close().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn destroy_window(window: tauri::Window) -> Result<(), String> {
+    window.destroy().map_err(|e| e.to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -54,6 +64,8 @@ pub fn run() {
             toggle_fullscreen,
             set_fullscreen,
             is_fullscreen,
+            close_window,
+            destroy_window,
             knowledge::commands::create_record,
             knowledge::commands::get_record,
             knowledge::commands::list_records,
