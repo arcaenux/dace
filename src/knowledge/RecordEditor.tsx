@@ -27,28 +27,18 @@ export const RecordEditor: FC<RecordEditorProps> = ({
 
   const debounceTimerRef = useRef<number | null>(null);
   const isSavingRef = useRef<boolean>(false);
-  const hasPendingSaveRef = useRef<boolean>(false);
+  const isDirtyRef = useRef<boolean>(false);
   const currentRecordIdRef = useRef<string>(record.id);
 
-  // Sync internal state when active record changes
-  useEffect(() => {
-    // If switching between different records
-    if (currentRecordIdRef.current !== record.id) {
-      currentRecordIdRef.current = record.id;
-      setTitle(record.title);
-      setContent(record.content);
-      setTags(record.tags);
-      setTagInput("");
-      setSaveStatus("saved");
-      setErrorMessage(null);
-    }
-  }, [record.id, record.title, record.content, record.tags]);
+  // Synchronized refs to guarantee zero data loss during unmounts or record switches
+  const titleRef = useRef<string>(record.title);
+  const contentRef = useRef<string>(record.content);
+  const tagsRef = useRef<string[]>(record.tags);
 
   // Core persistence function
   const executeSave = useCallback(
     async (saveTitle: string, saveContent: string, saveTags: string[]) => {
       if (isSavingRef.current) {
-        hasPendingSaveRef.current = true;
         return;
       }
 
@@ -58,46 +48,96 @@ export const RecordEditor: FC<RecordEditorProps> = ({
 
       try {
         await onSaveRecord(saveTitle, saveContent, saveTags);
+        isDirtyRef.current = false;
         setSaveStatus("saved");
       } catch (err) {
+        // Never show a false Saved status on failure
         setSaveStatus("error");
         setErrorMessage(err instanceof Error ? err.message : "Failed to persist record to SQLite");
       } finally {
         isSavingRef.current = false;
-        if (hasPendingSaveRef.current) {
-          hasPendingSaveRef.current = false;
-          // Trigger any queued updates
-          executeSave(title, content, tags);
-        }
       }
     },
-    [onSaveRecord, title, content, tags]
+    [onSaveRecord]
   );
+
+  // Sync internal state when active record changes (e.g. user selects a different record)
+  useEffect(() => {
+    // If switching between different records, flush any pending unsaved changes for the prior record first
+    if (currentRecordIdRef.current !== record.id) {
+      if (isDirtyRef.current) {
+        // Flush the previous record's unsaved changes immediately
+        if (debounceTimerRef.current !== null) {
+          window.clearTimeout(debounceTimerRef.current);
+          debounceTimerRef.current = null;
+        }
+        executeSave(titleRef.current, contentRef.current, tagsRef.current);
+      }
+
+      // Now load the newly selected record into state and refs
+      currentRecordIdRef.current = record.id;
+      titleRef.current = record.title;
+      contentRef.current = record.content;
+      tagsRef.current = record.tags;
+      isDirtyRef.current = false;
+
+      setTitle(record.title);
+      setContent(record.content);
+      setTags(record.tags);
+      setTagInput("");
+      setSaveStatus("saved");
+      setErrorMessage(null);
+    }
+  }, [record.id, record.title, record.content, record.tags, executeSave]);
+
+  // Window close / unmount protection: flush pending save if dirty
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (isDirtyRef.current) {
+        if (debounceTimerRef.current !== null) {
+          window.clearTimeout(debounceTimerRef.current);
+          debounceTimerRef.current = null;
+        }
+        executeSave(titleRef.current, contentRef.current, tagsRef.current);
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      // Flush on component unmount
+      if (isDirtyRef.current) {
+        executeSave(titleRef.current, contentRef.current, tagsRef.current);
+      }
+    };
+  }, [executeSave]);
 
   // Trigger debounced autosave when user edits
   const triggerAutosave = useCallback(
     (newTitle: string, newContent: string, newTags: string[]) => {
+      isDirtyRef.current = true;
       setSaveStatus("unsaved");
+
       if (debounceTimerRef.current !== null) {
         window.clearTimeout(debounceTimerRef.current);
       }
       debounceTimerRef.current = window.setTimeout(() => {
         executeSave(newTitle, newContent, newTags);
-      }, 1200);
+      }, 1000);
     },
     [executeSave]
   );
 
-  // Explicit save (e.g. on Ctrl+S)
+  // Explicit save (e.g. on Ctrl+S or Save button)
   const handleExplicitSave = useCallback(() => {
     if (debounceTimerRef.current !== null) {
       window.clearTimeout(debounceTimerRef.current);
       debounceTimerRef.current = null;
     }
-    executeSave(title, content, tags);
-  }, [executeSave, title, content, tags]);
+    executeSave(titleRef.current, contentRef.current, tagsRef.current);
+  }, [executeSave]);
 
-  // Expose explicit save to parent / global shortcut via listener
+  // Global save event listener
   useEffect(() => {
     const handleGlobalSaveRequest = (e: CustomEvent) => {
       if (e.detail?.recordId === record.id || !e.detail?.recordId) {
@@ -114,29 +154,33 @@ export const RecordEditor: FC<RecordEditorProps> = ({
   }, [handleExplicitSave, record.id]);
 
   const handleTitleChange = (val: string) => {
+    titleRef.current = val;
     setTitle(val);
-    triggerAutosave(val, content, tags);
+    triggerAutosave(val, contentRef.current, tagsRef.current);
   };
 
   const handleContentChange = (val: string) => {
+    contentRef.current = val;
     setContent(val);
-    triggerAutosave(title, val, tags);
+    triggerAutosave(titleRef.current, val, tagsRef.current);
   };
 
   const handleAddTag = () => {
     const clean = tagInput.trim().toLowerCase();
     if (clean && !tags.includes(clean)) {
       const updated = [...tags, clean];
+      tagsRef.current = updated;
       setTags(updated);
       setTagInput("");
-      triggerAutosave(title, content, updated);
+      triggerAutosave(titleRef.current, contentRef.current, updated);
     }
   };
 
   const handleRemoveTag = (tagToRemove: string) => {
     const updated = tags.filter((t) => t !== tagToRemove);
+    tagsRef.current = updated;
     setTags(updated);
-    triggerAutosave(title, content, updated);
+    triggerAutosave(titleRef.current, contentRef.current, updated);
   };
 
   const handleTagKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -187,8 +231,13 @@ export const RecordEditor: FC<RecordEditorProps> = ({
               </span>
             )}
             {saveStatus === "error" && (
-              <span className="status-error" title={errorMessage || "Database write error"}>
-                <span className="status-dot red"></span> Error saving
+              <span
+                className="status-error"
+                title={errorMessage || "Database write error. Click to retry."}
+                onClick={handleExplicitSave}
+                style={{ cursor: "pointer" }}
+              >
+                <span className="status-dot red"></span> Error saving (click to retry)
               </span>
             )}
           </div>
