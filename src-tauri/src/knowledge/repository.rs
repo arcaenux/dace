@@ -476,6 +476,7 @@ mod tests {
     #[test]
     fn test_record_lifecycle_and_search() {
         let db = Database::init_in_memory().expect("in-memory DB init failed");
+        eprintln!("\n>>> DATABASE FTS5 ENABLED: {} <<<\n", db.has_fts5);
         let mut conn = db.conn.lock().unwrap();
 
         // 1. Create Record
@@ -600,6 +601,99 @@ mod tests {
         }
 
         // Clean up temporary test file
+        let _ = std::fs::remove_dir_all(temp_dir);
+    }
+
+    #[test]
+    fn test_fts5_synchronization_and_reopen_integrity() {
+        let temp_dir = std::env::temp_dir().join(format!("novadome_fts_test_{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir_all(&temp_dir).unwrap();
+        let db_file = temp_dir.join("fts_integrity.db");
+
+        let id1;
+        let id2;
+
+        // Session 1: Populate records and verify initial search
+        {
+            let db = Database::init(&db_file).expect("session 1 init failed");
+            let mut conn = db.conn.lock().unwrap();
+
+            let rec1 = KnowledgeRepository::create_record(
+                &mut conn,
+                CreateRecordPayload {
+                    title: "Quantum Computing Foundations".to_string(),
+                    content: "Entanglement and superposition enable exponential state representation.".to_string(),
+                    tags: Some(vec!["quantum".to_string(), "physics".to_string()]),
+                },
+                db.has_fts5,
+            ).expect("create rec1 failed");
+            id1 = rec1.id;
+
+            let rec2 = KnowledgeRepository::create_record(
+                &mut conn,
+                CreateRecordPayload {
+                    title: "Classical Neural Networks".to_string(),
+                    content: "Backpropagation optimizes loss functions across deep layered architectures.".to_string(),
+                    tags: Some(vec!["ai".to_string(), "machine-learning".to_string()]),
+                },
+                db.has_fts5,
+            ).expect("create rec2 failed");
+            id2 = rec2.id;
+
+            // Search by term in rec1
+            let s1 = KnowledgeRepository::search_records(&conn, "superposition", db.has_fts5).unwrap();
+            assert_eq!(s1.len(), 1);
+            assert_eq!(s1[0].id, id1);
+
+            // Search by term in rec2
+            let s2 = KnowledgeRepository::search_records(&conn, "backpropagation", db.has_fts5).unwrap();
+            assert_eq!(s2.len(), 1);
+            assert_eq!(s2[0].id, id2);
+
+            // Update rec1 to replace "superposition" with "teleportation"
+            KnowledgeRepository::update_record(
+                &mut conn,
+                UpdateRecordPayload {
+                    id: id1.clone(),
+                    title: "Quantum Information Theory".to_string(),
+                    content: "Entanglement and quantum teleportation form the basis of communication protocols.".to_string(),
+                    tags: Some(vec!["quantum".to_string(), "information".to_string()]),
+                },
+                db.has_fts5,
+            ).expect("update rec1 failed");
+
+            // Old term should no longer match
+            let s_old = KnowledgeRepository::search_records(&conn, "superposition", db.has_fts5).unwrap();
+            assert_eq!(s_old.len(), 0, "Old term must not match after update");
+
+            // New term must match
+            let s_new = KnowledgeRepository::search_records(&conn, "teleportation", db.has_fts5).unwrap();
+            assert_eq!(s_new.len(), 1);
+            assert_eq!(s_new[0].id, id1);
+        }
+
+        // Session 2: Close and reopen database - confirm FTS5 persistence
+        {
+            let db = Database::init(&db_file).expect("session 2 reopen failed");
+            let mut conn = db.conn.lock().unwrap();
+
+            // Search across reopened connection
+            let s_reopen = KnowledgeRepository::search_records(&conn, "teleportation", db.has_fts5).unwrap();
+            assert_eq!(s_reopen.len(), 1, "FTS5 index must persist after reopening database");
+            assert_eq!(s_reopen[0].id, id1);
+
+            let s_rec2 = KnowledgeRepository::search_records(&conn, "Backpropagation", db.has_fts5).unwrap();
+            assert_eq!(s_rec2.len(), 1);
+            assert_eq!(s_rec2[0].id, id2);
+
+            // Delete rec2 and verify FTS5 index removes it
+            let deleted = KnowledgeRepository::delete_record(&mut conn, &id2, db.has_fts5).unwrap();
+            assert!(deleted);
+
+            let s_rec2_after = KnowledgeRepository::search_records(&conn, "Backpropagation", db.has_fts5).unwrap();
+            assert_eq!(s_rec2_after.len(), 0, "Deleted record must be removed from FTS5 index");
+        }
+
         let _ = std::fs::remove_dir_all(temp_dir);
     }
 }
