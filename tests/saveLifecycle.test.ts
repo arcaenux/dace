@@ -1,5 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { DatabaseSync } from "node:sqlite";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import {
   SaveCoordinator,
   RecordSwitchCoordinator,
@@ -331,7 +335,92 @@ test("9. Multiple rapid record switches serialize safely without state overwrite
   coordinator.destroy();
 });
 
-test("10. Failed save during record switch aborts switch and preserves dirty state", async () => {
+test("10. Reopening the application and verifying the latest content persists on disk", async () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "novadome-reopen-test-"));
+  const dbPath = path.join(tempDir, "novadome_reopen.db");
+  const recordId = "rec-reopen-1";
+
+  // Session 1: Application running, editing record, flushing save to SQLite file on disk
+  {
+    const db1 = new DatabaseSync(dbPath);
+    db1.exec(`
+      CREATE TABLE records (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        content TEXT NOT NULL,
+        tags TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+    `);
+
+    const coordinator = new SaveCoordinator(
+      {
+        recordId,
+        title: "Initial Draft",
+        content: "Draft content",
+        tags: ["draft"],
+      },
+      async (snapshot) => {
+        const stmt = db1.prepare(`
+          INSERT INTO records (id, title, content, tags, updated_at)
+          VALUES (?, ?, ?, ?, ?)
+          ON CONFLICT(id) DO UPDATE SET
+            title = excluded.title,
+            content = excluded.content,
+            tags = excluded.tags,
+            updated_at = excluded.updated_at;
+        `);
+        stmt.run(
+          snapshot.recordId,
+          snapshot.title,
+          snapshot.content,
+          JSON.stringify(snapshot.tags),
+          new Date().toISOString()
+        );
+      }
+    );
+
+    // Initial save
+    await coordinator.flushSave();
+
+    // User makes edits
+    coordinator.edit({
+      title: "Hardened Epistemic Architecture",
+      content: "Persistent across application closure and restart with verified data integrity.",
+      tags: ["architecture", "persistence"],
+    });
+
+    // Close coordination flushes pending changes
+    const closeCoord = new CloseCoordinator(coordinator);
+    const closeResult = await closeCoord.handleCloseRequest();
+    assert.strictEqual(closeResult.canClose, true);
+
+    // Close SQLite connection and terminate Session 1
+    db1.close();
+    coordinator.destroy();
+  }
+
+  // Session 2: Application restarted, new process opens same SQLite file from disk
+  {
+    const db2 = new DatabaseSync(dbPath);
+    const stmt = db2.prepare("SELECT id, title, content, tags FROM records WHERE id = ?");
+    const row: any = stmt.get(recordId);
+
+    assert.ok(row, "Record must be found in SQLite after reopening application");
+    assert.strictEqual(row.title, "Hardened Epistemic Architecture");
+    assert.strictEqual(
+      row.content,
+      "Persistent across application closure and restart with verified data integrity."
+    );
+    assert.deepStrictEqual(JSON.parse(row.tags), ["architecture", "persistence"]);
+
+    db2.close();
+  }
+
+  fs.rmSync(tempDir, { recursive: true, force: true });
+});
+
+test("11. Failed save during record switch aborts switch and preserves dirty state", async () => {
   const recordsStore: Record<string, SaveSnapshot> = {
     "rec-X": { recordId: "rec-X", title: "Doc X", content: "Important Unsaved Content", tags: [] },
     "rec-Y": { recordId: "rec-Y", title: "Doc Y", content: "Doc Y content", tags: [] },
