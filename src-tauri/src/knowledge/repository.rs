@@ -1,7 +1,8 @@
 use rusqlite::{params, Connection, Result};
 use uuid::Uuid;
 use super::models::{
-    CreateRecordPayload, KnowledgeRecord, KnowledgeRecordSummary, TagItem, UpdateRecordPayload,
+    CreateRecordPayload, CreateRelationshipPayload, KnowledgeRecord, KnowledgeRecordSummary,
+    RecordRelationshipItem, RecordRelationshipsResponse, TagItem, UpdateRecordPayload,
 };
 
 pub struct KnowledgeRepository;
@@ -466,6 +467,165 @@ impl KnowledgeRepository {
             trimmed.to_string()
         }
     }
+
+    pub fn create_relationship(
+        conn: &mut Connection,
+        payload: CreateRelationshipPayload,
+    ) -> Result<RecordRelationshipItem, String> {
+        let source_id = payload.source_id.trim();
+        let target_id = payload.target_id.trim();
+        let relation_type = payload.relation_type.trim().to_lowercase();
+        let description = payload.description.map(|d| d.trim().to_string()).filter(|d| !d.is_empty());
+
+        if source_id.is_empty() || target_id.is_empty() {
+            return Err("Source and target record IDs must not be empty".to_string());
+        }
+
+        if source_id == target_id {
+            return Err("A record cannot be related to itself".to_string());
+        }
+
+        if relation_type.is_empty() {
+            return Err("Relationship type must not be empty".to_string());
+        }
+
+        let rel_id = Uuid::new_v4().to_string();
+        let now = chrono::Utc::now().to_rfc3339();
+
+        let tx = conn.transaction().map_err(|e| format!("Transaction error: {}", e))?;
+
+        // 1. Fetch source title and target title to verify existence
+        let source_title: String = match tx.query_row(
+            "SELECT title FROM records WHERE id = ?1",
+            params![source_id],
+            |row| row.get(0),
+        ) {
+            Ok(t) => t,
+            Err(rusqlite::Error::QueryReturnedNoRows) => {
+                return Err(format!("Source record {} does not exist", source_id))
+            }
+            Err(e) => return Err(format!("Database error: {}", e)),
+        };
+
+        let target_title: String = match tx.query_row(
+            "SELECT title FROM records WHERE id = ?1",
+            params![target_id],
+            |row| row.get(0),
+        ) {
+            Ok(t) => t,
+            Err(rusqlite::Error::QueryReturnedNoRows) => {
+                return Err(format!("Target record {} does not exist", target_id))
+            }
+            Err(e) => return Err(format!("Database error: {}", e)),
+        };
+
+        // 2. Insert relationship
+        match tx.execute(
+            "INSERT INTO record_relationships (id, source_id, target_id, relation_type, description, created_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+            params![rel_id, source_id, target_id, relation_type, description, now],
+        ) {
+            Ok(_) => (),
+            Err(rusqlite::Error::SqliteFailure(err, _)) if err.code == rusqlite::ErrorCode::ConstraintViolation => {
+                return Err(format!(
+                    "A '{}' relationship already exists between these records",
+                    relation_type
+                ));
+            }
+            Err(e) => return Err(format!("Failed to insert relationship: {}", e)),
+        };
+
+        tx.commit().map_err(|e| format!("Commit error: {}", e))?;
+
+        Ok(RecordRelationshipItem {
+            id: rel_id,
+            source_id: source_id.to_string(),
+            source_title,
+            target_id: target_id.to_string(),
+            target_title,
+            relation_type,
+            description,
+            created_at: now,
+            is_outgoing: true,
+        })
+    }
+
+    pub fn delete_relationship(conn: &mut Connection, id: &str) -> Result<bool, String> {
+        let clean_id = id.trim();
+        let affected = conn.execute(
+            "DELETE FROM record_relationships WHERE id = ?1",
+            params![clean_id],
+        ).map_err(|e| format!("Failed to delete relationship: {}", e))?;
+
+        Ok(affected > 0)
+    }
+
+    pub fn get_record_relationships(
+        conn: &Connection,
+        record_id: &str,
+    ) -> Result<RecordRelationshipsResponse, String> {
+        let clean_id = record_id.trim();
+
+        // 1. Outgoing relationships: source is this record
+        let mut outgoing_stmt = conn.prepare(
+            "SELECT rel.id, rel.source_id, s.title, rel.target_id, t.title, rel.relation_type, rel.description, rel.created_at
+             FROM record_relationships rel
+             JOIN records s ON rel.source_id = s.id
+             JOIN records t ON rel.target_id = t.id
+             WHERE rel.source_id = ?1
+             ORDER BY rel.created_at DESC",
+        ).map_err(|e| format!("Prepare outgoing error: {}", e))?;
+
+        let outgoing_rows = outgoing_stmt.query_map(params![clean_id], |row| {
+            Ok(RecordRelationshipItem {
+                id: row.get(0)?,
+                source_id: row.get(1)?,
+                source_title: row.get(2)?,
+                target_id: row.get(3)?,
+                target_title: row.get(4)?,
+                relation_type: row.get(5)?,
+                description: row.get(6)?,
+                created_at: row.get(7)?,
+                is_outgoing: true,
+            })
+        }).map_err(|e| format!("Query outgoing error: {}", e))?;
+
+        let mut outgoing = Vec::new();
+        for item in outgoing_rows {
+            outgoing.push(item.map_err(|e| e.to_string())?);
+        }
+
+        // 2. Incoming relationships: target is this record
+        let mut incoming_stmt = conn.prepare(
+            "SELECT rel.id, rel.source_id, s.title, rel.target_id, t.title, rel.relation_type, rel.description, rel.created_at
+             FROM record_relationships rel
+             JOIN records s ON rel.source_id = s.id
+             JOIN records t ON rel.target_id = t.id
+             WHERE rel.target_id = ?1
+             ORDER BY rel.created_at DESC",
+        ).map_err(|e| format!("Prepare incoming error: {}", e))?;
+
+        let incoming_rows = incoming_stmt.query_map(params![clean_id], |row| {
+            Ok(RecordRelationshipItem {
+                id: row.get(0)?,
+                source_id: row.get(1)?,
+                source_title: row.get(2)?,
+                target_id: row.get(3)?,
+                target_title: row.get(4)?,
+                relation_type: row.get(5)?,
+                description: row.get(6)?,
+                created_at: row.get(7)?,
+                is_outgoing: false,
+            })
+        }).map_err(|e| format!("Query incoming error: {}", e))?;
+
+        let mut incoming = Vec::new();
+        for item in incoming_rows {
+            incoming.push(item.map_err(|e| e.to_string())?);
+        }
+
+        Ok(RecordRelationshipsResponse { outgoing, incoming })
+    }
 }
 
 #[cfg(test)]
@@ -692,6 +852,218 @@ mod tests {
 
             let s_rec2_after = KnowledgeRepository::search_records(&conn, "Backpropagation", db.has_fts5).unwrap();
             assert_eq!(s_rec2_after.len(), 0, "Deleted record must be removed from FTS5 index");
+        }
+
+        let _ = std::fs::remove_dir_all(temp_dir);
+    }
+
+    #[test]
+    fn test_relationships_lifecycle_and_constraints() {
+        let db = Database::init_in_memory().expect("in-memory DB init failed");
+        let mut conn = db.conn.lock().unwrap();
+
+        // Create records Alpha and Beta
+        let alpha = KnowledgeRepository::create_record(
+            &mut conn,
+            CreateRecordPayload {
+                title: "Concept Alpha".to_string(),
+                content: "Foundational theory of intellectual models.".to_string(),
+                tags: None,
+            },
+            db.has_fts5,
+        ).unwrap();
+
+        let beta = KnowledgeRepository::create_record(
+            &mut conn,
+            CreateRecordPayload {
+                title: "Concept Beta".to_string(),
+                content: "Applied cognitive scaffolding based on Alpha.".to_string(),
+                tags: None,
+            },
+            db.has_fts5,
+        ).unwrap();
+
+        // 1. Prevent self-relationship
+        let self_err = KnowledgeRepository::create_relationship(
+            &mut conn,
+            CreateRelationshipPayload {
+                source_id: alpha.id.clone(),
+                target_id: alpha.id.clone(),
+                relation_type: "builds_on".to_string(),
+                description: None,
+            },
+        );
+        assert!(self_err.is_err(), "Self-relationship must be rejected");
+        assert!(self_err.unwrap_err().contains("cannot be related to itself"));
+
+        // 2. Prevent invalid record references
+        let invalid_err = KnowledgeRepository::create_relationship(
+            &mut conn,
+            CreateRelationshipPayload {
+                source_id: alpha.id.clone(),
+                target_id: "non-existent-uuid".to_string(),
+                relation_type: "depends_on".to_string(),
+                description: None,
+            },
+        );
+        assert!(invalid_err.is_err(), "Non-existent target must be rejected");
+        assert!(invalid_err.unwrap_err().contains("does not exist"));
+
+        // 3. Create valid relationship Alpha -> Beta (builds_on)
+        let rel_ab = KnowledgeRepository::create_relationship(
+            &mut conn,
+            CreateRelationshipPayload {
+                source_id: alpha.id.clone(),
+                target_id: beta.id.clone(),
+                relation_type: "builds_on".to_string(),
+                description: Some("Alpha provides the theoretical foundation for Beta".to_string()),
+            },
+        ).expect("create relationship Alpha -> Beta failed");
+
+        assert_eq!(rel_ab.source_id, alpha.id);
+        assert_eq!(rel_ab.source_title, "Concept Alpha");
+        assert_eq!(rel_ab.target_id, beta.id);
+        assert_eq!(rel_ab.target_title, "Concept Beta");
+        assert_eq!(rel_ab.relation_type, "builds_on");
+        assert_eq!(
+            rel_ab.description,
+            Some("Alpha provides the theoretical foundation for Beta".to_string())
+        );
+
+        // 4. Duplicate relationship prevention
+        let dup_err = KnowledgeRepository::create_relationship(
+            &mut conn,
+            CreateRelationshipPayload {
+                source_id: alpha.id.clone(),
+                target_id: beta.id.clone(),
+                relation_type: "builds_on".to_string(),
+                description: Some("Duplicate attempt".to_string()),
+            },
+        );
+        assert!(dup_err.is_err(), "Duplicate relationship must be rejected");
+        assert!(dup_err.unwrap_err().contains("already exists"));
+
+        // 5. Deliberate reciprocal / directed relationship Beta -> Alpha (explains)
+        let rel_ba = KnowledgeRepository::create_relationship(
+            &mut conn,
+            CreateRelationshipPayload {
+                source_id: beta.id.clone(),
+                target_id: alpha.id.clone(),
+                relation_type: "explains".to_string(),
+                description: Some("Concrete realization illustrating Alpha".to_string()),
+            },
+        ).expect("create reciprocal Beta -> Alpha failed");
+
+        assert_eq!(rel_ba.source_id, beta.id);
+        assert_eq!(rel_ba.target_id, alpha.id);
+        assert_eq!(rel_ba.relation_type, "explains");
+
+        // 6. Query incoming and outgoing for Alpha
+        let alpha_rels = KnowledgeRepository::get_record_relationships(&conn, &alpha.id)
+            .expect("get relationships for Alpha failed");
+        assert_eq!(alpha_rels.outgoing.len(), 1, "Alpha must have 1 outgoing relationship");
+        assert_eq!(alpha_rels.outgoing[0].target_id, beta.id);
+        assert_eq!(alpha_rels.outgoing[0].relation_type, "builds_on");
+        assert_eq!(alpha_rels.incoming.len(), 1, "Alpha must have 1 incoming relationship");
+        assert_eq!(alpha_rels.incoming[0].source_id, beta.id);
+        assert_eq!(alpha_rels.incoming[0].relation_type, "explains");
+
+        // Query incoming and outgoing for Beta
+        let beta_rels = KnowledgeRepository::get_record_relationships(&conn, &beta.id)
+            .expect("get relationships for Beta failed");
+        assert_eq!(beta_rels.outgoing.len(), 1);
+        assert_eq!(beta_rels.outgoing[0].target_id, alpha.id);
+        assert_eq!(beta_rels.incoming.len(), 1);
+        assert_eq!(beta_rels.incoming[0].source_id, alpha.id);
+
+        // 7. Relationship deletion
+        let del_rel = KnowledgeRepository::delete_relationship(&mut conn, &rel_ba.id)
+            .expect("delete relationship failed");
+        assert!(del_rel);
+
+        let alpha_after_del = KnowledgeRepository::get_record_relationships(&conn, &alpha.id).unwrap();
+        assert_eq!(alpha_after_del.incoming.len(), 0, "Incoming rel to Alpha should be gone");
+        assert_eq!(alpha_after_del.outgoing.len(), 1, "Outgoing rel from Alpha must remain");
+
+        // 8. Record deletion and referential cascade
+        let del_beta = KnowledgeRepository::delete_record(&mut conn, &beta.id, db.has_fts5).unwrap();
+        assert!(del_beta);
+
+        let alpha_after_cascade = KnowledgeRepository::get_record_relationships(&conn, &alpha.id).unwrap();
+        assert_eq!(
+            alpha_after_cascade.outgoing.len(),
+            0,
+            "Relationships referencing deleted record must be cascaded"
+        );
+    }
+
+    #[test]
+    fn test_relationship_persistence_across_restarts() {
+        let temp_dir = std::env::temp_dir().join(format!("novadome_rel_test_{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir_all(&temp_dir).unwrap();
+        let db_file = temp_dir.join("rel_persist.db");
+
+        let id_c;
+        let id_d;
+
+        // Session 1: Create records and relationship, flush to disk, close DB
+        {
+            let db = Database::init(&db_file).expect("session 1 init failed");
+            let mut conn = db.conn.lock().unwrap();
+
+            let rec_c = KnowledgeRepository::create_record(
+                &mut conn,
+                CreateRecordPayload {
+                    title: "Concept Gamma".to_string(),
+                    content: "Source node".to_string(),
+                    tags: None,
+                },
+                db.has_fts5,
+            ).unwrap();
+            id_c = rec_c.id;
+
+            let rec_d = KnowledgeRepository::create_record(
+                &mut conn,
+                CreateRecordPayload {
+                    title: "Concept Delta".to_string(),
+                    content: "Target node".to_string(),
+                    tags: None,
+                },
+                db.has_fts5,
+            ).unwrap();
+            id_d = rec_d.id;
+
+            KnowledgeRepository::create_relationship(
+                &mut conn,
+                CreateRelationshipPayload {
+                    source_id: id_c.clone(),
+                    target_id: id_d.clone(),
+                    relation_type: "depends_on".to_string(),
+                    description: Some("Gamma cannot function without Delta".to_string()),
+                },
+            ).expect("create relationship failed");
+        }
+
+        // Session 2: Reopen database and verify relationships persisted on disk
+        {
+            let db = Database::init(&db_file).expect("session 2 reopen failed");
+            let conn = db.conn.lock().unwrap();
+
+            let c_rels = KnowledgeRepository::get_record_relationships(&conn, &id_c).unwrap();
+            assert_eq!(c_rels.outgoing.len(), 1, "Outgoing relationship must persist across reopen");
+            assert_eq!(c_rels.outgoing[0].target_id, id_d);
+            assert_eq!(c_rels.outgoing[0].target_title, "Concept Delta");
+            assert_eq!(c_rels.outgoing[0].relation_type, "depends_on");
+            assert_eq!(
+                c_rels.outgoing[0].description,
+                Some("Gamma cannot function without Delta".to_string())
+            );
+
+            let d_rels = KnowledgeRepository::get_record_relationships(&conn, &id_d).unwrap();
+            assert_eq!(d_rels.incoming.len(), 1, "Incoming relationship must persist across reopen");
+            assert_eq!(d_rels.incoming[0].source_id, id_c);
+            assert_eq!(d_rels.incoming[0].source_title, "Concept Gamma");
+            assert_eq!(d_rels.incoming[0].relation_type, "depends_on");
         }
 
         let _ = std::fs::remove_dir_all(temp_dir);

@@ -72,7 +72,10 @@ pub fn run() {
             knowledge::commands::update_record,
             knowledge::commands::delete_record,
             knowledge::commands::search_records,
-            knowledge::commands::list_tags
+            knowledge::commands::list_tags,
+            knowledge::commands::create_relationship,
+            knowledge::commands::delete_relationship,
+            knowledge::commands::get_record_relationships
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
