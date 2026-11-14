@@ -1,7 +1,9 @@
-import { FC, useState, useEffect, useCallback } from "react";
+import { FC, useState, useEffect, useCallback, useRef } from "react";
+import { getCurrentWindow } from "@tauri-apps/api/window";
+import { isTauriEnvironment, closeNativeWindow } from "../focus/tauriWindow";
 import { KnowledgeRecord, KnowledgeRecordSummary, TagItem } from "./types";
 import * as api from "./knowledgeApi";
-import { RecordEditor } from "./RecordEditor";
+import { RecordEditor, RecordEditorHandle } from "./RecordEditor";
 import { RecordListPanel } from "./RecordListPanel";
 import { useFocusSpace } from "../focus/FocusSpaceContext";
 
@@ -18,6 +20,14 @@ export const KnowledgeDesk: FC<KnowledgeDeskProps> = ({ onShowNotice }) => {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
+  // Close Coordination Modal State
+  const [closeErrorModalOpen, setCloseErrorModalOpen] = useState<boolean>(false);
+  const [closeErrorMessage, setCloseErrorMessage] = useState<string | null>(null);
+
+  const editorRef = useRef<RecordEditorHandle>(null);
+  const isSwitchingRef = useRef<boolean>(false);
+  const pendingSwitchTargetRef = useRef<string | null>(null);
+
   const { isFocusSpace } = useFocusSpace();
 
   // Load tag list from SQLite
@@ -31,20 +41,23 @@ export const KnowledgeDesk: FC<KnowledgeDeskProps> = ({ onShowNotice }) => {
   }, []);
 
   // Load records list from SQLite
-  const loadRecords = useCallback(async (tagFilter: string | null = null) => {
-    setIsLoading(true);
-    try {
-      const list = await api.listRecords(tagFilter || undefined);
-      setRecords(list);
-      return list;
-    } catch (err) {
-      console.error("[KnowledgeDesk] Failed to load records from SQLite:", err);
-      onShowNotice("Error reading from database");
-      return [];
-    } finally {
-      setIsLoading(false);
-    }
-  }, [onShowNotice]);
+  const loadRecords = useCallback(
+    async (tagFilter: string | null = null) => {
+      setIsLoading(true);
+      try {
+        const list = await api.listRecords(tagFilter || undefined);
+        setRecords(list);
+        return list;
+      } catch (err) {
+        console.error("[KnowledgeDesk] Failed to load records from SQLite:", err);
+        onShowNotice("Error reading from database");
+        return [];
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [onShowNotice]
+  );
 
   // Initial load on mount
   useEffect(() => {
@@ -71,22 +84,152 @@ export const KnowledgeDesk: FC<KnowledgeDeskProps> = ({ onShowNotice }) => {
     };
   }, [loadRecords, refreshTags]);
 
-  // Select a record to edit
-  const handleSelectRecord = async (id: string) => {
-    try {
-      const rec = await api.getRecord(id);
-      if (rec) {
-        setActiveRecord(rec);
-      }
-    } catch (err) {
-      console.error("[KnowledgeDesk] Failed to get record:", err);
-      onShowNotice("Failed to load record from database");
-    }
-  };
+  // Window Close Coordination: prevents application close while persistence is pending or dirty
+  useEffect(() => {
+    if (!isTauriEnvironment()) return;
 
-  // Create a brand new record
-  const handleCreateNewRecord = async () => {
+    let isClosing = false;
+    let unlistenFn: (() => void) | null = null;
+
+    async function initCloseHandler() {
+      try {
+        const appWin = getCurrentWindow();
+        unlistenFn = await appWin.onCloseRequested(async (event) => {
+          if (isClosing) {
+            // Authorized close already in progress
+            return;
+          }
+
+          const hasDirty = editorRef.current?.isDirty() ?? false;
+          const hasInFlight = editorRef.current?.isSaving() ?? false;
+
+          if (hasDirty || hasInFlight) {
+            // Prevent immediate exit
+            event.preventDefault();
+
+            try {
+              const saved = await editorRef.current?.flushSave();
+              if (saved) {
+                isClosing = true;
+                if (unlistenFn) {
+                  unlistenFn();
+                  unlistenFn = null;
+                }
+                await closeNativeWindow();
+              } else {
+                setCloseErrorMessage("Database write error while saving active record.");
+                setCloseErrorModalOpen(true);
+              }
+            } catch (err) {
+              setCloseErrorMessage(
+                err instanceof Error ? err.message : "Unexpected error while saving"
+              );
+              setCloseErrorModalOpen(true);
+            }
+          }
+        });
+      } catch (err) {
+        console.error("[KnowledgeDesk] Failed to register onCloseRequested handler:", err);
+      }
+    }
+
+    initCloseHandler();
+
+    return () => {
+      if (unlistenFn) {
+        unlistenFn();
+        unlistenFn = null;
+      }
+    };
+  }, []);
+
+  // Save active record with explicit recordId decoupling
+  const handleSaveRecord = useCallback(
+    async (
+      recordId: string,
+      title: string,
+      content: string,
+      newTags: string[]
+    ): Promise<KnowledgeRecord> => {
+      const updated = await api.updateRecord({
+        id: recordId,
+        title,
+        content,
+        tags: newTags,
+      });
+
+      // Only update activeRecord state if the saved record is still the one on screen
+      setActiveRecord((current) => (current && current.id === recordId ? updated : current));
+
+      // Refresh summaries list in background without disturbing active editing
+      const summaries = await api.listRecords(selectedTag || undefined);
+      setRecords(summaries);
+      await refreshTags();
+
+      return updated;
+    },
+    [refreshTags, selectedTag]
+  );
+
+  // Select a record to edit with strict switching protection
+  const handleSelectRecord = useCallback(
+    async (id: string) => {
+      if (activeRecord?.id === id) return;
+
+      pendingSwitchTargetRef.current = id;
+      if (isSwitchingRef.current) {
+        return;
+      }
+
+      isSwitchingRef.current = true;
+
+      try {
+        while (pendingSwitchTargetRef.current !== null) {
+          const nextId = pendingSwitchTargetRef.current;
+          pendingSwitchTargetRef.current = null;
+
+          // 1. Flush any pending changes on the current record
+          if (editorRef.current && (editorRef.current.isDirty() || editorRef.current.isSaving())) {
+            const ok = await editorRef.current.flushSave();
+            if (!ok) {
+              onShowNotice("Could not save changes to active record. Switch cancelled to prevent data loss.");
+              pendingSwitchTargetRef.current = null;
+              break;
+            }
+          }
+
+          // 2. Fetch the target record
+          const rec = await api.getRecord(nextId);
+          if (rec) {
+            setActiveRecord(rec);
+          } else {
+            onShowNotice("Record not found.");
+          }
+        }
+      } catch (err) {
+        console.error("[KnowledgeDesk] Error switching record:", err);
+        onShowNotice("Failed to switch records.");
+      } finally {
+        isSwitchingRef.current = false;
+      }
+    },
+    [activeRecord?.id, onShowNotice]
+  );
+
+  // Create a brand new record after flushing any active dirty record
+  const handleCreateNewRecord = useCallback(async () => {
+    if (isSwitchingRef.current) return;
+    isSwitchingRef.current = true;
+
     try {
+      if (editorRef.current && (editorRef.current.isDirty() || editorRef.current.isSaving())) {
+        const ok = await editorRef.current.flushSave();
+        if (!ok) {
+          onShowNotice("Could not save changes to active record. Creation cancelled to prevent data loss.");
+          return;
+        }
+      }
+
       const created = await api.createRecord({
         title: "",
         content: "",
@@ -99,27 +242,10 @@ export const KnowledgeDesk: FC<KnowledgeDeskProps> = ({ onShowNotice }) => {
     } catch (err) {
       console.error("[KnowledgeDesk] Failed to create record:", err);
       onShowNotice("Error creating record in database");
+    } finally {
+      isSwitchingRef.current = false;
     }
-  };
-
-  // Save active record
-  const handleSaveRecord = async (title: string, content: string, newTags: string[]) => {
-    if (!activeRecord) return;
-
-    const updated = await api.updateRecord({
-      id: activeRecord.id,
-      title,
-      content,
-      tags: newTags,
-    });
-
-    setActiveRecord(updated);
-
-    // Refresh summaries list in background without disturbing active editing
-    const summaries = await api.listRecords(selectedTag || undefined);
-    setRecords(summaries);
-    await refreshTags();
-  };
+  }, [loadRecords, onShowNotice, refreshTags, selectedTag]);
 
   // Delete active record after confirmation
   const handleConfirmDelete = async () => {
@@ -180,24 +306,22 @@ export const KnowledgeDesk: FC<KnowledgeDeskProps> = ({ onShowNotice }) => {
 
     window.addEventListener("novadome:new-record", handleNewRecordEvent);
     window.addEventListener("novadome:search-records", handleSearchEvent);
+
     return () => {
       window.removeEventListener("novadome:new-record", handleNewRecordEvent);
       window.removeEventListener("novadome:search-records", handleSearchEvent);
     };
-  }, []);
+  }, [handleCreateNewRecord]);
 
   return (
-    <div className="knowledge-desk-layout">
-      {/* 1. Collapsible Record Navigation Panel */}
+    <div className="knowledge-desk-root">
+      {/* 1. Record Navigation Drawer / Panel */}
       <RecordListPanel
-        isOpen={isListOpen && !isFocusSpace}
+        isOpen={isListOpen}
         onClose={() => setIsListOpen(false)}
         records={records}
         activeRecordId={activeRecord?.id || null}
-        onSelectRecord={(id) => {
-          handleSelectRecord(id);
-          setIsListOpen(false);
-        }}
+        onSelectRecord={handleSelectRecord}
         onCreateNewRecord={handleCreateNewRecord}
         onSearch={handleSearch}
         tags={tags}
@@ -206,26 +330,28 @@ export const KnowledgeDesk: FC<KnowledgeDeskProps> = ({ onShowNotice }) => {
         isLoading={isLoading}
       />
 
-      {/* 2. Central Editor Area */}
+      {/* 2. Main Writing / Record Area */}
       <div className="knowledge-main-area">
         {activeRecord ? (
           <RecordEditor
+            ref={editorRef}
+            key={activeRecord.id}
             record={activeRecord}
             onSaveRecord={handleSaveRecord}
             onDeleteRecord={(id) => setDeleteConfirmId(id)}
             isFocusSpace={isFocusSpace}
-            onToggleRecordList={() => setIsListOpen(!isListOpen)}
+            onToggleRecordList={() => setIsListOpen((prev) => !prev)}
             isListOpen={isListOpen}
           />
         ) : (
           <div className="desk-empty-state">
             <h2 className="desk-empty-heading">Knowledge Desk</h2>
             <p className="desk-empty-sub">
-              No knowledge record is currently open. You can create a new record or browse existing notes.
+              A quiet space for capturing thoughts, structured concepts, and personal research.
             </p>
             <div className="desk-empty-actions">
               <button className="desk-btn primary" onClick={handleCreateNewRecord}>
-                Create New Record
+                + Create First Record
               </button>
               {records.length > 0 && (
                 <button className="desk-btn" onClick={() => setIsListOpen(true)}>
@@ -252,16 +378,71 @@ export const KnowledgeDesk: FC<KnowledgeDeskProps> = ({ onShowNotice }) => {
             </p>
             <div className="confirm-actions">
               <button
+                type="button"
                 className="desk-btn"
                 onClick={() => setDeleteConfirmId(null)}
               >
                 Cancel
               </button>
               <button
+                type="button"
                 className="desk-btn danger-solid"
                 onClick={handleConfirmDelete}
               >
                 Confirm Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 4. Shutdown Save Error Modal with Clear Retry Options */}
+      {closeErrorModalOpen && (
+        <div
+          className="overlay-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Unsaved Changes on Close"
+        >
+          <div className="delete-confirm-dialog">
+            <h3 className="confirm-title">Unsaved Changes</h3>
+            <p className="confirm-message">
+              {closeErrorMessage || "An error occurred while saving your record to SQLite."}
+              <br />
+              Closing now will cause recent changes to be lost. What would you like to do?
+            </p>
+            <div className="confirm-actions">
+              <button
+                type="button"
+                className="desk-btn"
+                onClick={() => setCloseErrorModalOpen(false)}
+              >
+                Keep Editing
+              </button>
+              <button
+                type="button"
+                className="desk-btn danger"
+                onClick={async () => {
+                  setCloseErrorModalOpen(false);
+                  await closeNativeWindow();
+                }}
+              >
+                Discard & Close
+              </button>
+              <button
+                type="button"
+                className="desk-btn primary"
+                onClick={async () => {
+                  const ok = await editorRef.current?.flushSave();
+                  if (ok) {
+                    setCloseErrorModalOpen(false);
+                    await closeNativeWindow();
+                  } else {
+                    onShowNotice("Retry failed. Please check database connectivity.");
+                  }
+                }}
+              >
+                Retry Save & Close
               </button>
             </div>
           </div>

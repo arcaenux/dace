@@ -82,3 +82,27 @@ export async function isNativeFullscreen(): Promise<boolean> {
 
   return false;
 }
+
+/**
+ * Closes the application window safely.
+ */
+export async function closeNativeWindow(): Promise<void> {
+  if (isTauriEnvironment()) {
+    try {
+      await invoke("destroy_window");
+      return;
+    } catch {
+      try {
+        const appWindow = getCurrentWindow();
+        await appWindow.destroy();
+        return;
+      } catch (err) {
+        console.error("[NovaDome] Failed to destroy window via Tauri API:", err);
+      }
+    }
+  }
+
+  if (typeof window !== "undefined") {
+    window.close();
+  }
+}
