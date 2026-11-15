@@ -1,3 +1,4 @@
+@import "./fonts.css";
 @import "./tokens.css";
 @import "./knowledge.css";
 @import "./graph.css";
@@ -186,9 +187,10 @@ html, body, #root {
 }
 
 .intro-heading {
-  font-size: var(--font-size-2xl);
+  font-family: var(--font-editorial);
+  font-size: 2.25rem;
   font-weight: 500;
-  letter-spacing: -0.02em;
+  letter-spacing: var(--letter-spacing-editorial);
   color: var(--text-primary);
   line-height: var(--line-height-tight);
 }
@@ -269,8 +271,10 @@ html, body, #root {
 }
 
 .activity-title {
+  font-family: var(--font-editorial);
   font-size: var(--font-size-xl);
   font-weight: 500;
+  letter-spacing: var(--letter-spacing-editorial);
   color: var(--text-primary);
 }
 

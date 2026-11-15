@@ -185,8 +185,10 @@
 }
 
 .card-title {
-  font-size: var(--font-size-sm);
+  font-family: var(--font-editorial);
+  font-size: var(--font-size-md);
   font-weight: 500;
+  letter-spacing: var(--letter-spacing-editorial);
   color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
@@ -423,11 +425,11 @@
   width: 100%;
   background: transparent;
   border: none;
-  font-size: var(--font-size-2xl);
-  font-weight: 600;
-  font-family: var(--font-sans);
+  font-size: 1.85rem;
+  font-weight: 500;
+  font-family: var(--font-editorial);
   color: var(--text-primary);
-  letter-spacing: -0.02em;
+  letter-spacing: var(--letter-spacing-editorial);
   outline: none;
   padding: 0;
   line-height: var(--line-height-tight);
@@ -495,10 +497,11 @@
   min-height: 480px;
   background: transparent;
   border: none;
-  font-size: var(--font-size-md);
-  font-family: var(--font-sans);
+  font-size: 1.0625rem;
+  font-family: var(--font-editorial);
   color: var(--text-primary);
-  line-height: 1.7;
+  line-height: 1.78;
+  letter-spacing: -0.005em;
   outline: none;
   resize: none;
   padding: var(--space-2) 0;
@@ -506,6 +509,27 @@
 
 .editor-textarea::placeholder {
   color: var(--text-dim);
+  font-family: var(--font-editorial);
+  font-style: italic;
+  font-size: 1.0625rem;
+  letter-spacing: var(--letter-spacing-quote);
+}
+
+/* First-class Quotation & Excerpt Typography */
+blockquote,
+.knowledge-quote,
+.quotation-excerpt {
+  font-family: var(--font-quotation);
+  font-style: italic;
+  font-size: 1.0625rem;
+  line-height: var(--line-height-relaxed);
+  color: #e2e8f0;
+  border-left: 2px solid var(--accent-primary);
+  padding: var(--space-2) var(--space-4);
+  margin: var(--space-4) 0;
+  background: rgba(118, 151, 198, 0.04);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  letter-spacing: var(--letter-spacing-quote);
 }
 
 /* Empty State */
@@ -719,8 +743,10 @@
   border: none;
   padding: 0;
   margin: 0;
+  font-family: var(--font-editorial);
   font-size: var(--font-size-sm);
   font-weight: 500;
+  letter-spacing: var(--letter-spacing-editorial);
   color: var(--text-primary);
   cursor: pointer;
   text-align: left;
@@ -733,12 +759,17 @@
 }
 
 .rel-description {
+  font-family: var(--font-quotation);
+  font-style: italic;
   font-size: var(--font-size-xs);
-  color: var(--text-secondary);
-  padding-left: calc(var(--space-2) + 2px);
-  border-left: 2px solid var(--border-subtle);
-  margin-top: 2px;
-  line-height: 1.4;
+  letter-spacing: var(--letter-spacing-quote);
+  color: #cbd5e1;
+  padding-left: var(--space-2);
+  border-left: 2px solid rgba(118, 151, 198, 0.4);
+  background: rgba(118, 151, 198, 0.03);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  margin-top: 4px;
+  line-height: var(--line-height-relaxed);
 }
 
 .rel-actions {
@@ -858,8 +889,10 @@
 }
 
 .candidate-title {
-  font-size: var(--font-size-xs);
+  font-family: var(--font-editorial);
+  font-size: var(--font-size-sm);
   font-weight: 500;
+  letter-spacing: var(--letter-spacing-editorial);
   color: var(--text-primary);
 }
 

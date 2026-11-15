@@ -206,7 +206,7 @@ export const KnowledgeGraphView: FC<KnowledgeGraphViewProps> = ({
         const labelText = meta.label;
 
         ctx.save();
-        ctx.font = `${Math.max(9 / zoom, 8)}px "Inter", system-ui, sans-serif`;
+        ctx.font = `500 ${Math.max(9 / zoom, 8)}px "Manrope Variable", Manrope, sans-serif`;
         const textMetrics = ctx.measureText(labelText);
         const padX = 6 / zoom;
         const pillW = textMetrics.width + padX * 2;
@@ -300,8 +300,18 @@ export const KnowledgeGraphView: FC<KnowledgeGraphViewProps> = ({
 
       if (shouldDrawLabel) {
         ctx.save();
-        const fontSize = Math.max(11 / zoom, 9);
-        ctx.font = `${fontSize}px "Inter", system-ui, sans-serif`;
+        const baseFontSize = Math.max(11 / zoom, 9);
+        const fontSize = isSelected ? baseFontSize * 1.15 : baseFontSize;
+
+        // Conceptual titles use Editorial / Naturalist serif; selected concept uses expressive emphasis
+        if (isSelected) {
+          ctx.font = `italic 600 ${fontSize}px "Newsreader Variable", Newsreader, "Cormorant Garamond", Georgia, serif`;
+        } else if (isHovered || isNeighbor) {
+          ctx.font = `500 ${fontSize}px "Newsreader Variable", Newsreader, "Cormorant Garamond", Georgia, serif`;
+        } else {
+          ctx.font = `400 ${fontSize}px "Newsreader Variable", Newsreader, "Cormorant Garamond", Georgia, serif`;
+        }
+
         const label = node.title || "Untitled Concept";
         const textMetrics = ctx.measureText(label);
 

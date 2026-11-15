@@ -24,9 +24,22 @@
 
   --overlay-backdrop: rgba(7, 9, 12, 0.75);
 
-  /* Typography */
-  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  /* Typography — Three-Layer Naturalist & Interface System */
+  --font-interface: "Manrope Variable", Manrope, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-sans: var(--font-interface);
+  --font-editorial: "Newsreader Variable", Newsreader, "Cormorant Garamond", Garamond, Georgia, serif;
+  --font-quotation: "Newsreader Variable", Newsreader, "Cormorant Garamond", Georgia, serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+
+  --letter-spacing-editorial: -0.018em;
+  --letter-spacing-interface: -0.006em;
+  --letter-spacing-quote: 0.01em;
+  --letter-spacing-caps: 0.07em;
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
 
   --font-size-xs: 0.75rem;    /* 12px */
   --font-size-sm: 0.8125rem;  /* 13px */
