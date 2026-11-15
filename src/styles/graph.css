@@ -66,13 +66,18 @@
   border: none;
   outline: none;
   color: var(--text-primary);
-  font-family: var(--font-sans);
+  font-family: var(--font-interface);
   font-size: var(--font-size-sm);
+  letter-spacing: var(--letter-spacing-interface);
 }
 
 .graph-search-input::placeholder {
   color: var(--text-muted);
-  opacity: 0.8;
+  font-family: var(--font-editorial);
+  font-style: italic;
+  font-size: 0.9375rem;
+  opacity: 0.82;
+  letter-spacing: 0.01em;
 }
 
 .search-clear-btn {
@@ -121,12 +126,15 @@
 }
 
 .result-title {
-  font-size: var(--font-size-sm);
+  font-family: var(--font-editorial);
+  font-size: var(--font-size-md);
   font-weight: 500;
+  letter-spacing: var(--letter-spacing-editorial);
   color: var(--text-primary);
 }
 
 .result-preview {
+  font-family: var(--font-interface);
   font-size: var(--font-size-xs);
   color: var(--text-muted);
   margin-top: 2px;
@@ -263,15 +271,20 @@
 }
 
 .card-title {
-  font-size: var(--font-size-base);
-  font-weight: 600;
+  font-family: var(--font-editorial);
+  font-size: var(--font-size-lg);
+  font-weight: 500;
+  letter-spacing: var(--letter-spacing-editorial);
   color: var(--text-primary);
   margin-bottom: 4px;
   line-height: var(--line-height-tight);
 }
 
 .card-preview {
+  font-family: var(--font-quotation);
+  font-style: italic;
   font-size: var(--font-size-xs);
+  letter-spacing: var(--letter-spacing-quote);
   color: var(--text-secondary);
   line-height: var(--line-height-normal);
   margin-bottom: var(--space-3);
@@ -385,10 +398,17 @@
 }
 
 .edge-desc-text {
-  font-size: var(--font-size-xs);
-  color: var(--text-secondary);
+  font-family: var(--font-quotation);
   font-style: italic;
+  font-size: var(--font-size-xs);
+  letter-spacing: var(--letter-spacing-quote);
+  color: #cbd5e1;
+  padding: 4px 8px;
+  border-left: 2px solid rgba(56, 189, 248, 0.4);
+  background: rgba(14, 165, 233, 0.04);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   margin: var(--space-2) 0;
+  line-height: var(--line-height-relaxed);
 }
 
 /* --------------------------------------------------------------------------
@@ -427,13 +447,16 @@
 }
 
 .empty-heading {
-  font-size: var(--font-size-lg);
-  font-weight: 600;
+  font-family: var(--font-editorial);
+  font-size: var(--font-size-xl);
+  font-weight: 500;
+  letter-spacing: var(--letter-spacing-editorial);
   color: var(--text-primary);
   margin-bottom: var(--space-2);
 }
 
 .empty-sub {
+  font-family: var(--font-interface);
   font-size: var(--font-size-sm);
   color: var(--text-secondary);
   line-height: var(--line-height-relaxed);
