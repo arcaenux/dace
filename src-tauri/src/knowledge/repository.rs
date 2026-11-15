@@ -1,8 +1,9 @@
 use rusqlite::{params, Connection, Result};
 use uuid::Uuid;
 use super::models::{
-    CreateRecordPayload, CreateRelationshipPayload, KnowledgeRecord, KnowledgeRecordSummary,
-    RecordRelationshipItem, RecordRelationshipsResponse, TagItem, UpdateRecordPayload,
+    CreateRecordPayload, CreateRelationshipPayload, GraphEdge, GraphNode, KnowledgeGraphData,
+    KnowledgeRecord, KnowledgeRecordSummary, RecordRelationshipItem, RecordRelationshipsResponse,
+    TagItem, UpdateRecordPayload,
 };
 
 pub struct KnowledgeRepository;
@@ -626,6 +627,72 @@ impl KnowledgeRepository {
 
         Ok(RecordRelationshipsResponse { outgoing, incoming })
     }
+
+    pub fn get_knowledge_graph(conn: &Connection) -> Result<KnowledgeGraphData, String> {
+        // 1. Fetch all nodes with connection counts
+        let mut node_stmt = conn.prepare(
+            "SELECT r.id, r.title, r.content, r.updated_at,
+                    (SELECT COUNT(*) FROM record_relationships rel WHERE rel.source_id = r.id OR rel.target_id = r.id) as connection_count
+             FROM records r
+             ORDER BY r.updated_at DESC",
+        ).map_err(|e| format!("Prepare nodes error: {}", e))?;
+
+        let node_rows = node_stmt.query_map([], |row| {
+            let id: String = row.get(0)?;
+            let title: String = row.get(1)?;
+            let content: String = row.get(2)?;
+            let updated_at: String = row.get(3)?;
+            let connection_count: i64 = row.get(4)?;
+            let preview = Self::make_preview(&content);
+            Ok((id, title, preview, updated_at, connection_count))
+        }).map_err(|e| format!("Query nodes error: {}", e))?;
+
+        let mut nodes = Vec::new();
+        let mut node_ids = std::collections::HashSet::new();
+
+        for item in node_rows {
+            let (id, title, preview, updated_at, connection_count) = item.map_err(|e| e.to_string())?;
+            let tags = Self::get_tags_for_record(conn, &id)?;
+            node_ids.insert(id.clone());
+            nodes.push(GraphNode {
+                id,
+                title,
+                preview,
+                tags,
+                updated_at,
+                connection_count,
+            });
+        }
+
+        // 2. Fetch all directed edges
+        let mut edge_stmt = conn.prepare(
+            "SELECT id, source_id, target_id, relation_type, description, created_at
+             FROM record_relationships
+             ORDER BY created_at ASC",
+        ).map_err(|e| format!("Prepare edges error: {}", e))?;
+
+        let edge_rows = edge_stmt.query_map([], |row| {
+            Ok(GraphEdge {
+                id: row.get(0)?,
+                source: row.get(1)?,
+                target: row.get(2)?,
+                relation_type: row.get(3)?,
+                description: row.get(4)?,
+                created_at: row.get(5)?,
+            })
+        }).map_err(|e| format!("Query edges error: {}", e))?;
+
+        let mut edges = Vec::new();
+        for item in edge_rows {
+            let edge = item.map_err(|e| e.to_string())?;
+            // Ensure edge endpoints exist in the nodes set
+            if node_ids.contains(&edge.source) && node_ids.contains(&edge.target) {
+                edges.push(edge);
+            }
+        }
+
+        Ok(KnowledgeGraphData { nodes, edges })
+    }
 }
 
 #[cfg(test)]
@@ -1067,5 +1134,111 @@ mod tests {
         }
 
         let _ = std::fs::remove_dir_all(temp_dir);
+    }
+
+    #[test]
+    fn test_knowledge_graph_data_retrieval() {
+        let db = Database::init_in_memory().expect("in-memory DB init failed");
+        let mut conn = db.conn.lock().unwrap();
+
+        // 1. Empty database handling
+        let empty_graph = KnowledgeRepository::get_knowledge_graph(&conn).unwrap();
+        assert_eq!(empty_graph.nodes.len(), 0);
+        assert_eq!(empty_graph.edges.len(), 0);
+
+        // 2. Disconnected node handling
+        let solo = KnowledgeRepository::create_record(
+            &mut conn,
+            CreateRecordPayload {
+                title: "Island Concept".to_string(),
+                content: "A standalone concept without connections.".to_string(),
+                tags: Some(vec!["isolated".to_string()]),
+            },
+            db.has_fts5,
+        ).unwrap();
+
+        let solo_graph = KnowledgeRepository::get_knowledge_graph(&conn).unwrap();
+        assert_eq!(solo_graph.nodes.len(), 1);
+        assert_eq!(solo_graph.nodes[0].id, solo.id);
+        assert_eq!(solo_graph.nodes[0].title, "Island Concept");
+        assert_eq!(solo_graph.nodes[0].connection_count, 0);
+        assert_eq!(solo_graph.edges.len(), 0);
+
+        // 3. Cycle handling (A -> B -> C -> A)
+        let node_a = KnowledgeRepository::create_record(
+            &mut conn,
+            CreateRecordPayload {
+                title: "Node A".to_string(),
+                content: "First vertex in cycle".to_string(),
+                tags: None,
+            },
+            db.has_fts5,
+        ).unwrap();
+
+        let node_b = KnowledgeRepository::create_record(
+            &mut conn,
+            CreateRecordPayload {
+                title: "Node B".to_string(),
+                content: "Second vertex in cycle".to_string(),
+                tags: None,
+            },
+            db.has_fts5,
+        ).unwrap();
+
+        let node_c = KnowledgeRepository::create_record(
+            &mut conn,
+            CreateRecordPayload {
+                title: "Node C".to_string(),
+                content: "Third vertex in cycle".to_string(),
+                tags: None,
+            },
+            db.has_fts5,
+        ).unwrap();
+
+        // Relate A -> B
+        KnowledgeRepository::create_relationship(
+            &mut conn,
+            CreateRelationshipPayload {
+                source_id: node_a.id.clone(),
+                target_id: node_b.id.clone(),
+                relation_type: "builds_on".to_string(),
+                description: Some("A to B".to_string()),
+            },
+        ).unwrap();
+
+        // Relate B -> C
+        KnowledgeRepository::create_relationship(
+            &mut conn,
+            CreateRelationshipPayload {
+                source_id: node_b.id.clone(),
+                target_id: node_c.id.clone(),
+                relation_type: "explains".to_string(),
+                description: Some("B to C".to_string()),
+            },
+        ).unwrap();
+
+        // Relate C -> A (closes cycle)
+        KnowledgeRepository::create_relationship(
+            &mut conn,
+            CreateRelationshipPayload {
+                source_id: node_c.id.clone(),
+                target_id: node_a.id.clone(),
+                relation_type: "depends_on".to_string(),
+                description: Some("C back to A".to_string()),
+            },
+        ).unwrap();
+
+        let cyclic_graph = KnowledgeRepository::get_knowledge_graph(&conn).unwrap();
+        // 4 nodes total (solo, A, B, C)
+        assert_eq!(cyclic_graph.nodes.len(), 4);
+        assert_eq!(cyclic_graph.edges.len(), 3);
+
+        let a_meta = cyclic_graph.nodes.iter().find(|n| n.id == node_a.id).unwrap();
+        assert_eq!(a_meta.connection_count, 2); // 1 outgoing (A->B) + 1 incoming (C->A)
+
+        // Verify directed edges preserved
+        let edge_ab = cyclic_graph.edges.iter().find(|e| e.source == node_a.id && e.target == node_b.id).unwrap();
+        assert_eq!(edge_ab.relation_type, "builds_on");
+        assert_eq!(edge_ab.description, Some("A to B".to_string()));
     }
 }

@@ -1,5 +1,6 @@
 @import "./tokens.css";
 @import "./knowledge.css";
+@import "./graph.css";
 
 /* Base Resets & Typography */
 *, *::before, *::after {

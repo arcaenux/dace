@@ -3,6 +3,9 @@ import { isTauriEnvironment } from "../focus/tauriWindow";
 import {
   CreateRecordPayload,
   CreateRelationshipPayload,
+  GraphEdge,
+  GraphNode,
+  KnowledgeGraphData,
   KnowledgeRecord,
   KnowledgeRecordSummary,
   RecordRelationshipItem,
@@ -231,4 +234,36 @@ export async function getRecordRelationships(
     });
 
   return { outgoing, incoming };
+}
+
+export async function getKnowledgeGraph(): Promise<KnowledgeGraphData> {
+  if (isTauriEnvironment()) {
+    return await invoke<KnowledgeGraphData>("get_knowledge_graph");
+  }
+
+  // Fallback for browser preview
+  const nodes: GraphNode[] = fallbackRecords.map((r) => {
+    const connCount = fallbackRelationships.filter(
+      (rel) => rel.source_id === r.id || rel.target_id === r.id
+    ).length;
+    return {
+      id: r.id,
+      title: r.title,
+      preview: r.content.slice(0, 140),
+      tags: r.tags,
+      updated_at: r.updated_at,
+      connection_count: connCount,
+    };
+  });
+
+  const edges: GraphEdge[] = fallbackRelationships.map((rel) => ({
+    id: rel.id,
+    source: rel.source_id,
+    target: rel.target_id,
+    relation_type: rel.relation_type,
+    description: rel.description,
+    created_at: rel.created_at,
+  }));
+
+  return { nodes, edges };
 }
