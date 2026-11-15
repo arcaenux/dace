@@ -106,7 +106,7 @@ export function useKeyboardShortcuts({
         return;
       }
 
-      // 8. Alt+1 / Alt+2 Navigation Shortcuts
+      // 8. Alt+1 / Alt+2 / Alt+3 Navigation Shortcuts
       if (e.altKey && !modifier && !e.shiftKey) {
         if (e.key === "1") {
           e.preventDefault();
@@ -115,6 +115,10 @@ export function useKeyboardShortcuts({
         } else if (e.key === "2") {
           e.preventDefault();
           setActiveActivity("knowledge-desk");
+          return;
+        } else if (e.key === "3") {
+          e.preventDefault();
+          setActiveActivity("knowledge-graph");
           return;
         }
       }

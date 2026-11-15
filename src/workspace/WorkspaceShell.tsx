@@ -10,9 +10,11 @@ import { CommandPalette } from "../overlays/CommandPalette";
 import { ShortcutReference } from "../overlays/ShortcutReference";
 import { FocusSpaceView } from "../focus/FocusSpaceView";
 import { KnowledgeDesk } from "../knowledge/KnowledgeDesk";
+import { KnowledgeGraphView } from "../graph/KnowledgeGraphView";
 
 export const WorkspaceShell: FC = () => {
   const [activeActivity, setActiveActivity] = useState<WorkspaceActivityId>("workspace");
+  const [selectedDeskRecordId, setSelectedDeskRecordId] = useState<string | null>(null);
   const [activeOverlay, setActiveOverlay] = useState<OverlayType>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [isPanelOpen, setIsPanelOpen] = useState<boolean>(false);
@@ -89,10 +91,22 @@ export const WorkspaceShell: FC = () => {
             )}
 
             {activeActivity === "knowledge-desk" && (
-              <KnowledgeDesk onShowNotice={showNotice} />
+              <KnowledgeDesk onShowNotice={showNotice} initialRecordId={selectedDeskRecordId} />
             )}
 
-            {activeActivity !== "workspace" && activeActivity !== "knowledge-desk" && (
+            {activeActivity === "knowledge-graph" && (
+              <KnowledgeGraphView
+                onOpenRecordInDesk={(recordId) => {
+                  setSelectedDeskRecordId(recordId);
+                  setActiveActivity("knowledge-desk");
+                }}
+                onShowNotice={showNotice}
+              />
+            )}
+
+            {activeActivity !== "workspace" &&
+              activeActivity !== "knowledge-desk" &&
+              activeActivity !== "knowledge-graph" && (
               <div className="activity-placeholder">
                 <span className="activity-badge-large">Planned Module</span>
                 <h2 className="activity-title">
@@ -125,7 +139,13 @@ export const WorkspaceShell: FC = () => {
                 Current Activity
               </div>
               <div style={{ fontWeight: 500, color: "var(--text-primary)", marginTop: "4px" }}>
-                {activeActivity === "workspace" ? "General Workspace" : activeActivity === "knowledge-desk" ? "Knowledge Desk (SQLite Active)" : activeActivity}
+                {activeActivity === "workspace"
+                  ? "General Workspace"
+                  : activeActivity === "knowledge-desk"
+                  ? "Knowledge Desk (SQLite Active)"
+                  : activeActivity === "knowledge-graph"
+                  ? "Interactive Knowledge Graph (Cosmos Active)"
+                  : activeActivity}
               </div>
             </div>
 

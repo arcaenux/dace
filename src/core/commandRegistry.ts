@@ -124,12 +124,12 @@ export function buildCommandList(ctx: CommandContext): CommandItem[] {
     {
       id: "nav:knowledge-graph",
       name: "Open Knowledge Graph",
-      description: "Explore topological relationships, clusters and associations",
+      description: "Explore interactive astronomical knowledge graph and conceptual relationships",
       category: "Navigation",
-      available: false,
-      unavailabilityReason: "Planned for Milestone 4 (Exploratory Topological Network)",
+      shortcut: "Alt+3",
+      available: true,
       execute: () => {
-        ctx.setNotice("Knowledge Graph is planned for Milestone 4.");
+        ctx.setActiveActivity("knowledge-graph");
         ctx.closeOverlay();
       },
     },
