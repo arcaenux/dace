@@ -83,6 +83,7 @@ export function useKeyboardShortcuts({
       if (modifier && (e.key === "s" || e.key === "S") && !e.shiftKey && !e.altKey) {
         e.preventDefault();
         if (activeActivity === "knowledge-desk") {
+          window.dispatchEvent(new CustomEvent("dace:save-record"));
           window.dispatchEvent(new CustomEvent("novadome:save-record"));
         } else {
           setNotice("No active document to save. (Switch to Knowledge Desk)");
@@ -94,6 +95,7 @@ export function useKeyboardShortcuts({
       if (modifier && (e.key === "n" || e.key === "N") && !e.shiftKey && !e.altKey) {
         e.preventDefault();
         setActiveActivity("knowledge-desk");
+        window.dispatchEvent(new CustomEvent("dace:new-record"));
         window.dispatchEvent(new CustomEvent("novadome:new-record"));
         return;
       }
@@ -102,6 +104,7 @@ export function useKeyboardShortcuts({
       if (modifier && (e.key === "o" || e.key === "O") && !e.shiftKey && !e.altKey) {
         e.preventDefault();
         setActiveActivity("knowledge-desk");
+        window.dispatchEvent(new CustomEvent("dace:import-attachment"));
         window.dispatchEvent(new CustomEvent("novadome:import-attachment"));
         return;
       }
@@ -110,6 +113,7 @@ export function useKeyboardShortcuts({
       if (modifier && e.shiftKey && (e.key === "f" || e.key === "F") && !e.altKey) {
         e.preventDefault();
         setActiveActivity("knowledge-desk");
+        window.dispatchEvent(new CustomEvent("dace:search-records"));
         window.dispatchEvent(new CustomEvent("novadome:search-records"));
         return;
       }

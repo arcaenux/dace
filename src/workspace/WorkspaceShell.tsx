@@ -69,7 +69,7 @@ export const WorkspaceShell: FC = () => {
   });
 
   return (
-    <div className="nova-app">
+    <div className="dace-app nova-app">
       {/* 1. Quiet Navigation Header */}
       <WorkspaceNavigation
         activeActivity={activeActivity}
@@ -136,7 +136,7 @@ export const WorkspaceShell: FC = () => {
                 </h2>
                 <p className="activity-desc">
                   This capability is scheduled for subsequent milestone releases as specified in
-                  the NOVA DOME roadmap.
+                  the Dace roadmap.
                 </p>
                 <button
                   className="activity-back-btn"
@@ -181,7 +181,7 @@ export const WorkspaceShell: FC = () => {
             </div>
 
             <div style={{ marginTop: "var(--space-4)", paddingTop: "var(--space-4)", borderTop: "1px solid var(--border-subtle)", fontSize: "var(--font-size-xs)", color: "var(--text-muted)", lineHeight: "1.5" }}>
-              Panels in NOVA DOME only consume screen space when summoned. Dismiss this panel by pressing <kbd style={{ padding: "1px 4px", background: "var(--bg-surface-elevated)", border: "1px solid var(--border-subtle)" }}>Esc</kbd> or clicking the close button.
+              Panels in Dace only consume screen space when summoned. Dismiss this panel by pressing <kbd style={{ padding: "1px 4px", background: "var(--bg-surface-elevated)", border: "1px solid var(--border-subtle)" }}>Esc</kbd> or clicking the close button.
             </div>
           </div>
         </ContextualPanel>

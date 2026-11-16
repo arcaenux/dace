@@ -51,6 +51,7 @@ export function buildCommandList(ctx: CommandContext): CommandItem[] {
       execute: () => {
         ctx.setActiveActivity("knowledge-desk");
         ctx.closeOverlay();
+        window.dispatchEvent(new CustomEvent("dace:new-record"));
         window.dispatchEvent(new CustomEvent("novadome:new-record"));
       },
     },
@@ -64,6 +65,7 @@ export function buildCommandList(ctx: CommandContext): CommandItem[] {
       execute: () => {
         ctx.setActiveActivity("knowledge-desk");
         ctx.closeOverlay();
+        window.dispatchEvent(new CustomEvent("dace:import-attachment"));
         window.dispatchEvent(new CustomEvent("novadome:import-attachment"));
       },
     },
@@ -77,6 +79,7 @@ export function buildCommandList(ctx: CommandContext): CommandItem[] {
       execute: () => {
         ctx.setActiveActivity("knowledge-desk");
         ctx.closeOverlay();
+        window.dispatchEvent(new CustomEvent("dace:search-records"));
         window.dispatchEvent(new CustomEvent("novadome:search-records"));
       },
     },
@@ -89,6 +92,7 @@ export function buildCommandList(ctx: CommandContext): CommandItem[] {
       available: true,
       execute: () => {
         if (ctx.activeActivity === "knowledge-desk") {
+          window.dispatchEvent(new CustomEvent("dace:save-record"));
           window.dispatchEvent(new CustomEvent("novadome:save-record"));
           ctx.closeOverlay();
         } else {

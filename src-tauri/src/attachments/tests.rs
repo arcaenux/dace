@@ -9,7 +9,7 @@ use super::storage::{infer_mime_type, AttachmentStorage};
 struct TestDir(PathBuf);
 impl TestDir {
     fn new() -> Self {
-        let p = std::env::temp_dir().join(format!("novadome_att_test_{}", Uuid::new_v4()));
+        let p = std::env::temp_dir().join(format!("dace_att_test_{}", Uuid::new_v4()));
         let _ = std::fs::create_dir_all(&p);
         Self(p)
     }
@@ -28,7 +28,7 @@ fn test_storage_staged_ingestion_and_deduplication() {
     let tmp = TestDir::new();
     let storage = AttachmentStorage::new(tmp.path().join("attachments")).unwrap();
 
-    let sample_data = b"NOVA DOME Milestone 5 - Content Addressed Storage Test Payload";
+    let sample_data = b"Dace Milestone 5 - Content Addressed Storage Test Payload";
     let mut cursor = Cursor::new(sample_data);
 
     // 1. First Ingestion

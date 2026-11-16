@@ -42,7 +42,7 @@ pub fn pick_and_import_attachment(
 ) -> Result<Option<ImportAttachmentResult>, String> {
     // 1. Invoke native OS file picker
     let file_handle = rfd::FileDialog::new()
-        .set_title("Import Document into NOVA DOME")
+        .set_title("Import Document into Dace")
         .add_filter("Research Documents & Images", &["pdf", "md", "txt", "png", "jpg", "jpeg", "webp", "gif", "svg"])
         .add_filter("All Files", &["*"])
         .pick_file();

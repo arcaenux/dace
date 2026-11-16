@@ -14,8 +14,8 @@ export const WorkspaceIntro: FC<WorkspaceIntroProps> = ({
   return (
     <div className="intro-container">
       <div className="intro-header">
-        <span className="intro-tagline">Personal Intellectual Workspace</span>
-        <h1 className="intro-heading">Welcome to NOVA DOME</h1>
+        <span className="intro-tagline">A space for discovery.</span>
+        <h1 className="intro-heading">Welcome to Dace</h1>
         <p className="intro-description">
           A quiet digital environment designed for deep intellectual work — research,
           rigorous thinking, knowledge crystallization, and long-term learning.

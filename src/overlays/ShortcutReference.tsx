@@ -112,7 +112,7 @@ export const ShortcutReference: FC<ShortcutReferenceProps> = ({
 
         <div className="command-palette-footer">
           <span>Press <kbd style={{ padding: "1px 4px", background: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>Esc</kbd> to return to workspace</span>
-          <span>NOVA DOME v0.1.0</span>
+          <span>Dace v0.1.0</span>
         </div>
       </div>
     </div>
