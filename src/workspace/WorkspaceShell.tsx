@@ -11,10 +11,12 @@ import { ShortcutReference } from "../overlays/ShortcutReference";
 import { FocusSpaceView } from "../focus/FocusSpaceView";
 import { KnowledgeDesk } from "../knowledge/KnowledgeDesk";
 import { KnowledgeGraphView } from "../graph/KnowledgeGraphView";
+import { ResearchReaderView } from "../reader/ResearchReaderView";
 
 export const WorkspaceShell: FC = () => {
   const [activeActivity, setActiveActivity] = useState<WorkspaceActivityId>("workspace");
   const [selectedDeskRecordId, setSelectedDeskRecordId] = useState<string | null>(null);
+  const [readerTarget, setReaderTarget] = useState<{ attachmentId: string; pageNumber: number } | null>(null);
   const [activeOverlay, setActiveOverlay] = useState<OverlayType>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [isPanelOpen, setIsPanelOpen] = useState<boolean>(false);
@@ -91,7 +93,26 @@ export const WorkspaceShell: FC = () => {
             )}
 
             {activeActivity === "knowledge-desk" && (
-              <KnowledgeDesk onShowNotice={showNotice} initialRecordId={selectedDeskRecordId} />
+              <KnowledgeDesk
+                onShowNotice={showNotice}
+                initialRecordId={selectedDeskRecordId}
+                onOpenInReader={(attId, pageNum) => {
+                  setReaderTarget({ attachmentId: attId, pageNumber: pageNum });
+                  setActiveActivity("reader");
+                }}
+              />
+            )}
+
+            {activeActivity === "reader" && (
+              <ResearchReaderView
+                initialAttachmentId={readerTarget?.attachmentId}
+                initialPage={readerTarget?.pageNumber}
+                onNavigateToRecord={(recordId) => {
+                  setSelectedDeskRecordId(recordId);
+                  setActiveActivity("knowledge-desk");
+                }}
+                onShowNotice={showNotice}
+              />
             )}
 
             {activeActivity === "knowledge-graph" && (
@@ -106,6 +127,7 @@ export const WorkspaceShell: FC = () => {
 
             {activeActivity !== "workspace" &&
               activeActivity !== "knowledge-desk" &&
+              activeActivity !== "reader" &&
               activeActivity !== "knowledge-graph" && (
               <div className="activity-placeholder">
                 <span className="activity-badge-large">Planned Module</span>

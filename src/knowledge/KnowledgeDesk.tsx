@@ -11,9 +11,14 @@ import { useFocusSpace } from "../focus/FocusSpaceContext";
 interface KnowledgeDeskProps {
   onShowNotice: (msg: string) => void;
   initialRecordId?: string | null;
+  onOpenInReader?: (attachmentId: string, pageNumber: number) => void;
 }
 
-export const KnowledgeDesk: FC<KnowledgeDeskProps> = ({ onShowNotice, initialRecordId }) => {
+export const KnowledgeDesk: FC<KnowledgeDeskProps> = ({
+  onShowNotice,
+  initialRecordId,
+  onOpenInReader,
+}) => {
   const [records, setRecords] = useState<KnowledgeRecordSummary[]>([]);
   const [activeRecord, setActiveRecord] = useState<KnowledgeRecord | null>(null);
   const [tags, setTags] = useState<TagItem[]>([]);
@@ -398,6 +403,7 @@ export const KnowledgeDesk: FC<KnowledgeDeskProps> = ({ onShowNotice, initialRec
             canNavigateBack={navigationHistory.length > 0}
             onNavigateBack={handleNavigateBack}
             previousRecordTitle={previousRecordTitle}
+            onOpenExcerptInReader={onOpenInReader}
           />
         ) : (
           <div className="desk-empty-state">

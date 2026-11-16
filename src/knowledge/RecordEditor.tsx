@@ -10,6 +10,7 @@ import {
 import { KnowledgeRecord, SaveStatus } from "./types";
 import { RecordRelationshipsPanel } from "./RecordRelationshipsPanel";
 import { RecordAttachmentsPanel } from "../attachments/RecordAttachmentsPanel";
+import { RecordExcerptsSection } from "../reader/RecordExcerptsSection";
 
 export interface RecordEditorHandle {
   flushSave: () => Promise<boolean>;
@@ -30,6 +31,7 @@ export interface RecordEditorProps {
   canNavigateBack?: boolean;
   onNavigateBack?: () => void;
   previousRecordTitle?: string | null;
+  onOpenExcerptInReader?: (attachmentId: string, pageNumber: number) => void;
 }
 
 export const RecordEditor = forwardRef<RecordEditorHandle, RecordEditorProps>(function RecordEditor(
@@ -45,6 +47,7 @@ export const RecordEditor = forwardRef<RecordEditorHandle, RecordEditorProps>(fu
     canNavigateBack,
     onNavigateBack,
     previousRecordTitle,
+    onOpenExcerptInReader,
   },
   ref
 ) {
@@ -404,6 +407,14 @@ export const RecordEditor = forwardRef<RecordEditorHandle, RecordEditorProps>(fu
         {/* Managed Research Documents & Ingestion Section */}
         <RecordAttachmentsPanel
           recordId={record.id}
+          onShowNotice={onShowNotice}
+          onOpenInReader={onOpenExcerptInReader}
+        />
+
+        {/* Connected Research Excerpts & Quotations */}
+        <RecordExcerptsSection
+          recordId={record.id}
+          onOpenExcerptInReader={onOpenExcerptInReader}
           onShowNotice={onShowNotice}
         />
       </div>

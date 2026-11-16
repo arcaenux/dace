@@ -147,6 +147,18 @@ export function buildCommandList(ctx: CommandContext): CommandItem[] {
       },
     },
     {
+      id: "nav:reader",
+      name: "Open Research Reader",
+      description: "Read research papers, highlight passages, and connect annotations to knowledge",
+      category: "Navigation",
+      shortcut: "Alt+4",
+      available: true,
+      execute: () => {
+        ctx.setActiveActivity("reader");
+        ctx.closeOverlay();
+      },
+    },
+    {
       id: "nav:terminal",
       name: "Open Terminal",
       description: "Embedded pseudo-terminal for workspace CLI automation",

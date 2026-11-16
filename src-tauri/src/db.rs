@@ -206,6 +206,63 @@ impl Database {
             tx.commit()?;
         }
 
+        // Migration 4: Research Reader, Highlights, Annotations & Knowledge Excerpt Links
+        if current_version < 4 {
+            let tx = conn.unchecked_transaction()?;
+
+            tx.execute_batch(
+                "CREATE TABLE IF NOT EXISTS highlights (
+                    id TEXT PRIMARY KEY,
+                    attachment_id TEXT NOT NULL,
+                    doc_sha256 TEXT NOT NULL,
+                    page_number INTEGER NOT NULL,
+                    selected_text TEXT NOT NULL,
+                    anchor_data TEXT NOT NULL,
+                    highlight_type TEXT NOT NULL,
+                    color TEXT,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    FOREIGN KEY (attachment_id) REFERENCES attachments (id) ON DELETE CASCADE
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_highlights_att ON highlights(attachment_id);
+                CREATE INDEX IF NOT EXISTS idx_highlights_page ON highlights(attachment_id, page_number);
+                CREATE INDEX IF NOT EXISTS idx_highlights_type ON highlights(highlight_type);
+
+                CREATE TABLE IF NOT EXISTS annotations (
+                    id TEXT PRIMARY KEY,
+                    highlight_id TEXT NOT NULL UNIQUE,
+                    content TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    FOREIGN KEY (highlight_id) REFERENCES highlights (id) ON DELETE CASCADE
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_annotations_hl ON annotations(highlight_id);
+
+                CREATE TABLE IF NOT EXISTS highlight_records (
+                    highlight_id TEXT NOT NULL,
+                    record_id TEXT NOT NULL,
+                    commentary TEXT,
+                    created_at TEXT NOT NULL,
+                    PRIMARY KEY (highlight_id, record_id),
+                    FOREIGN KEY (highlight_id) REFERENCES highlights (id) ON DELETE CASCADE,
+                    FOREIGN KEY (record_id) REFERENCES records (id) ON DELETE CASCADE
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_hl_rec_hl ON highlight_records(highlight_id);
+                CREATE INDEX IF NOT EXISTS idx_hl_rec_rec ON highlight_records(record_id);"
+            )?;
+
+            let now = chrono::Utc::now().to_rfc3339();
+            tx.execute(
+                "INSERT INTO schema_migrations (version, applied_at) VALUES (?1, ?2)",
+                params![4, now],
+            )?;
+
+            tx.commit()?;
+        }
+
         Ok(has_fts5)
     }
 }
