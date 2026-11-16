@@ -13,11 +13,13 @@ import { AttachmentDetailsModal } from "./AttachmentDetailsModal";
 interface RecordAttachmentsPanelProps {
   recordId: string;
   onShowNotice: (msg: string) => void;
+  onOpenInReader?: (attachmentId: string, pageNumber: number) => void;
 }
 
 export const RecordAttachmentsPanel: FC<RecordAttachmentsPanelProps> = ({
   recordId,
   onShowNotice,
+  onOpenInReader,
 }) => {
   const [attachments, setAttachments] = useState<AttachmentSummary[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -232,6 +234,17 @@ export const RecordAttachmentsPanel: FC<RecordAttachmentsPanelProps> = ({
                   </div>
 
                   <div className="attachment-card-actions">
+                    {onOpenInReader && (
+                      <button
+                        type="button"
+                        className="desk-btn primary"
+                        style={{ background: "rgba(99, 102, 241, 0.25)", borderColor: "#6366f1", color: "#c7d2fe" }}
+                        onClick={() => onOpenInReader(att.id, 1)}
+                        title="Read and annotate document in Research Reader"
+                      >
+                        Read
+                      </button>
+                    )}
                     <button
                       type="button"
                       className="desk-btn"

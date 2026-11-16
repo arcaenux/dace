@@ -1,6 +1,7 @@
 pub mod attachments;
 pub mod db;
 pub mod knowledge;
+pub mod reader;
 
 #[cfg(not(test))]
 use attachments::storage::AttachmentStorage;
@@ -107,7 +108,18 @@ pub fn run() {
             attachments::commands::delete_attachment,
             attachments::commands::read_attachment_text,
             attachments::commands::read_attachment_data_url,
-            attachments::commands::open_attachment_in_system
+            attachments::commands::open_attachment_in_system,
+            reader::commands::create_highlight,
+            reader::commands::get_attachment_highlights,
+            reader::commands::update_highlight_type,
+            reader::commands::delete_highlight,
+            reader::commands::save_annotation,
+            reader::commands::delete_annotation,
+            reader::commands::link_highlight_to_record,
+            reader::commands::unlink_highlight_from_record,
+            reader::commands::get_record_excerpts,
+            reader::commands::get_highlight_records,
+            reader::commands::create_record_from_excerpt
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -3,6 +3,7 @@
 @import "./knowledge.css";
 @import "./graph.css";
 @import "./attachments.css";
+@import "./reader.css";
 
 /* Base Resets & Typography */
 *, *::before, *::after {

@@ -128,6 +128,10 @@ export function useKeyboardShortcuts({
           e.preventDefault();
           setActiveActivity("knowledge-graph");
           return;
+        } else if (e.key === "4") {
+          e.preventDefault();
+          setActiveActivity("reader");
+          return;
         }
       }
 

@@ -58,9 +58,9 @@ export const ShortcutReference: FC<ShortcutReferenceProps> = ({
       status: "active",
     },
     {
-      keyCombo: "Alt + 1 / 2 / 3",
+      keyCombo: "Alt + 1 / 2 / 3 / 4",
       description: "Switch Activity",
-      context: "Alt+1 Workspace, Alt+2 Knowledge Desk, Alt+3 Knowledge Graph",
+      context: "Alt+1 Workspace, Alt+2 Desk, Alt+3 Graph, Alt+4 Research Reader",
       status: "active",
     },
     {
