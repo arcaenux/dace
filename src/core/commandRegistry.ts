@@ -55,6 +55,19 @@ export function buildCommandList(ctx: CommandContext): CommandItem[] {
       },
     },
     {
+      id: "attachments:import-document",
+      name: "Import Research Document",
+      description: "Import and preserve an external file in content-addressed managed storage",
+      category: "Workspace",
+      shortcut: "Ctrl+O",
+      available: true,
+      execute: () => {
+        ctx.setActiveActivity("knowledge-desk");
+        ctx.closeOverlay();
+        window.dispatchEvent(new CustomEvent("novadome:import-attachment"));
+      },
+    },
+    {
       id: "knowledge:search-records",
       name: "Search Knowledge Records",
       description: "Query knowledge records by title or content in SQLite",
@@ -124,12 +137,12 @@ export function buildCommandList(ctx: CommandContext): CommandItem[] {
     {
       id: "nav:knowledge-graph",
       name: "Open Knowledge Graph",
-      description: "Explore topological relationships, clusters and associations",
+      description: "Explore interactive astronomical knowledge graph and conceptual relationships",
       category: "Navigation",
-      available: false,
-      unavailabilityReason: "Planned for Milestone 4 (Exploratory Topological Network)",
+      shortcut: "Alt+3",
+      available: true,
       execute: () => {
-        ctx.setNotice("Knowledge Graph is planned for Milestone 4.");
+        ctx.setActiveActivity("knowledge-graph");
         ctx.closeOverlay();
       },
     },

@@ -1,0 +1,10 @@
+/* ==========================================================================
+   NOVA DOME — Typography System Fonts
+   Layer 1: Editorial / Naturalist (Newsreader Variable) - SIL OFL
+   Layer 2: Interface Typography (Manrope Variable) - SIL OFL
+   Layer 3: Expressive Quotation (Newsreader Variable Italic) - SIL OFL
+   ========================================================================== */
+
+@import "@fontsource-variable/newsreader/index.css";
+@import "@fontsource-variable/newsreader/wght-italic.css";
+@import "@fontsource-variable/manrope/index.css";

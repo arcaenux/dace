@@ -1,8 +1,9 @@
 use tauri::State;
 use crate::db::Database;
 use super::models::{
-    CreateRecordPayload, CreateRelationshipPayload, KnowledgeRecord, KnowledgeRecordSummary,
-    RecordRelationshipItem, RecordRelationshipsResponse, TagItem, UpdateRecordPayload,
+    CreateRecordPayload, CreateRelationshipPayload, KnowledgeGraphData, KnowledgeRecord,
+    KnowledgeRecordSummary, RecordRelationshipItem, RecordRelationshipsResponse, TagItem,
+    UpdateRecordPayload,
 };
 use super::repository::KnowledgeRepository;
 
@@ -95,4 +96,12 @@ pub fn get_record_relationships(
 ) -> Result<RecordRelationshipsResponse, String> {
     let conn = db.conn.lock().map_err(|e| format!("Mutex lock error: {}", e))?;
     KnowledgeRepository::get_record_relationships(&conn, &record_id)
+}
+
+#[tauri::command]
+pub fn get_knowledge_graph(
+    db: State<'_, Database>,
+) -> Result<KnowledgeGraphData, String> {
+    let conn = db.conn.lock().map_err(|e| format!("Mutex lock error: {}", e))?;
+    KnowledgeRepository::get_knowledge_graph(&conn)
 }

@@ -3,15 +3,17 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { isTauriEnvironment, closeNativeWindow } from "../focus/tauriWindow";
 import { KnowledgeRecord, KnowledgeRecordSummary, TagItem } from "./types";
 import * as api from "./knowledgeApi";
+import { pickAndImportAttachment } from "../attachments/attachmentsApi";
 import { RecordEditor, RecordEditorHandle } from "./RecordEditor";
 import { RecordListPanel } from "./RecordListPanel";
 import { useFocusSpace } from "../focus/FocusSpaceContext";
 
 interface KnowledgeDeskProps {
   onShowNotice: (msg: string) => void;
+  initialRecordId?: string | null;
 }
 
-export const KnowledgeDesk: FC<KnowledgeDeskProps> = ({ onShowNotice }) => {
+export const KnowledgeDesk: FC<KnowledgeDeskProps> = ({ onShowNotice, initialRecordId }) => {
   const [records, setRecords] = useState<KnowledgeRecordSummary[]>([]);
   const [activeRecord, setActiveRecord] = useState<KnowledgeRecord | null>(null);
   const [tags, setTags] = useState<TagItem[]>([]);
@@ -71,9 +73,9 @@ export const KnowledgeDesk: FC<KnowledgeDeskProps> = ({ onShowNotice }) => {
       await refreshTags();
 
       if (isMounted) {
-        if (list.length > 0) {
-          // Open the most recently updated record
-          const full = await api.getRecord(list[0].id);
+        const targetId = initialRecordId || (list.length > 0 ? list[0].id : null);
+        if (targetId) {
+          const full = await api.getRecord(targetId);
           if (full && isMounted) {
             setActiveRecord(full);
           }
@@ -85,7 +87,7 @@ export const KnowledgeDesk: FC<KnowledgeDeskProps> = ({ onShowNotice }) => {
     return () => {
       isMounted = false;
     };
-  }, [loadRecords, refreshTags]);
+  }, [loadRecords, refreshTags, initialRecordId]);
 
   // Window Close Coordination: prevents application close while persistence is pending or dirty
   useEffect(() => {
@@ -219,6 +221,13 @@ export const KnowledgeDesk: FC<KnowledgeDeskProps> = ({ onShowNotice }) => {
     [activeRecord?.id, onShowNotice]
   );
 
+  // Handle switching to a specific record if initialRecordId prop updates while mounted
+  useEffect(() => {
+    if (initialRecordId && initialRecordId !== activeRecord?.id) {
+      handleSelectRecord(initialRecordId);
+    }
+  }, [initialRecordId, activeRecord?.id, handleSelectRecord]);
+
   // Navigate to a connected concept, preserving history
   const handleNavigateToRecord = useCallback(
     async (targetId: string) => {
@@ -333,14 +342,27 @@ export const KnowledgeDesk: FC<KnowledgeDeskProps> = ({ onShowNotice }) => {
       setIsListOpen(true);
     };
 
+    const handleImportAttachmentEvent = async () => {
+      try {
+        const res = await pickAndImportAttachment(activeRecord?.id);
+        if (res) {
+          onShowNotice(`Imported "${res.attachment.file_name}" into managed storage.`);
+        }
+      } catch (err: any) {
+        onShowNotice(`Import failed: ${err?.message || err}`);
+      }
+    };
+
     window.addEventListener("novadome:new-record", handleNewRecordEvent);
     window.addEventListener("novadome:search-records", handleSearchEvent);
+    window.addEventListener("novadome:import-attachment", handleImportAttachmentEvent);
 
     return () => {
       window.removeEventListener("novadome:new-record", handleNewRecordEvent);
       window.removeEventListener("novadome:search-records", handleSearchEvent);
+      window.removeEventListener("novadome:import-attachment", handleImportAttachmentEvent);
     };
-  }, [handleCreateNewRecord]);
+  }, [handleCreateNewRecord, activeRecord?.id, onShowNotice]);
 
   return (
     <div className="knowledge-desk-root">

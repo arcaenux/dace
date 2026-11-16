@@ -70,3 +70,26 @@ export interface CreateRelationshipPayload {
   relation_type: string;
   description?: string | null;
 }
+
+export interface GraphNode {
+  id: string;
+  title: string;
+  preview: string;
+  tags: string[];
+  updated_at: string;
+  connection_count: number;
+}
+
+export interface GraphEdge {
+  id: string;
+  source: string;
+  target: string;
+  relation_type: string;
+  description: string | null;
+  created_at: string;
+}
+
+export interface KnowledgeGraphData {
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+}

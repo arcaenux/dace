@@ -165,6 +165,47 @@ impl Database {
             tx.commit()?;
         }
 
+        // Migration 3: Managed Attachments & Content-Addressed Storage Schema
+        if current_version < 3 {
+            let tx = conn.unchecked_transaction()?;
+
+            tx.execute_batch(
+                "CREATE TABLE IF NOT EXISTS attachments (
+                    id TEXT PRIMARY KEY,
+                    file_name TEXT NOT NULL,
+                    mime_type TEXT NOT NULL,
+                    file_size INTEGER NOT NULL,
+                    sha256_hash TEXT NOT NULL,
+                    storage_path TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_attachments_hash ON attachments(sha256_hash);
+                CREATE INDEX IF NOT EXISTS idx_attachments_created_at ON attachments(created_at DESC);
+
+                CREATE TABLE IF NOT EXISTS record_attachments (
+                    record_id TEXT NOT NULL,
+                    attachment_id TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    PRIMARY KEY (record_id, attachment_id),
+                    FOREIGN KEY (record_id) REFERENCES records (id) ON DELETE CASCADE,
+                    FOREIGN KEY (attachment_id) REFERENCES attachments (id) ON DELETE CASCADE
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_record_attachments_rec ON record_attachments(record_id);
+                CREATE INDEX IF NOT EXISTS idx_record_attachments_att ON record_attachments(attachment_id);"
+            )?;
+
+            let now = chrono::Utc::now().to_rfc3339();
+            tx.execute(
+                "INSERT INTO schema_migrations (version, applied_at) VALUES (?1, ?2)",
+                params![3, now],
+            )?;
+
+            tx.commit()?;
+        }
+
         Ok(has_fts5)
     }
 }
