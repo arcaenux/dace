@@ -46,6 +46,12 @@ export const ShortcutReference: FC<ShortcutReferenceProps> = ({
       status: "active",
     },
     {
+      keyCombo: "Ctrl + O",
+      description: "Import Research Document",
+      context: "Import and preserve a document in managed storage",
+      status: "active",
+    },
+    {
       keyCombo: "Ctrl + Shift + F",
       description: "Search Knowledge",
       context: "Open records panel and search knowledge in SQLite",

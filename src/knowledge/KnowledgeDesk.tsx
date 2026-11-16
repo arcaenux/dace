@@ -3,6 +3,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { isTauriEnvironment, closeNativeWindow } from "../focus/tauriWindow";
 import { KnowledgeRecord, KnowledgeRecordSummary, TagItem } from "./types";
 import * as api from "./knowledgeApi";
+import { pickAndImportAttachment } from "../attachments/attachmentsApi";
 import { RecordEditor, RecordEditorHandle } from "./RecordEditor";
 import { RecordListPanel } from "./RecordListPanel";
 import { useFocusSpace } from "../focus/FocusSpaceContext";
@@ -341,14 +342,27 @@ export const KnowledgeDesk: FC<KnowledgeDeskProps> = ({ onShowNotice, initialRec
       setIsListOpen(true);
     };
 
+    const handleImportAttachmentEvent = async () => {
+      try {
+        const res = await pickAndImportAttachment(activeRecord?.id);
+        if (res) {
+          onShowNotice(`Imported "${res.attachment.file_name}" into managed storage.`);
+        }
+      } catch (err: any) {
+        onShowNotice(`Import failed: ${err?.message || err}`);
+      }
+    };
+
     window.addEventListener("novadome:new-record", handleNewRecordEvent);
     window.addEventListener("novadome:search-records", handleSearchEvent);
+    window.addEventListener("novadome:import-attachment", handleImportAttachmentEvent);
 
     return () => {
       window.removeEventListener("novadome:new-record", handleNewRecordEvent);
       window.removeEventListener("novadome:search-records", handleSearchEvent);
+      window.removeEventListener("novadome:import-attachment", handleImportAttachmentEvent);
     };
-  }, [handleCreateNewRecord]);
+  }, [handleCreateNewRecord, activeRecord?.id, onShowNotice]);
 
   return (
     <div className="knowledge-desk-root">

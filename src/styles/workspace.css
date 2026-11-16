@@ -2,6 +2,7 @@
 @import "./tokens.css";
 @import "./knowledge.css";
 @import "./graph.css";
+@import "./attachments.css";
 
 /* Base Resets & Typography */
 *, *::before, *::after {
