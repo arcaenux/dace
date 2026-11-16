@@ -9,6 +9,7 @@ import {
 } from "react";
 import { KnowledgeRecord, SaveStatus } from "./types";
 import { RecordRelationshipsPanel } from "./RecordRelationshipsPanel";
+import { RecordAttachmentsPanel } from "../attachments/RecordAttachmentsPanel";
 
 export interface RecordEditorHandle {
   flushSave: () => Promise<boolean>;
@@ -397,6 +398,12 @@ export const RecordEditor = forwardRef<RecordEditorHandle, RecordEditorProps>(fu
           recordId={record.id}
           recordTitle={title}
           onNavigateToRecord={onNavigateToRecord}
+          onShowNotice={onShowNotice}
+        />
+
+        {/* Managed Research Documents & Ingestion Section */}
+        <RecordAttachmentsPanel
+          recordId={record.id}
           onShowNotice={onShowNotice}
         />
       </div>

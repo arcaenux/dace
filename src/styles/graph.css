@@ -1,0 +1,464 @@
+/* ==========================================================================
+   Interactive Knowledge Graph — Astronomical & Deep Obsidian Interface
+   ========================================================================== */
+
+.knowledge-graph-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: #070a14;
+  user-select: none;
+}
+
+.knowledge-graph-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* --------------------------------------------------------------------------
+   Floating Top-Center Search
+   -------------------------------------------------------------------------- */
+.graph-top-center-search {
+  position: absolute;
+  top: var(--space-4);
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(440px, 90vw);
+  z-index: 20;
+}
+
+.graph-search-input-wrapper {
+  display: flex;
+  align-items: center;
+  background: rgba(14, 18, 27, 0.78);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  padding: 0 14px;
+  height: 38px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(118, 151, 198, 0.05);
+  transition: border-color var(--duration-normal) var(--ease-standard),
+              box-shadow var(--duration-normal) var(--ease-standard);
+}
+
+.graph-search-input-wrapper:focus-within {
+  border-color: rgba(118, 151, 198, 0.4);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 12px rgba(14, 165, 233, 0.15);
+}
+
+.graph-search-input-wrapper .search-icon {
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+  margin-right: 10px;
+  display: flex;
+  align-items: center;
+}
+
+.graph-search-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text-primary);
+  font-family: var(--font-interface);
+  font-size: var(--font-size-sm);
+  letter-spacing: var(--letter-spacing-interface);
+}
+
+.graph-search-input::placeholder {
+  color: var(--text-muted);
+  font-family: var(--font-editorial);
+  font-style: italic;
+  font-size: 0.9375rem;
+  opacity: 0.82;
+  letter-spacing: 0.01em;
+}
+
+.search-clear-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+  border-radius: var(--radius-sm);
+  transition: color var(--duration-fast);
+}
+
+.search-clear-btn:hover {
+  color: var(--text-primary);
+}
+
+/* Live Search Dropdown */
+.graph-search-dropdown {
+  margin-top: 6px;
+  background: rgba(14, 18, 27, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+  max-height: 280px;
+  overflow-y: auto;
+  padding: 6px 0;
+}
+
+.search-result-item {
+  padding: 8px 14px;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  transition: background var(--duration-fast);
+}
+
+.search-result-item:last-child {
+  border-bottom: none;
+}
+
+.search-result-item:hover {
+  background: rgba(118, 151, 198, 0.12);
+}
+
+.result-title {
+  font-family: var(--font-editorial);
+  font-size: var(--font-size-md);
+  font-weight: 500;
+  letter-spacing: var(--letter-spacing-editorial);
+  color: var(--text-primary);
+}
+
+.result-preview {
+  font-family: var(--font-interface);
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.search-empty {
+  padding: 12px 14px;
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  text-align: center;
+}
+
+/* --------------------------------------------------------------------------
+   Floating Top-Right Actions
+   -------------------------------------------------------------------------- */
+.graph-top-actions {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-5);
+  z-index: 20;
+}
+
+/* --------------------------------------------------------------------------
+   Floating Viewport Navigation Controls (Bottom-Left)
+   -------------------------------------------------------------------------- */
+.graph-viewport-controls {
+  position: absolute;
+  bottom: var(--space-5);
+  left: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: rgba(14, 18, 27, 0.82);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: var(--radius-lg);
+  padding: 4px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  z-index: 20;
+}
+
+.graph-control-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--duration-fast);
+}
+
+.graph-control-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-primary);
+}
+
+.graph-control-btn:active {
+  background: rgba(118, 151, 198, 0.18);
+}
+
+/* --------------------------------------------------------------------------
+   Contextual Inspector Pill / Card (Bottom-Right / Floating)
+   -------------------------------------------------------------------------- */
+.graph-contextual-card {
+  position: absolute;
+  bottom: var(--space-5);
+  right: var(--space-5);
+  width: min(340px, 90vw);
+  background: rgba(13, 17, 26, 0.88);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(118, 151, 198, 0.16);
+  border-radius: var(--radius-xl);
+  padding: var(--space-4);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55), 0 0 24px rgba(14, 165, 233, 0.06);
+  z-index: 25;
+  animation: graphCardFadeIn var(--duration-normal) var(--ease-standard);
+}
+
+@keyframes graphCardFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-2);
+}
+
+.card-badge {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 10px;
+  background: rgba(14, 165, 233, 0.12);
+  color: #38bdf8;
+  border: 1px solid rgba(14, 165, 233, 0.25);
+}
+
+.card-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 18px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0 2px;
+  transition: color var(--duration-fast);
+}
+
+.card-close-btn:hover {
+  color: var(--text-primary);
+}
+
+.card-title {
+  font-family: var(--font-editorial);
+  font-size: var(--font-size-lg);
+  font-weight: 500;
+  letter-spacing: var(--letter-spacing-editorial);
+  color: var(--text-primary);
+  margin-bottom: 4px;
+  line-height: var(--line-height-tight);
+}
+
+.card-preview {
+  font-family: var(--font-quotation);
+  font-style: italic;
+  font-size: var(--font-size-xs);
+  letter-spacing: var(--letter-spacing-quote);
+  color: var(--text-secondary);
+  line-height: var(--line-height-normal);
+  margin-bottom: var(--space-3);
+  max-height: 48px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* Connected concepts section */
+.card-connections-info {
+  margin-top: var(--space-2);
+  padding-top: var(--space-2);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.connections-heading {
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.connections-empty {
+  font-size: var(--font-size-xs);
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+.connected-chips-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 110px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.connected-chip {
+  display: block;
+  font-size: var(--font-size-xs);
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text-primary);
+  transition: all var(--duration-fast);
+}
+
+.connected-chip:hover {
+  background: rgba(118, 151, 198, 0.15);
+  border-color: rgba(118, 151, 198, 0.3);
+}
+
+.chip-type {
+  color: var(--accent-primary);
+  font-weight: 500;
+}
+
+.card-actions {
+  margin-top: var(--space-3);
+  display: flex;
+  gap: var(--space-2);
+}
+
+.card-actions .desk-btn {
+  flex: 1;
+  text-align: center;
+  justify-content: center;
+}
+
+/* Edge Inspector Flow */
+.edge-connection-flow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: var(--space-2) 0;
+  flex-wrap: wrap;
+}
+
+.edge-node-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: var(--font-size-xs);
+  padding: 3px 8px;
+  cursor: pointer;
+  max-width: 120px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: all var(--duration-fast);
+}
+
+.edge-node-btn:hover {
+  background: rgba(118, 151, 198, 0.15);
+  border-color: rgba(118, 151, 198, 0.3);
+}
+
+.edge-rel-badge {
+  font-size: var(--font-size-xs);
+  color: var(--accent-primary);
+  font-weight: 500;
+}
+
+.edge-desc-text {
+  font-family: var(--font-quotation);
+  font-style: italic;
+  font-size: var(--font-size-xs);
+  letter-spacing: var(--letter-spacing-quote);
+  color: #cbd5e1;
+  padding: 4px 8px;
+  border-left: 2px solid rgba(56, 189, 248, 0.4);
+  background: rgba(14, 165, 233, 0.04);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  margin: var(--space-2) 0;
+  line-height: var(--line-height-relaxed);
+}
+
+/* --------------------------------------------------------------------------
+   Empty Cosmos State Overlay
+   -------------------------------------------------------------------------- */
+.graph-empty-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(7, 10, 20, 0.85);
+  pointer-events: auto;
+}
+
+.graph-empty-card {
+  max-width: 380px;
+  text-align: center;
+  padding: var(--space-8);
+  background: rgba(14, 18, 27, 0.7);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+}
+
+.empty-constellation-icon {
+  font-size: 36px;
+  color: #38bdf8;
+  margin-bottom: var(--space-3);
+  text-shadow: 0 0 16px rgba(56, 189, 248, 0.4);
+}
+
+.empty-heading {
+  font-family: var(--font-editorial);
+  font-size: var(--font-size-xl);
+  font-weight: 500;
+  letter-spacing: var(--letter-spacing-editorial);
+  color: var(--text-primary);
+  margin-bottom: var(--space-2);
+}
+
+.empty-sub {
+  font-family: var(--font-interface);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  line-height: var(--line-height-relaxed);
+  margin-bottom: var(--space-5);
+}
