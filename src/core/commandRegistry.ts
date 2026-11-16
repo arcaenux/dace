@@ -55,6 +55,19 @@ export function buildCommandList(ctx: CommandContext): CommandItem[] {
       },
     },
     {
+      id: "attachments:import-document",
+      name: "Import Research Document",
+      description: "Import and preserve an external file in content-addressed managed storage",
+      category: "Workspace",
+      shortcut: "Ctrl+O",
+      available: true,
+      execute: () => {
+        ctx.setActiveActivity("knowledge-desk");
+        ctx.closeOverlay();
+        window.dispatchEvent(new CustomEvent("novadome:import-attachment"));
+      },
+    },
+    {
       id: "knowledge:search-records",
       name: "Search Knowledge Records",
       description: "Query knowledge records by title or content in SQLite",

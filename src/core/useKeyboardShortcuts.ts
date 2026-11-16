@@ -98,6 +98,14 @@ export function useKeyboardShortcuts({
         return;
       }
 
+      // 6.1. Ctrl+O: Import Research Document (prevent browser open file)
+      if (modifier && (e.key === "o" || e.key === "O") && !e.shiftKey && !e.altKey) {
+        e.preventDefault();
+        setActiveActivity("knowledge-desk");
+        window.dispatchEvent(new CustomEvent("novadome:import-attachment"));
+        return;
+      }
+
       // 7. Ctrl+Shift+F: Search Knowledge Records
       if (modifier && e.shiftKey && (e.key === "f" || e.key === "F") && !e.altKey) {
         e.preventDefault();
