@@ -1,6 +1,6 @@
-# Typography Attribution — NOVA DOME
+# Typography Attribution — Dace
 
-NOVA DOME uses locally bundled open-source typefaces distributed under the SIL Open Font License 1.1:
+Dace uses locally bundled open-source typefaces distributed under the SIL Open Font License 1.1:
 
 1. **Newsreader Variable**
    - Designer: Production Type (commissioned by Google)

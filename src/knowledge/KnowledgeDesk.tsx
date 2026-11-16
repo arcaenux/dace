@@ -358,13 +358,19 @@ export const KnowledgeDesk: FC<KnowledgeDeskProps> = ({
       }
     };
 
+    window.addEventListener("dace:new-record", handleNewRecordEvent);
     window.addEventListener("novadome:new-record", handleNewRecordEvent);
+    window.addEventListener("dace:search-records", handleSearchEvent);
     window.addEventListener("novadome:search-records", handleSearchEvent);
+    window.addEventListener("dace:import-attachment", handleImportAttachmentEvent);
     window.addEventListener("novadome:import-attachment", handleImportAttachmentEvent);
 
     return () => {
+      window.removeEventListener("dace:new-record", handleNewRecordEvent);
       window.removeEventListener("novadome:new-record", handleNewRecordEvent);
+      window.removeEventListener("dace:search-records", handleSearchEvent);
       window.removeEventListener("novadome:search-records", handleSearchEvent);
+      window.removeEventListener("dace:import-attachment", handleImportAttachmentEvent);
       window.removeEventListener("novadome:import-attachment", handleImportAttachmentEvent);
     };
   }, [handleCreateNewRecord, activeRecord?.id, onShowNotice]);

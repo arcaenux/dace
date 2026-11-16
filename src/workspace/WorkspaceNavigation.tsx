@@ -31,7 +31,7 @@ export const WorkspaceNavigation: FC<WorkspaceNavigationProps> = ({
     <header className={`workspace-header ${isFocusSpace ? "hidden" : ""}`}>
       <div className="brand-section">
         <div className={`brand-symbol ${isFocusSpace ? "in-focus" : ""}`} />
-        <span className="brand-title">NOVA DOME</span>
+        <span className="brand-title">Dace</span>
         <span className="activity-badge">{activityNames[activeActivity] || "Workspace"}</span>
       </div>
 

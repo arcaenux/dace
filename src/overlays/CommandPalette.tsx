@@ -139,7 +139,7 @@ export const CommandPalette: FC<CommandPaletteProps> = ({
               <kbd>esc</kbd> close
             </span>
           </div>
-          <span>NOVA DOME</span>
+          <span>Dace</span>
         </div>
       </div>
     </div>

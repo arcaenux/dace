@@ -1,12 +1,12 @@
 {
-  "name": "nova-dome",
+  "name": "dace",
   "private": true,
   "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "test": "node --experimental-strip-types --test tests/saveLifecycle.test.ts tests/graphSimulation.test.ts tests/typographySystem.test.ts tests/managedAttachments.test.ts tests/researchReader.test.ts",
+    "test": "node --experimental-strip-types --test tests/saveLifecycle.test.ts tests/graphSimulation.test.ts tests/typographySystem.test.ts tests/managedAttachments.test.ts tests/researchReader.test.ts tests/rebrandAndMigration.test.ts",
     "preview": "vite preview",
     "tauri": "tauri"
   },

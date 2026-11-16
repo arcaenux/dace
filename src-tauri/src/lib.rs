@@ -1,14 +1,15 @@
 pub mod attachments;
 pub mod db;
 pub mod knowledge;
+pub mod migration;
 pub mod reader;
+
+use tauri::Manager;
 
 #[cfg(not(test))]
 use attachments::storage::AttachmentStorage;
 #[cfg(not(test))]
 use db::Database;
-#[cfg(not(test))]
-use tauri::Manager;
 
 #[allow(dead_code)]
 #[tauri::command]
@@ -40,6 +41,13 @@ fn is_fullscreen(window: tauri::Window) -> Result<bool, String> {
 
 #[allow(dead_code)]
 #[tauri::command]
+fn get_migration_status(app: tauri::AppHandle) -> Result<migration::MigrationReport, String> {
+    let app_data_dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
+    Ok(migration::DataMigrator::migrate_if_needed(&app_data_dir))
+}
+
+#[allow(dead_code)]
+#[tauri::command]
 fn close_window(window: tauri::Window) -> Result<(), String> {
     window.close().map_err(|e| e.to_string())
 }
@@ -65,7 +73,21 @@ pub fn run() {
             std::fs::create_dir_all(&app_data_dir)
                 .map_err(|e| format!("Failed to create app data dir {:?}: {}", app_data_dir, e))?;
 
-            let db_path = app_data_dir.join("novadome.db");
+            // Safe legacy data migration: detect and migrate com.novadome.app data if present
+            let report = migration::DataMigrator::migrate_if_needed(&app_data_dir);
+            if let Some(ref err) = report.error {
+                eprintln!("[Dace] Legacy data migration notice: {}", err);
+            }
+
+            // Target SQLite database: dace.db (with fallback to novadome.db if needed)
+            let db_path = if app_data_dir.join("dace.db").exists() {
+                app_data_dir.join("dace.db")
+            } else if app_data_dir.join("novadome.db").exists() {
+                app_data_dir.join("novadome.db")
+            } else {
+                app_data_dir.join("dace.db")
+            };
+
             let database = Database::init(db_path)
                 .map_err(|e| format!("Failed to initialize database: {}", e))?;
 
@@ -81,6 +103,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             greet,
+            get_migration_status,
             toggle_fullscreen,
             set_fullscreen,
             is_fullscreen,

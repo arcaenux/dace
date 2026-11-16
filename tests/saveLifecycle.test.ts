@@ -336,8 +336,8 @@ test("9. Multiple rapid record switches serialize safely without state overwrite
 });
 
 test("10. Reopening the application and verifying the latest content persists on disk", async () => {
-  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "novadome-reopen-test-"));
-  const dbPath = path.join(tempDir, "novadome_reopen.db");
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "dace-reopen-test-"));
+  const dbPath = path.join(tempDir, "dace_reopen.db");
   const recordId = "rec-reopen-1";
 
   // Session 1: Application running, editing record, flushing save to SQLite file on disk

@@ -219,8 +219,10 @@ export const RecordEditor = forwardRef<RecordEditorHandle, RecordEditorProps>(fu
         flushSave();
       }
     };
+    window.addEventListener("dace:save-record" as any, handleGlobalSaveRequest);
     window.addEventListener("novadome:save-record" as any, handleGlobalSaveRequest);
     return () => {
+      window.removeEventListener("dace:save-record" as any, handleGlobalSaveRequest);
       window.removeEventListener("novadome:save-record" as any, handleGlobalSaveRequest);
       if (debounceTimerRef.current !== null) {
         window.clearTimeout(debounceTimerRef.current);
