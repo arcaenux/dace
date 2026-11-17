@@ -141,9 +141,9 @@ export const ConnectExcerptModal: FC<ConnectExcerptModalProps> = ({
             <button
               className={`activity-back-btn ${mode === "create" ? "active" : ""}`}
               style={{
-                background: mode === "create" ? "rgba(99, 102, 241, 0.2)" : "rgba(255, 255, 255, 0.04)",
-                borderColor: mode === "create" ? "#6366f1" : "var(--border-subtle)",
-                color: mode === "create" ? "#c7d2fe" : "var(--text-dim)",
+                background: mode === "create" ? "var(--accent-muted)" : "var(--bg-surface-subtle)",
+                borderColor: mode === "create" ? "var(--accent-primary)" : "var(--border-subtle)",
+                color: mode === "create" ? "var(--text-primary)" : "var(--text-dim)",
               }}
               onClick={() => setMode("create")}
             >
@@ -152,9 +152,9 @@ export const ConnectExcerptModal: FC<ConnectExcerptModalProps> = ({
             <button
               className={`activity-back-btn ${mode === "link" ? "active" : ""}`}
               style={{
-                background: mode === "link" ? "rgba(99, 102, 241, 0.2)" : "rgba(255, 255, 255, 0.04)",
-                borderColor: mode === "link" ? "#6366f1" : "var(--border-subtle)",
-                color: mode === "link" ? "#c7d2fe" : "var(--text-dim)",
+                background: mode === "link" ? "var(--accent-muted)" : "var(--bg-surface-subtle)",
+                borderColor: mode === "link" ? "var(--accent-primary)" : "var(--border-subtle)",
+                color: mode === "link" ? "var(--text-primary)" : "var(--text-dim)",
               }}
               onClick={() => setMode("link")}
             >

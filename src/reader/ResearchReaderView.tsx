@@ -175,10 +175,10 @@ export const ResearchReaderView: FC<ResearchReaderViewProps> = ({
                   top: "100%",
                   left: 0,
                   marginTop: "6px",
-                  background: "#0f172a",
-                  border: "1px solid var(--border-subtle)",
-                  borderRadius: "6px",
-                  boxShadow: "0 10px 25px rgba(0,0,0,0.7)",
+                  background: "var(--bg-surface-elevated)",
+                  border: "1px solid var(--border-medium)",
+                  borderRadius: "var(--radius-md)",
+                  boxShadow: "var(--shadow-elevated)",
                   width: "280px",
                   zIndex: 200,
                   maxHeight: "300px",
@@ -205,9 +205,9 @@ export const ResearchReaderView: FC<ResearchReaderViewProps> = ({
                           padding: "8px 10px",
                           fontSize: "0.82rem",
                           cursor: "pointer",
-                          borderRadius: "4px",
-                          background: doc.id === activeAttachment?.id ? "rgba(99, 102, 241, 0.15)" : "transparent",
-                          color: doc.id === activeAttachment?.id ? "var(--text-bright)" : "var(--text-normal)",
+                          borderRadius: "var(--radius-sm)",
+                          background: doc.id === activeAttachment?.id ? "var(--accent-muted)" : "transparent",
+                          color: doc.id === activeAttachment?.id ? "var(--text-primary)" : "var(--text-secondary)",
                           whiteSpace: "nowrap",
                           overflow: "hidden",
                           textOverflow: "ellipsis",
@@ -308,7 +308,7 @@ export const ResearchReaderView: FC<ResearchReaderViewProps> = ({
           </div>
         ) : loadError ? (
           <div className="reader-viewport" style={{ justifyContent: "center" }}>
-            <div style={{ color: "#f87171", fontSize: "0.9rem", textAlign: "center", maxWidth: "480px" }}>
+            <div style={{ color: "var(--status-danger)", fontSize: "0.9rem", textAlign: "center", maxWidth: "480px" }}>
               <strong>Could not load document:</strong>
               <p style={{ marginTop: "6px" }}>{loadError}</p>
             </div>

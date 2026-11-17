@@ -132,7 +132,7 @@ export const ReaderDrawer: FC<ReaderDrawerProps> = ({
                   key={type}
                   className={`toolbar-hl-btn ${filterType === type ? "active" : ""}`}
                   style={{
-                    background: filterType === type ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.02)",
+                    background: filterType === type ? "var(--bg-surface-active)" : "var(--bg-surface-subtle)",
                     border: "1px solid var(--border-subtle)",
                     fontSize: "0.72rem",
                     padding: "2px 6px",
@@ -344,10 +344,11 @@ export const ReaderDrawer: FC<ReaderDrawerProps> = ({
                 style={{
                   fontFamily: "monospace",
                   fontSize: "0.72rem",
-                  color: "#94a3b8",
-                  background: "rgba(0,0,0,0.3)",
+                  color: "var(--text-muted)",
+                  background: "var(--bg-surface-elevated)",
+                  border: "1px solid var(--border-subtle)",
                   padding: "6px 8px",
-                  borderRadius: "4px",
+                  borderRadius: "var(--radius-sm)",
                   wordBreak: "break-all",
                   marginTop: "2px",
                 }}
