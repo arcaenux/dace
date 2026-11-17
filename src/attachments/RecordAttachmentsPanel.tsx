@@ -238,7 +238,6 @@ export const RecordAttachmentsPanel: FC<RecordAttachmentsPanelProps> = ({
                       <button
                         type="button"
                         className="desk-btn primary"
-                        style={{ background: "rgba(99, 102, 241, 0.25)", borderColor: "#6366f1", color: "#c7d2fe" }}
                         onClick={() => onOpenInReader(att.id, 1)}
                         title="Read and annotate document in Research Reader"
                       >

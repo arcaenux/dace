@@ -4,6 +4,7 @@
 @import "./graph.css";
 @import "./attachments.css";
 @import "./reader.css";
+@import "./cinematic.css";
 
 /* Base Resets & Typography */
 *, *::before, *::after {
