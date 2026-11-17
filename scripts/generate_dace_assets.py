@@ -95,8 +95,8 @@ def draw_seated_figure(size: float = 1.0) -> Image.Image:
     """Small original silhouette of a seated observer, with a warm rim light."""
     canvas = Image.new("RGBA", (180, 220), (0, 0, 0, 0))
     d = ImageDraw.Draw(canvas)
-    silhouette = (9, 7, 6, 255)
-    rim = (148, 78, 24, 150)
+    silhouette = (13, 9, 7, 255)
+    rim = (255, 154, 58, 210)
 
     # Rock seat
     d.polygon([(28, 170), (52, 146), (126, 150), (154, 176), (142, 194), (38, 192)], fill=silhouette)
@@ -118,9 +118,10 @@ def draw_seated_figure(size: float = 1.0) -> Image.Image:
     d.polygon([(64, 136), (88, 134), (84, 170), (72, 176), (52, 164)], fill=silhouette)
 
     # Restrained amber rim on the illuminated edge
-    d.line([(70, 30), (66, 50), (70, 64)], fill=rim, width=3, joint="curve")
-    d.line([(68, 66), (62, 98), (57, 112)], fill=rim, width=3, joint="curve")
-    d.line([(52, 146), (38, 166)], fill=rim, width=2)
+    d.line([(70, 30), (66, 50), (70, 64)], fill=rim, width=4, joint="curve")
+    d.line([(68, 66), (62, 98), (57, 112)], fill=rim, width=4, joint="curve")
+    d.line([(100, 64), (110, 94), (118, 112)], fill=(196, 96, 28, 150), width=3, joint="curve")
+    d.line([(52, 146), (38, 166)], fill=rim, width=3)
     if size != 1.0:
         new = (max(1, int(canvas.width * size)), max(1, int(canvas.height * size)))
         canvas = canvas.resize(new, Image.Resampling.LANCZOS)
@@ -239,6 +240,12 @@ def make_hero() -> None:
         rd.line([(rx - rw * 0.4, ry - rh), (rx + rw * 0.5, ry - rh * 0.7)], fill=(92, 44, 12, 90), width=2)
     rock_array = np.asarray(rocks, dtype=np.float32) / 255.0
     arr = arr * (1 - rock_array[..., 3:4]) + rock_array[..., :3] * rock_array[..., 3:4]
+
+    # A restrained pool of amber light gives the observer a readable silhouette.
+    gx, gy = w * 0.62, h * 0.72
+    gd = np.sqrt((xx - gx) ** 2 + (yy - gy) ** 2) / (w * 0.15)
+    glow = np.clip(1.0 - gd, 0.0, 1.0)[..., None] ** 2
+    arr += glow * np.array([52.0, 26.0, 7.0], dtype=np.float32)
 
     # Solitary observer.
     figure = draw_seated_figure(1.05)
