@@ -1,17 +1,22 @@
 use rusqlite::{params, Connection, Result};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::Mutex;
+
+/// Highest schema migration version this build knows how to open.
+pub const SCHEMA_VERSION: i64 = 4;
 
 pub struct Database {
     pub conn: Mutex<Connection>,
     pub has_fts5: bool,
+    pub path: Option<PathBuf>,
 }
 
 impl Database {
     /// Initializes a database connection at the specified file path,
     /// applies necessary PRAGMAs (WAL mode, foreign keys), and runs migrations.
     pub fn init<P: AsRef<Path>>(path: P) -> Result<Self, String> {
-        let conn = Connection::open(path).map_err(|e| format!("Failed to open SQLite database: {}", e))?;
+        let path_ref = path.as_ref();
+        let conn = Connection::open(path_ref).map_err(|e| format!("Failed to open SQLite database: {}", e))?;
 
         // 1. Enforce Foreign Keys
         conn.execute_batch(
@@ -27,6 +32,7 @@ impl Database {
         Ok(Self {
             conn: Mutex::new(conn),
             has_fts5,
+            path: Some(path_ref.to_path_buf()),
         })
     }
 
@@ -44,7 +50,16 @@ impl Database {
         Ok(Self {
             conn: Mutex::new(conn),
             has_fts5,
+            path: None,
         })
+    }
+
+    pub fn schema_version(conn: &Connection) -> Result<i64, rusqlite::Error> {
+        conn.query_row(
+            "SELECT COALESCE(MAX(version), 0) FROM schema_migrations",
+            [],
+            |row| row.get(0),
+        )
     }
 
     fn run_migrations(conn: &Connection) -> Result<bool, rusqlite::Error> {
