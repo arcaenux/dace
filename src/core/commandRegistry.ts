@@ -1,4 +1,4 @@
-import { CommandItem, WorkspaceActivityId } from "./types";
+import type { CommandItem, WorkspaceActivityId } from "./types.ts";
 
 export interface CommandContext {
   activeActivity: WorkspaceActivityId;
@@ -70,6 +70,28 @@ export function buildCommandList(ctx: CommandContext): CommandItem[] {
       },
     },
     {
+      id: "workspace:export-backup",
+      name: "Export Backup",
+      description: "Create a complete .ndarchive backup of your database and managed attachments",
+      category: "Workspace",
+      available: true,
+      execute: () => {
+        ctx.closeOverlay();
+        window.dispatchEvent(new CustomEvent("dace:export-backup"));
+      },
+    },
+    {
+      id: "workspace:restore-backup",
+      name: "Restore Backup",
+      description: "Validate a .ndarchive and safely replace this library after a recovery snapshot",
+      category: "Workspace",
+      available: true,
+      execute: () => {
+        ctx.closeOverlay();
+        window.dispatchEvent(new CustomEvent("dace:restore-backup"));
+      },
+    },
+    {
       id: "knowledge:search-records",
       name: "Search Knowledge Records",
       description: "Query knowledge records by title or content in SQLite",
@@ -127,21 +149,9 @@ export function buildCommandList(ctx: CommandContext): CommandItem[] {
       },
     },
     {
-      id: "nav:reader",
-      name: "Open Reader",
-      description: "Read PDFs, epubs, web articles and extract literature notes",
-      category: "Navigation",
-      available: false,
-      unavailabilityReason: "Planned for Milestone 3 (Document Ingestion & Reading)",
-      execute: () => {
-        ctx.setNotice("Document Reader is planned for Milestone 3.");
-        ctx.closeOverlay();
-      },
-    },
-    {
       id: "nav:knowledge-graph",
       name: "Open Knowledge Graph",
-      description: "Explore interactive astronomical knowledge graph and conceptual relationships",
+      description: "Explore the interactive knowledge graph and conceptual relationships",
       category: "Navigation",
       shortcut: "Alt+3",
       available: true,
@@ -163,6 +173,45 @@ export function buildCommandList(ctx: CommandContext): CommandItem[] {
       },
     },
     {
+      id: "reader:layout-reading",
+      name: "Reader: Reading Layout",
+      description: "Maximise the document surface for uninterrupted reading",
+      category: "Workspace",
+      shortcut: "Alt+Shift+1",
+      available: true,
+      execute: () => {
+        ctx.setActiveActivity("reader");
+        window.dispatchEvent(new CustomEvent("dace:reader-mode", { detail: "reading" }));
+        ctx.closeOverlay();
+      },
+    },
+    {
+      id: "reader:layout-research",
+      name: "Reader: Research Layout",
+      description: "Show the document and writing workspace side by side",
+      category: "Workspace",
+      shortcut: "Alt+Shift+2",
+      available: true,
+      execute: () => {
+        ctx.setActiveActivity("reader");
+        window.dispatchEvent(new CustomEvent("dace:reader-mode", { detail: "research" }));
+        ctx.closeOverlay();
+      },
+    },
+    {
+      id: "reader:layout-writing",
+      name: "Reader: Writing Layout",
+      description: "Expand the research notes while keeping source references",
+      category: "Workspace",
+      shortcut: "Alt+Shift+3",
+      available: true,
+      execute: () => {
+        ctx.setActiveActivity("reader");
+        window.dispatchEvent(new CustomEvent("dace:reader-mode", { detail: "writing" }));
+        ctx.closeOverlay();
+      },
+    },
+    {
       id: "nav:terminal",
       name: "Open Terminal",
       description: "Embedded pseudo-terminal for workspace CLI automation",
@@ -177,7 +226,7 @@ export function buildCommandList(ctx: CommandContext): CommandItem[] {
     {
       id: "system:settings",
       name: "Open Settings",
-      description: "Configure local storage, appearance, backups and capabilities",
+      description: "Configure application preferences and local workspace options (planned)",
       category: "System",
       available: false,
       unavailabilityReason: "Planned for Milestone 6 (System Settings & Administration)",

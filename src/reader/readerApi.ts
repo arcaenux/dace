@@ -13,6 +13,9 @@ import type { KnowledgeRecord } from "../knowledge/types.ts";
 // Fallback in-memory state for mock / browser testing
 let fallbackHighlights: Highlight[] = [];
 let fallbackRecordLinks: HighlightRecordLink[] = [];
+let fallbackIdCounter = 0;
+
+const fallbackId = (prefix: string) => `${prefix}-${Date.now()}-${++fallbackIdCounter}`;
 
 export async function createHighlight(
   input: CreateHighlightInput
@@ -22,11 +25,11 @@ export async function createHighlight(
   }
 
   const now = new Date().toISOString();
-  const id = `mock-hl-${Date.now()}`;
+  const id = fallbackId("mock-hl");
   let ann: Annotation | null = null;
   if (input.annotation_content && input.annotation_content.trim()) {
     ann = {
-      id: `mock-ann-${Date.now()}`,
+      id: fallbackId("mock-ann"),
       highlight_id: id,
       content: input.annotation_content.trim(),
       created_at: now,
@@ -240,7 +243,7 @@ export async function createRecordFromExcerpt(
 
   const now = new Date().toISOString();
   const rec: KnowledgeRecord = {
-    id: `rec-from-ex-${Date.now()}`,
+    id: fallbackId("rec-from-ex"),
     title: title || "New Insight Note",
     content: commentary ? `> Quoted passage\n\n${commentary}` : "> Quoted passage",
     created_at: now,

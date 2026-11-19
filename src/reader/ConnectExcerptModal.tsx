@@ -1,5 +1,6 @@
-import { FC, useState, useEffect } from "react";
+import { FC, useState, useEffect, useRef } from "react";
 import { Highlight } from "./types.ts";
+import { useDismissable } from "../core/useDismissable";
 import * as readerApi from "./readerApi.ts";
 import { listRecords } from "../knowledge/knowledgeApi.ts";
 import { KnowledgeRecordSummary } from "../knowledge/types.ts";
@@ -32,6 +33,16 @@ export const ConnectExcerptModal: FC<ConnectExcerptModalProps> = ({
   const [selectedRecordId, setSelectedRecordId] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  useDismissable(
+    true,
+    () => {
+      if (!isSubmitting) onClose();
+    },
+    modalRef,
+    { group: "reader-dialog", autoFocus: true }
+  );
 
   useEffect(() => {
     async function fetchRecords() {
@@ -104,19 +115,21 @@ export const ConnectExcerptModal: FC<ConnectExcerptModalProps> = ({
   return (
     <div
       className="overlay-backdrop"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
       role="dialog"
       aria-label="Connect Excerpt to Knowledge"
     >
-      <div className="attachment-details-modal" style={{ maxWidth: "580px" }}>
+      <div ref={modalRef} className="attachment-details-modal" style={{ maxWidth: "580px" }}>
         <div className="details-modal-header">
           <div>
             <span className="details-modal-badge">Knowledge Crystallization</span>
             <h2 className="details-modal-title">Connect Excerpt to Knowledge</h2>
           </div>
-          <button className="details-modal-close-btn" onClick={onClose} aria-label="Close">
+          <button
+            className="details-modal-close-btn"
+            onClick={() => { if (!isSubmitting) onClose(); }}
+            aria-label="Close"
+            data-overlay-initial-focus
+          >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="18" y1="6" x2="6" y2="18"></line>
               <line x1="6" y1="6" x2="18" y2="18"></line>

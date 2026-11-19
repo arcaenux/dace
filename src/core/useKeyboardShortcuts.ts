@@ -26,6 +26,9 @@ export function useKeyboardShortcuts({
 }: KeyboardShortcutsProps) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Escape and other keys may already be claimed by a focused overlay.
+      if (e.defaultPrevented) return;
+
       const isInput =
         e.target instanceof HTMLInputElement ||
         e.target instanceof HTMLTextAreaElement ||
@@ -85,6 +88,8 @@ export function useKeyboardShortcuts({
         if (activeActivity === "knowledge-desk") {
           window.dispatchEvent(new CustomEvent("dace:save-record"));
           window.dispatchEvent(new CustomEvent("novadome:save-record"));
+        } else if (activeActivity === "reader") {
+          window.dispatchEvent(new CustomEvent("dace:save-reader-note"));
         } else {
           setNotice("No active document to save. (Switch to Knowledge Desk)");
         }
@@ -118,7 +123,7 @@ export function useKeyboardShortcuts({
         return;
       }
 
-      // 8. Alt+1 / Alt+2 / Alt+3 Navigation Shortcuts
+      // 8. Alt+1 / Alt+2 / Alt+3 / Alt+4 Navigation Shortcuts
       if (e.altKey && !modifier && !e.shiftKey) {
         if (e.key === "1") {
           e.preventDefault();
