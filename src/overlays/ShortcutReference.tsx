@@ -1,16 +1,24 @@
-import { FC, useRef, MouseEvent } from "react";
+import { FC, useRef, RefObject } from "react";
 import { ShortcutDefinition } from "../core/types";
+import { useDismissable } from "../core/useDismissable";
 
 interface ShortcutReferenceProps {
   isOpen: boolean;
   onClose: () => void;
+  triggerRef?: RefObject<HTMLElement | null>;
 }
 
 export const ShortcutReference: FC<ShortcutReferenceProps> = ({
   isOpen,
   onClose,
+  triggerRef,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  useDismissable(isOpen, onClose, containerRef, {
+    triggerRef,
+    group: "workspace-overlay",
+    autoFocus: true,
+  });
 
   if (!isOpen) return null;
 
@@ -58,9 +66,15 @@ export const ShortcutReference: FC<ShortcutReferenceProps> = ({
       status: "active",
     },
     {
-      keyCombo: "Alt + 1 / 2 / 3",
+      keyCombo: "Alt + 1 / 2 / 3 / 4",
       description: "Switch Activity",
-      context: "Alt+1 Workspace, Alt+2 Knowledge Desk, Alt+3 Knowledge Graph",
+      context: "Alt+1 Workspace, Alt+2 Desk, Alt+3 Graph, Alt+4 Research Reader",
+      status: "active",
+    },
+    {
+      keyCombo: "Alt + Shift + 1 / 2 / 3",
+      description: "Reader Layout",
+      context: "Reading, Research, or Writing layout on the active document",
       status: "active",
     },
     {
@@ -71,16 +85,9 @@ export const ShortcutReference: FC<ShortcutReferenceProps> = ({
     },
   ];
 
-  const handleBackdropClick = (e: MouseEvent<HTMLDivElement>) => {
-    if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-      onClose();
-    }
-  };
-
   return (
     <div
       className="overlay-backdrop"
-      onClick={handleBackdropClick}
       role="dialog"
       aria-modal="true"
       aria-label="Keyboard Shortcuts and Actions"
@@ -88,7 +95,12 @@ export const ShortcutReference: FC<ShortcutReferenceProps> = ({
       <div className="shortcut-modal" ref={containerRef}>
         <div className="shortcut-modal-header">
           <div className="shortcut-modal-title">Shortcuts & Available Actions</div>
-          <button className="panel-close-btn" onClick={onClose} aria-label="Close shortcuts">
+          <button
+            className="panel-close-btn"
+            onClick={onClose}
+            aria-label="Close shortcuts"
+            data-overlay-initial-focus
+          >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="18" y1="6" x2="6" y2="18"></line>
               <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -112,7 +124,7 @@ export const ShortcutReference: FC<ShortcutReferenceProps> = ({
 
         <div className="command-palette-footer">
           <span>Press <kbd style={{ padding: "1px 4px", background: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>Esc</kbd> to return to workspace</span>
-          <span>NOVA DOME v0.1.0</span>
+          <span>Dace v0.1.0</span>
         </div>
       </div>
     </div>

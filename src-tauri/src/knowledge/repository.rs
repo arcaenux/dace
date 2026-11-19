@@ -710,14 +710,14 @@ mod tests {
         let created = KnowledgeRepository::create_record(
             &mut conn,
             CreateRecordPayload {
-                title: "Epistemic Architecture in NOVA DOME".to_string(),
+                title: "Epistemic Architecture in Dace".to_string(),
                 content: "Knowledge records must be atomic and connected through explicit typed relationships.".to_string(),
                 tags: Some(vec!["epistemology".to_string(), "architecture".to_string()]),
             },
             db.has_fts5,
         ).expect("create_record failed");
 
-        assert_eq!(created.title, "Epistemic Architecture in NOVA DOME");
+        assert_eq!(created.title, "Epistemic Architecture in Dace");
         assert_eq!(created.tags.len(), 2);
         assert!(created.tags.contains(&"epistemology".to_string()));
         assert!(created.tags.contains(&"architecture".to_string()));
@@ -781,9 +781,9 @@ mod tests {
 
     #[test]
     fn test_sqlite_file_persistence_across_restarts() {
-        let temp_dir = std::env::temp_dir().join(format!("novadome_test_{}", uuid::Uuid::new_v4()));
+        let temp_dir = std::env::temp_dir().join(format!("dace_test_{}", uuid::Uuid::new_v4()));
         std::fs::create_dir_all(&temp_dir).unwrap();
-        let db_file = temp_dir.join("test_novadome.db");
+        let db_file = temp_dir.join("test_dace.db");
 
         let record_id;
 
@@ -833,7 +833,7 @@ mod tests {
 
     #[test]
     fn test_fts5_synchronization_and_reopen_integrity() {
-        let temp_dir = std::env::temp_dir().join(format!("novadome_fts_test_{}", uuid::Uuid::new_v4()));
+        let temp_dir = std::env::temp_dir().join(format!("dace_fts_test_{}", uuid::Uuid::new_v4()));
         std::fs::create_dir_all(&temp_dir).unwrap();
         let db_file = temp_dir.join("fts_integrity.db");
 
@@ -1066,7 +1066,7 @@ mod tests {
 
     #[test]
     fn test_relationship_persistence_across_restarts() {
-        let temp_dir = std::env::temp_dir().join(format!("novadome_rel_test_{}", uuid::Uuid::new_v4()));
+        let temp_dir = std::env::temp_dir().join(format!("dace_rel_test_{}", uuid::Uuid::new_v4()));
         std::fs::create_dir_all(&temp_dir).unwrap();
         let db_file = temp_dir.join("rel_persist.db");
 

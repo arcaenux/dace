@@ -29,7 +29,7 @@ export async function setNativeFullscreen(fullscreen: boolean): Promise<boolean>
         return true;
       } catch (windowErr) {
         console.warn(
-          "[NovaDome] Native window fullscreen could not be applied via Tauri API:",
+          "[Dace] Native window fullscreen could not be applied via Tauri API:",
           rustErr,
           windowErr
         );
@@ -52,7 +52,7 @@ export async function setNativeFullscreen(fullscreen: boolean): Promise<boolean>
         }
       }
     } catch (domErr) {
-      console.warn("[NovaDome] DOM requestFullscreen/exitFullscreen failed:", domErr);
+      console.warn("[Dace] DOM requestFullscreen/exitFullscreen failed:", domErr);
     }
   }
 
@@ -97,7 +97,7 @@ export async function closeNativeWindow(): Promise<void> {
         await appWindow.destroy();
         return;
       } catch (err) {
-        console.error("[NovaDome] Failed to destroy window via Tauri API:", err);
+        console.error("[Dace] Failed to destroy window via Tauri API:", err);
       }
     }
   }

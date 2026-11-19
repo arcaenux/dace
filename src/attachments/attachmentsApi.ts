@@ -204,7 +204,7 @@ export async function readAttachmentText(attachmentId: string): Promise<string> 
     return await invoke<string>("read_attachment_text", { attachmentId });
   }
 
-  return "# Sample Markdown Research Note\n\nThis is a fallback document reading surface in NOVA DOME.";
+  return "# Sample Markdown Research Note\n\nThis is a fallback document reading surface in Dace.";
 }
 
 export async function readAttachmentDataUrl(attachmentId: string): Promise<string> {

@@ -5,6 +5,7 @@ import {
   useCallback,
   DragEvent as ReactDragEvent,
 } from "react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { AttachmentSummary, formatFileSize, getViewerType } from "./types";
 import * as api from "./attachmentsApi";
 import { DocumentPreviewModal } from "./DocumentPreviewModal";
@@ -13,15 +14,21 @@ import { AttachmentDetailsModal } from "./AttachmentDetailsModal";
 interface RecordAttachmentsPanelProps {
   recordId: string;
   onShowNotice: (msg: string) => void;
+  onOpenInReader?: (attachmentId: string, pageNumber: number) => void;
+  /** Use the quiet, collapsible section treatment inside the Knowledge Desk rail. */
+  compact?: boolean;
 }
 
 export const RecordAttachmentsPanel: FC<RecordAttachmentsPanelProps> = ({
   recordId,
   onShowNotice,
+  onOpenInReader,
+  compact = false,
 }) => {
   const [attachments, setAttachments] = useState<AttachmentSummary[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isDraggingOver, setIsDraggingOver] = useState<boolean>(false);
+  const [isExpanded, setIsExpanded] = useState<boolean>(true);
 
   // Modals state
   const [previewAttachment, setPreviewAttachment] = useState<AttachmentSummary | null>(null);
@@ -136,15 +143,28 @@ export const RecordAttachmentsPanel: FC<RecordAttachmentsPanelProps> = ({
       onDrop={handleDrop}
     >
       <div className="attachments-header">
-        <div className="attachments-title-wrap">
-          <span className="attachments-heading">Managed Research Documents</span>
+        <button
+          type="button"
+          className={`attachments-title-wrap ${compact ? "desk-section-toggle" : ""}`}
+          onClick={() => compact && setIsExpanded((current) => !current)}
+          aria-expanded={compact ? isExpanded : undefined}
+        >
+          {compact &&
+            (isExpanded ? (
+              <ChevronDown size={13} strokeWidth={1.6} aria-hidden="true" />
+            ) : (
+              <ChevronRight size={13} strokeWidth={1.6} aria-hidden="true" />
+            ))}
+          <span className="attachments-heading">
+            {compact ? "Documents" : "Managed Research Documents"}
+          </span>
           <span className="attachments-counter">{attachments.length}</span>
-        </div>
+        </button>
 
         <div className="attachments-actions">
           <button
             type="button"
-            className="desk-btn primary add-attachment-btn"
+            className={`desk-btn add-attachment-btn ${compact ? "quiet" : "primary"}`}
             onClick={handlePickAndImport}
             title="Import an external document into managed storage"
           >
@@ -153,31 +173,22 @@ export const RecordAttachmentsPanel: FC<RecordAttachmentsPanelProps> = ({
         </div>
       </div>
 
-      {/* Drag & Drop Overlay Callout */}
-      {isDraggingOver && (
-        <div className="drag-drop-banner">
-          <span>Release to import document into managed storage</span>
-        </div>
-      )}
+      {(!compact || isExpanded) && (
+        <>
+          {/* Drag & Drop Overlay Callout */}
+          {isDraggingOver && (
+            <div className="drag-drop-banner">
+              <span>Release to import document into managed storage</span>
+            </div>
+          )}
 
-      {/* Attachments List */}
-      <div className="attachments-list-container">
+          {/* Attachments List */}
+          <div className="attachments-list-container">
         {isLoading && attachments.length === 0 ? (
           <div className="attachments-loading-text">Loading documents...</div>
         ) : attachments.length === 0 ? (
           <div className="attachments-empty-state">
-            <span className="empty-paperclip-icon">📎</span>
-            <p className="empty-desc">
-              No documents associated with this concept. Import PDFs, research papers, notes, or
-              images to preserve them in content-addressed storage.
-            </p>
-            <button
-              type="button"
-              className="desk-btn secondary"
-              onClick={handlePickAndImport}
-            >
-              Select File to Import
-            </button>
+            <p className="empty-desc">Attach research materials, PDFs or notes.</p>
           </div>
         ) : (
           <div className="attachments-grid">
@@ -232,6 +243,16 @@ export const RecordAttachmentsPanel: FC<RecordAttachmentsPanelProps> = ({
                   </div>
 
                   <div className="attachment-card-actions">
+                    {onOpenInReader && (
+                      <button
+                        type="button"
+                        className="desk-btn primary"
+                        onClick={() => onOpenInReader(att.id, 1)}
+                        title="Read and annotate document in Research Reader"
+                      >
+                        Read
+                      </button>
+                    )}
                     <button
                       type="button"
                       className="desk-btn"
@@ -285,8 +306,10 @@ export const RecordAttachmentsPanel: FC<RecordAttachmentsPanelProps> = ({
               );
             })}
           </div>
-        )}
-      </div>
+          )}
+          </div>
+        </>
+      )}
 
       {/* In-app Document Preview Modal */}
       {previewAttachment && (

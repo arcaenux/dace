@@ -77,19 +77,19 @@ test("3. Font attribution document exists with SIL Open Font License details", (
   assert.ok(content.includes("SIL Open Font License"), "Attribution must state SIL Open Font License");
 });
 
-test("4. Knowledge Graph canvas uses refined typography for nodes and interface", () => {
+test("4. Knowledge Graph canvas uses the canonical cinematic typography", () => {
   const graphViewPath = path.resolve("src/graph/KnowledgeGraphView.tsx");
   const code = fs.readFileSync(graphViewPath, "utf-8");
 
-  // Node titles use editorial serif
+  // Node titles use the primary interface typeface
   assert.ok(
-    code.includes("Newsreader Variable"),
-    "KnowledgeGraphView canvas must render node labels with Newsreader Variable"
+    code.includes('"Space Grotesk"'),
+    "KnowledgeGraphView canvas must render node labels with Space Grotesk"
   );
 
-  // Relationship labels use interface sans
+  // Relationship labels use the technical mono typeface
   assert.ok(
-    code.includes("Manrope Variable"),
-    "KnowledgeGraphView canvas must render relationship badges with Manrope Variable"
+    code.includes('"IBM Plex Mono"'),
+    "KnowledgeGraphView canvas must render relationship badges with IBM Plex Mono"
   );
 });

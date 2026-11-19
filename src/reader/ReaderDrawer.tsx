@@ -1,0 +1,559 @@
+import {
+  FC,
+  RefObject,
+  useEffect,
+  useState,
+} from "react";
+import {
+  BookOpen,
+  Check,
+  ChevronRight,
+  Heading2,
+  Link2,
+  List,
+  ListChecks,
+  Quote,
+  Tag,
+  X,
+} from "lucide-react";
+import { Highlight, OutlineItem } from "./types.ts";
+import { AttachmentSummary } from "../attachments/types.ts";
+import * as readerApi from "./readerApi.ts";
+import * as attachmentsApi from "../attachments/attachmentsApi.ts";
+import * as knowledgeApi from "../knowledge/knowledgeApi.ts";
+import { KnowledgeGraphView } from "../graph/KnowledgeGraphView.tsx";
+import { NoteExcerpt } from "./noteExcerpts.ts";
+import { ReaderNoteSaveStatus } from "./useReaderNote.ts";
+
+type ReaderDrawerTab = "highlights" | "outline" | "knowledge" | "info";
+
+interface ReaderDrawerProps {
+  isOpen: boolean;
+  onClose: () => void;
+  activeTab: ReaderDrawerTab;
+  onTabChange: (tab: ReaderDrawerTab) => void;
+  highlights: Highlight[];
+  outline: OutlineItem[];
+  attachment: AttachmentSummary;
+  selectedHighlightId: string | null;
+  onSelectHighlight: (id: string) => void;
+  onJumpToPage: (page: number) => void;
+  onOpenConnectModal: (highlight: Highlight) => void;
+  onHighlightDeleted: (id: string) => void;
+  onHighlightUpdated: (updated: Highlight) => void;
+  onNavigateToRecord?: (recordId: string) => void;
+  onShowNotice: (msg: string) => void;
+  hasNote: boolean;
+  noteTitle: string;
+  noteContent: string;
+  noteTags: string[];
+  noteSaveStatus: ReaderNoteSaveStatus;
+  noteError: string | null;
+  noteExcerpts: NoteExcerpt[];
+  noteContentRef: RefObject<HTMLTextAreaElement | null>;
+  onStartNote: () => void;
+  onNoteTitleChange: (title: string) => void;
+  onNoteContentChange: (content: string) => void;
+  onNoteTagsChange: (tags: string[]) => void;
+  onSaveNote: () => void;
+  onInsertMarkdown: (prefix: string, suffix?: string) => void;
+}
+
+const TABS: { id: ReaderDrawerTab; label: string; icon: typeof BookOpen }[] = [
+  { id: "highlights", label: "Notes", icon: BookOpen },
+  { id: "outline", label: "Outline", icon: List },
+  { id: "knowledge", label: "Knowledge", icon: Link2 },
+  { id: "info", label: "Info", icon: Heading2 },
+];
+
+const formatBytes = (bytes: number) => {
+  if (!Number.isFinite(bytes) || bytes <= 0) return "—";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+};
+
+const saveStatusLabel = (status: ReaderNoteSaveStatus, error: string | null) => {
+  if (status === "saving") return "Saving…";
+  if (status === "unsaved") return "Unsaved";
+  if (status === "saved") return "Saved";
+  if (status === "error") return error || "Save failed";
+  return "Not started";
+};
+
+export const ReaderDrawer: FC<ReaderDrawerProps> = ({
+  isOpen,
+  onClose,
+  activeTab,
+  onTabChange,
+  highlights,
+  outline,
+  attachment,
+  selectedHighlightId,
+  onSelectHighlight,
+  onJumpToPage,
+  onOpenConnectModal,
+  onHighlightDeleted,
+  onHighlightUpdated,
+  onNavigateToRecord,
+  onShowNotice,
+  hasNote,
+  noteTitle,
+  noteContent,
+  noteTags,
+  noteSaveStatus,
+  noteError,
+  noteExcerpts,
+  noteContentRef,
+  onStartNote,
+  onNoteTitleChange,
+  onNoteContentChange,
+  onNoteTagsChange,
+  onSaveNote,
+  onInsertMarkdown,
+}) => {
+  const [filterType, setFilterType] = useState<string>("all");
+  const [editingHighlightId, setEditingHighlightId] = useState<string | null>(null);
+  const [editNoteContent, setEditNoteContent] = useState<string>("");
+  const [linkedRecords, setLinkedRecords] = useState<Array<{ id: string; title: string }>>([]);
+  const [isLoadingLinkedRecords, setIsLoadingLinkedRecords] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadLinkedRecords() {
+      if (!isOpen || activeTab !== "knowledge" || attachment.record_count === 0) {
+        if (!cancelled) {
+          setLinkedRecords([]);
+          setIsLoadingLinkedRecords(false);
+        }
+        return;
+      }
+
+      setIsLoadingLinkedRecords(true);
+      try {
+        const details = await attachmentsApi.getAttachmentDetails(attachment.id);
+        const ids = Array.from(
+          new Set((details.associated_records || []).filter((id) => typeof id === "string" && id.trim().length > 0))
+        );
+
+        const records = await Promise.all(
+          ids.map(async (id) => {
+            try {
+              const record = await knowledgeApi.getRecord(id);
+              return { id, title: record?.title?.trim() || "Untitled Record" };
+            } catch {
+              return { id, title: "Linked Record" };
+            }
+          })
+        );
+
+        if (!cancelled) {
+          setLinkedRecords(records);
+        }
+      } catch {
+        if (!cancelled) {
+          setLinkedRecords([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingLinkedRecords(false);
+        }
+      }
+    }
+
+    loadLinkedRecords();
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, activeTab, attachment.id, attachment.record_count]);
+
+  if (!isOpen) return null;
+
+  const filteredHighlights = highlights.filter((highlight) => {
+    if (filterType === "all") return true;
+    return highlight.highlight_type === filterType;
+  });
+
+  const handleStartEditNote = (highlight: Highlight) => {
+    setEditingHighlightId(highlight.id);
+    setEditNoteContent(highlight.annotation?.content || "");
+  };
+
+  const handleSaveAnnotation = async (highlight: Highlight) => {
+    try {
+      if (editNoteContent.trim()) {
+        const annotation = await readerApi.saveAnnotation(highlight.id, editNoteContent.trim());
+        onHighlightUpdated({ ...highlight, annotation });
+        onShowNotice("Annotation saved");
+      } else {
+        await readerApi.deleteAnnotation(highlight.id);
+        onHighlightUpdated({ ...highlight, annotation: null });
+        onShowNotice("Annotation removed");
+      }
+      setEditingHighlightId(null);
+    } catch (err: any) {
+      console.error("Failed to save annotation:", err);
+      onShowNotice(`Failed to save note: ${err?.message || err}`);
+    }
+  };
+
+  const handleDeleteHighlight = async (highlightId: string) => {
+    try {
+      await readerApi.deleteHighlight(highlightId);
+      onHighlightDeleted(highlightId);
+      onShowNotice("Highlight deleted");
+    } catch (err: any) {
+      console.error("Failed to delete highlight:", err);
+      onShowNotice(`Delete failed: ${err?.message || err}`);
+    }
+  };
+
+  return (
+    <aside className="reader-drawer" aria-label="Research writing workspace">
+      <div className="reader-drawer-tabs">
+        {TABS.map((tab) => {
+          const Icon = tab.icon;
+          return (
+            <button
+              key={tab.id}
+              className={`drawer-tab ${activeTab === tab.id ? "active" : ""}`}
+              onClick={() => onTabChange(tab.id)}
+              data-reader-tab={tab.id}
+            >
+              <Icon size={12} strokeWidth={1.8} />
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
+        <button
+          className="drawer-close-btn"
+          onClick={onClose}
+          aria-label="Return to reading mode"
+          title="Return to reading"
+        >
+          <X size={14} />
+        </button>
+      </div>
+
+      <div className="reader-drawer-content">
+        {activeTab === "highlights" && (
+          <div className="reader-notes-view">
+            {!hasNote ? (
+              <div className="reader-note-empty">
+                <div className="reader-note-empty-mark">DACE</div>
+                <h2>No note for this document yet</h2>
+                <p>
+                  Start a research note, then use <strong>Add to notes</strong> on any selected passage to bring
+                  exact source text here with its page reference.
+                </p>
+                <button className="reader-primary-btn" onClick={onStartNote}>
+                  Start note
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="reader-note-head">
+                  <div>
+                    <span className="reader-section-label">Active research note</span>
+                    <input
+                      className="reader-note-title"
+                      value={noteTitle}
+                      onChange={(event) => onNoteTitleChange(event.target.value)}
+                      placeholder="Untitled note"
+                      aria-label="Note title"
+                    />
+                    <label className="reader-note-tags">
+                      <Tag size={11} strokeWidth={1.8} aria-hidden="true" />
+                      <input
+                        value={noteTags.join(", ")}
+                        onChange={(event) =>
+                          onNoteTagsChange(
+                            event.target.value
+                              .split(",")
+                              .map((tag) => tag.trim())
+                              .filter(Boolean)
+                          )
+                        }
+                        placeholder="Add tags, separated by commas"
+                        aria-label="Note tags"
+                      />
+                    </label>
+                  </div>
+                  <div className={`reader-save-status status-${noteSaveStatus}`}>
+                    <span className="reader-save-dot" />
+                    {saveStatusLabel(noteSaveStatus, noteError)}
+                  </div>
+                </div>
+
+                <div className="reader-format-bar" aria-label="Note formatting">
+                  <button onClick={() => onInsertMarkdown("## ")} title="Heading">
+                    <Heading2 size={13} /> Heading
+                  </button>
+                  <button onClick={() => onInsertMarkdown("- ")} title="List item">
+                    <List size={13} /> List
+                  </button>
+                  <button onClick={() => onInsertMarkdown("- [ ] ")} title="Checklist item">
+                    <ListChecks size={13} /> Task
+                  </button>
+                  <button onClick={() => onInsertMarkdown("> ")} title="Quote">
+                    <Quote size={13} /> Quote
+                  </button>
+                  <button onClick={() => onInsertMarkdown("[", "](https://)")} title="Link">
+                    <Link2 size={13} /> Link
+                  </button>
+                </div>
+
+                {noteExcerpts.length > 0 && (
+                  <section className="reader-source-passages">
+                    <span className="reader-section-label">Source passages</span>
+                    <div className="reader-source-chips">
+                      {noteExcerpts.map((excerpt) => (
+                        <button
+                          key={excerpt.id}
+                          className="reader-source-chip"
+                          onClick={() => onJumpToPage(excerpt.page)}
+                          title={excerpt.text}
+                        >
+                          <span>p. {excerpt.page}</span>
+                          <span>{excerpt.text.slice(0, 42)}{excerpt.text.length > 42 ? "…" : ""}</span>
+                          <ChevronRight size={12} />
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+                )}
+
+                <textarea
+                  ref={noteContentRef}
+                  className="reader-note-editor"
+                  value={noteContent}
+                  onChange={(event) => onNoteContentChange(event.target.value)}
+                  placeholder="Write your research notes. Use headings, lists and source references to structure your thinking…"
+                  aria-label="Note content"
+                  spellCheck={false}
+                />
+
+                <div className="reader-note-footer">
+                  <span>Markdown-style notes · autosaved to Knowledge Desk</span>
+                  <button className="reader-tertiary-btn" onClick={onSaveNote}>
+                    <Check size={12} /> Save now
+                  </button>
+                </div>
+
+                <section className="reader-highlights-section">
+                  <div className="reader-section-heading">
+                    <span className="reader-section-label">Passages & annotations</span>
+                    <span>{highlights.length}</span>
+                  </div>
+                  <div className="reader-filter-row">
+                    {["all", "important", "question", "insight", "definition"].map((type) => (
+                      <button
+                        key={type}
+                        className={`toolbar-hl-btn ${filterType === type ? "active" : ""}`}
+                        onClick={() => setFilterType(type)}
+                      >
+                        {type.charAt(0).toUpperCase() + type.slice(1)}
+                      </button>
+                    ))}
+                  </div>
+
+                  {filteredHighlights.length === 0 ? (
+                    <div className="reader-inline-empty">
+                      No {filterType !== "all" ? filterType : ""} highlights recorded yet.
+                      <br />
+                      Select text in the document to highlight or annotate.
+                    </div>
+                  ) : (
+                    filteredHighlights.map((highlight) => (
+                      <div
+                        key={highlight.id}
+                        className={`annotation-card ${selectedHighlightId === highlight.id ? "selected" : ""}`}
+                        onClick={() => onSelectHighlight(highlight.id)}
+                      >
+                        <div className="card-header">
+                          <span className="card-tag">
+                            <span className={`hl-dot ${highlight.highlight_type}`} />
+                            <span style={{ color: "var(--text-bright)" }}>{highlight.highlight_type}</span>
+                          </span>
+                          <button
+                            className="card-page-btn"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              onJumpToPage(highlight.page_number);
+                            }}
+                            title={`Jump to page ${highlight.page_number}`}
+                          >
+                            p. {highlight.page_number}
+                          </button>
+                        </div>
+
+                        {highlight.is_stale && (
+                          <div className="card-stale-notice">Anchor from earlier document version (hash mismatch)</div>
+                        )}
+
+                        <div className="card-quote">"{highlight.selected_text}"</div>
+
+                        {editingHighlightId === highlight.id ? (
+                          <div style={{ marginTop: "8px" }} onClick={(event) => event.stopPropagation()}>
+                            <textarea
+                              className="card-note-edit"
+                              value={editNoteContent}
+                              onChange={(event) => setEditNoteContent(event.target.value)}
+                              placeholder="Write your reflection, question, or note…"
+                              autoFocus
+                            />
+                            <div className="reader-inline-actions">
+                              <button className="card-action-link" onClick={() => setEditingHighlightId(null)}>
+                                Cancel
+                              </button>
+                              <button className="card-action-link primary" onClick={() => handleSaveAnnotation(highlight)}>
+                                Save
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          highlight.annotation && <div className="card-note-area">{highlight.annotation.content}</div>
+                        )}
+
+                        <div className="card-actions" onClick={(event) => event.stopPropagation()}>
+                          <button className="card-action-link" onClick={() => handleStartEditNote(highlight)}>
+                            {highlight.annotation ? "Edit Note" : "+ Note"}
+                          </button>
+                          <button className="card-action-link" onClick={() => onOpenConnectModal(highlight)}>
+                            Connect
+                          </button>
+                          <button className="card-action-link danger" onClick={() => handleDeleteHighlight(highlight.id)}>
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </section>
+              </>
+            )}
+          </div>
+        )}
+
+        {activeTab === "outline" && (
+          <div className="reader-outline-view">
+            {outline.length === 0 ? (
+              <div className="reader-inline-empty">
+                No embedded bookmarks or headings detected in this document.
+              </div>
+            ) : (
+              <div className="reader-outline-list">
+                {outline.map((item, index) => (
+                  <div key={`${item.title}-${index}`} className="reader-outline-group">
+                    <button
+                      className="reader-outline-item"
+                      onClick={() => item.pageNumber && onJumpToPage(item.pageNumber)}
+                    >
+                      <span>{item.title}</span>
+                      {item.pageNumber && <span>p. {item.pageNumber}</span>}
+                    </button>
+                    {item.items?.map((sub, subIndex) => (
+                      <button
+                        key={`${sub.title}-${subIndex}`}
+                        className="reader-outline-item nested"
+                        onClick={() => sub.pageNumber && onJumpToPage(sub.pageNumber)}
+                      >
+                        <span>{sub.title}</span>
+                        {sub.pageNumber && <span>p. {sub.pageNumber}</span>}
+                      </button>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === "knowledge" && (
+          <div className="reader-knowledge-view">
+            <p className="reader-view-intro">
+              Knowledge records referencing this document or its anchored excerpts:
+            </p>
+            {attachment.record_count === 0 ? (
+              <div className="reader-inline-empty">
+                No knowledge records currently reference this document.
+                <br />
+                Use <strong>Connect</strong> on any passage to create a linked note.
+              </div>
+            ) : isLoadingLinkedRecords ? (
+              <div className="reader-inline-empty">Loading linked records…</div>
+            ) : linkedRecords.length === 0 ? (
+              <div className="reader-inline-empty">
+                No linked knowledge records could be resolved for this document.
+              </div>
+            ) : (
+              <>
+                <p className="reader-view-intro">
+                  This document is linked to <strong>{linkedRecords.length}</strong> knowledge record
+                  {linkedRecords.length === 1 ? "" : "s"}.
+                </p>
+                <div className="reader-linked-records">
+                  {linkedRecords.map((record) => (
+                    <button
+                      key={record.id}
+                      className="reader-linked-record"
+                      disabled={!onNavigateToRecord}
+                      onClick={() => {
+                        if (onNavigateToRecord && record.id.trim()) {
+                          onNavigateToRecord(record.id);
+                        }
+                      }}
+                      title={record.title}
+                    >
+                      <span>{record.title}</span>
+                      <ChevronRight size={13} />
+                    </button>
+                  ))}
+                </div>
+                <div className="reader-embedded-graph">
+                  <span className="reader-section-label">Connected graph</span>
+                  <KnowledgeGraphView
+                    embedded
+                    focusRecordId={linkedRecords[0]?.id ?? null}
+                    onOpenRecordInDesk={(recordId) => onNavigateToRecord?.(recordId)}
+                    onShowNotice={onShowNotice}
+                  />
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {activeTab === "info" && (
+          <div className="reader-info-view">
+            <div className="reader-info-row">
+              <span className="detail-meta-label">File name</span>
+              <span>{attachment.file_name}</span>
+            </div>
+            <div className="reader-info-row">
+              <span className="detail-meta-label">Format / MIME</span>
+              <span>{attachment.mime_type}</span>
+            </div>
+            <div className="reader-info-row">
+              <span className="detail-meta-label">File size</span>
+              <span>{formatBytes(attachment.file_size)}</span>
+            </div>
+            <div className="reader-info-row">
+              <span className="detail-meta-label">Added</span>
+              <span>{new Date(attachment.created_at).toLocaleString()}</span>
+            </div>
+            <div className="reader-info-row">
+              <span className="detail-meta-label">Highlights & excerpts</span>
+              <span>{highlights.length} recorded</span>
+            </div>
+            <div className="reader-info-row">
+              <span className="detail-meta-label">SHA-256</span>
+              <code>{attachment.sha256_hash}</code>
+            </div>
+          </div>
+        )}
+      </div>
+    </aside>
+  );
+};

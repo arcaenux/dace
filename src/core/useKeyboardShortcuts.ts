@@ -26,6 +26,9 @@ export function useKeyboardShortcuts({
 }: KeyboardShortcutsProps) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Escape and other keys may already be claimed by a focused overlay.
+      if (e.defaultPrevented) return;
+
       const isInput =
         e.target instanceof HTMLInputElement ||
         e.target instanceof HTMLTextAreaElement ||
@@ -83,7 +86,10 @@ export function useKeyboardShortcuts({
       if (modifier && (e.key === "s" || e.key === "S") && !e.shiftKey && !e.altKey) {
         e.preventDefault();
         if (activeActivity === "knowledge-desk") {
+          window.dispatchEvent(new CustomEvent("dace:save-record"));
           window.dispatchEvent(new CustomEvent("novadome:save-record"));
+        } else if (activeActivity === "reader") {
+          window.dispatchEvent(new CustomEvent("dace:save-reader-note"));
         } else {
           setNotice("No active document to save. (Switch to Knowledge Desk)");
         }
@@ -94,6 +100,7 @@ export function useKeyboardShortcuts({
       if (modifier && (e.key === "n" || e.key === "N") && !e.shiftKey && !e.altKey) {
         e.preventDefault();
         setActiveActivity("knowledge-desk");
+        window.dispatchEvent(new CustomEvent("dace:new-record"));
         window.dispatchEvent(new CustomEvent("novadome:new-record"));
         return;
       }
@@ -102,6 +109,7 @@ export function useKeyboardShortcuts({
       if (modifier && (e.key === "o" || e.key === "O") && !e.shiftKey && !e.altKey) {
         e.preventDefault();
         setActiveActivity("knowledge-desk");
+        window.dispatchEvent(new CustomEvent("dace:import-attachment"));
         window.dispatchEvent(new CustomEvent("novadome:import-attachment"));
         return;
       }
@@ -110,11 +118,12 @@ export function useKeyboardShortcuts({
       if (modifier && e.shiftKey && (e.key === "f" || e.key === "F") && !e.altKey) {
         e.preventDefault();
         setActiveActivity("knowledge-desk");
+        window.dispatchEvent(new CustomEvent("dace:search-records"));
         window.dispatchEvent(new CustomEvent("novadome:search-records"));
         return;
       }
 
-      // 8. Alt+1 / Alt+2 / Alt+3 Navigation Shortcuts
+      // 8. Alt+1 / Alt+2 / Alt+3 / Alt+4 Navigation Shortcuts
       if (e.altKey && !modifier && !e.shiftKey) {
         if (e.key === "1") {
           e.preventDefault();
@@ -127,6 +136,10 @@ export function useKeyboardShortcuts({
         } else if (e.key === "3") {
           e.preventDefault();
           setActiveActivity("knowledge-graph");
+          return;
+        } else if (e.key === "4") {
+          e.preventDefault();
+          setActiveActivity("reader");
           return;
         }
       }

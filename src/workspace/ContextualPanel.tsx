@@ -1,10 +1,12 @@
-import { FC, ReactNode } from "react";
+import { FC, ReactNode, RefObject, useRef } from "react";
+import { useDismissable } from "../core/useDismissable";
 
 interface ContextualPanelProps {
   isOpen: boolean;
   title: string;
   onClose: () => void;
   children: ReactNode;
+  triggerRef?: RefObject<HTMLElement | null>;
 }
 
 export const ContextualPanel: FC<ContextualPanelProps> = ({
@@ -12,9 +14,17 @@ export const ContextualPanel: FC<ContextualPanelProps> = ({
   title,
   onClose,
   children,
+  triggerRef,
 }) => {
+  const panelRef = useRef<HTMLElement>(null);
+  useDismissable(isOpen, onClose, panelRef, {
+    triggerRef,
+    group: "workspace-overlay",
+  });
+
   return (
     <aside
+      ref={panelRef}
       className={`contextual-panel ${isOpen ? "open" : ""}`}
       aria-hidden={!isOpen}
       aria-label={title}

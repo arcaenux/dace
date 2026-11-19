@@ -1,0 +1,942 @@
+/* ==========================================================================
+   Dace — Adaptive Research Reader
+   One document, one research session, three activity-driven compositions.
+   This layer is imported last so it can authoritatively reshape the legacy
+   reader geometry without touching PDF.js internals.
+   ========================================================================== */
+
+.dace-app {
+  --reader-accent: #ff9900;
+  --reader-accent-deep: #8a4a0a;
+  --reader-bg: #0b0b0b;
+  --reader-surface: #101010;
+  --reader-elevated: #171717;
+  --reader-border: #292929;
+}
+
+/* The shell owns chrome clearance. Retracted chrome returns that space to the
+   document instead of merely shrinking type inside the old padded container. */
+.dace-app .research-reader-container {
+  height: 100%;
+  min-height: 0;
+  padding-top: var(--top-plane);
+  padding-left: var(--rail-plane);
+  background: var(--reader-bg);
+  transition: padding-left 240ms var(--ease-standard, ease), padding-top 240ms var(--ease-standard, ease);
+}
+.dace-app.reader-header-hidden .research-reader-container {
+  padding-top: 0;
+}
+.dace-app.reader-nav-hidden .research-reader-container {
+  padding-left: 0;
+}
+.dace-app.reader-nav-compact .research-reader-container {
+  padding-left: 58px;
+}
+.dace-app.reader-nav-compact .workspace-rail.is-compact {
+  width: 58px;
+}
+.dace-app.reader-nav-compact .workspace-rail.is-compact .rail-orbit,
+.dace-app.reader-nav-compact .workspace-rail.is-compact .rail-tail,
+.dace-app.reader-nav-compact .workspace-rail.is-compact .rail-nav-label {
+  opacity: 0;
+  pointer-events: none;
+}
+.dace-app.reader-nav-compact .workspace-rail.is-compact .rail-nav-item {
+  transform: scale(0.78);
+}
+
+/* Root composition ------------------------------------------------------ */
+.dace-app .reader-shell {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--reader-bg);
+}
+.dace-app .reader-toolbar-wrap {
+  flex: 0 0 auto;
+}
+.dace-app .reader-toolbar-focus-wrap {
+  position: absolute;
+  z-index: 60;
+  top: 14px;
+  left: 50%;
+  width: min(880px, calc(100vw - 32px));
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.dace-app .reader-toolbar-focus-wrap .reader-toolbar {
+  pointer-events: auto;
+  border: 1px solid rgba(255, 153, 0, 0.2);
+  border-radius: 999px;
+  background: rgba(11, 11, 11, 0.86);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(14px);
+}
+.dace-app .reader-shell.is-focus .reader-adaptive-body {
+  height: 100%;
+}
+
+.dace-app .reader-adaptive-body {
+  position: relative;
+  display: grid;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  transition: grid-template-columns 260ms var(--ease-standard, ease);
+}
+.dace-app.reader-is-resizing .reader-adaptive-body {
+  transition: none;
+}
+.dace-app.reader-is-resizing,
+.dace-app.reader-is-resizing * {
+  cursor: col-resize !important;
+  user-select: none !important;
+}
+
+/* Compact single-row document toolbar ----------------------------------- */
+.dace-app .reader-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  height: 46px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--reader-border);
+  background: rgba(11, 11, 11, 0.88);
+  color: #f4e9dd;
+}
+.dace-app .reader-toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.dace-app .reader-toolbar-start {
+  flex: 1 1 0;
+}
+.dace-app .reader-toolbar-end {
+  flex: 1 1 0;
+  justify-content: flex-end;
+}
+.dace-app .reader-toolbar-brand {
+  flex: 0 0 auto;
+  color: var(--reader-accent);
+  font-family: var(--font-mono);
+  font-size: var(--type-micro);
+  letter-spacing: 0.24em;
+}
+.dace-app .reader-toolbar-picker,
+.dace-app .reader-toolbar-popover-wrap {
+  position: relative;
+  min-width: 0;
+}
+.dace-app .reader-compact-btn,
+.dace-app .reader-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 28px;
+  border: 1px solid var(--reader-border);
+  border-radius: 6px;
+  background: var(--reader-surface);
+  color: #b5a697;
+  cursor: pointer;
+  transition: color 140ms ease, border-color 140ms ease, background-color 140ms ease;
+}
+.dace-app .reader-compact-btn:hover,
+.dace-app .reader-icon-btn:hover:not(:disabled),
+.dace-app .reader-icon-btn.active {
+  border-color: rgba(255, 153, 0, 0.48);
+  background: rgba(255, 153, 0, 0.08);
+  color: var(--reader-accent);
+}
+.dace-app .reader-icon-btn {
+  width: 28px;
+  padding: 0;
+}
+.dace-app .reader-icon-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.dace-app .reader-doc-trigger {
+  max-width: 280px;
+  padding: 0 8px;
+  color: #f4e9dd;
+}
+.dace-app .reader-doc-trigger span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dace-app .reader-mode-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex: 0 0 auto;
+  padding: 3px;
+  border: 1px solid var(--reader-border);
+  border-radius: 999px;
+  background: rgba(16, 16, 16, 0.92);
+}
+.dace-app .reader-mode-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #77716b;
+  font-family: var(--font-mono);
+  font-size: var(--type-micro);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 150ms ease, background-color 150ms ease;
+}
+.dace-app .reader-mode-btn:hover {
+  color: #f4e9dd;
+}
+.dace-app .reader-mode-btn.active {
+  background: rgba(255, 153, 0, 0.14);
+  color: var(--reader-accent);
+}
+
+.dace-app .reader-page-nav,
+.dace-app .reader-zoom {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+  padding: 0 4px;
+  border-left: 1px solid var(--reader-border);
+}
+.dace-app .reader-page-field,
+.dace-app .reader-zoom span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #77716b;
+  font-family: var(--font-mono);
+  font-size: var(--type-mono);
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+.dace-app .reader-page-field input {
+  width: 30px;
+  border: 0;
+  background: transparent;
+  color: #f4e9dd;
+  font-family: var(--font-mono);
+  font-size: var(--type-mono);
+  text-align: center;
+}
+.dace-app .reader-page-field input:focus {
+  outline: 1px solid rgba(255, 153, 0, 0.45);
+  outline-offset: 1px;
+}
+
+/* Popovers --------------------------------------------------------------- */
+.dace-app .reader-popover {
+  position: absolute;
+  z-index: 200;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 190px;
+  padding: 6px;
+  border: 1px solid var(--reader-border);
+  border-radius: 8px;
+  background: var(--reader-elevated);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.55);
+}
+.dace-app .reader-doc-popover {
+  right: auto;
+  left: 0;
+  width: 280px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+.dace-app .reader-popover-title {
+  padding: 6px 8px;
+  color: #77716b;
+  font-family: var(--font-mono);
+  font-size: var(--type-micro);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.dace-app .reader-popover-item,
+.dace-app .reader-popover-action {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 30px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: #b5a697;
+  font-family: var(--font-interface);
+  font-size: var(--type-small);
+  text-align: left;
+  cursor: pointer;
+}
+.dace-app .reader-popover-item:hover,
+.dace-app .reader-popover-action:hover,
+.dace-app .reader-popover-item.active {
+  background: rgba(255, 153, 0, 0.1);
+  color: var(--reader-accent);
+}
+.dace-app .reader-popover-empty {
+  padding: 10px 8px;
+  color: #77716b;
+  font-size: var(--type-small);
+}
+
+/* Document surface ------------------------------------------------------- */
+.dace-app .reader-document-pane {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: #080808;
+}
+.dace-app .reader-shell .reader-viewport {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  padding: 26px clamp(18px, 3vw, 54px) 64px;
+  overflow: auto;
+  border: 0;
+  border-radius: 0;
+  background: #080808;
+  box-shadow: none;
+}
+.dace-app .reader-shell.mode-reading .reader-viewport {
+  padding: 18px clamp(20px, 7vw, 120px) 72px;
+}
+.dace-app .reader-shell.is-focus .reader-viewport {
+  padding-top: 64px;
+}
+.dace-app .pdf-page-container {
+  width: max-content;
+  max-width: none;
+  margin: 0 auto;
+  border-radius: 2px;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.72), 0 0 0 1px rgba(244, 233, 221, 0.06);
+}
+.dace-app .pdf-canvas {
+  display: block;
+  max-width: none;
+}
+.dace-app .reader-surface-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 100%;
+  padding: 32px;
+  color: #77716b;
+  font-family: var(--font-display);
+  font-size: var(--type-body);
+  text-align: center;
+}
+.dace-app .reader-surface-state h2 {
+  color: #f4e9dd;
+  font-size: var(--type-lg);
+  font-weight: 500;
+}
+.dace-app .reader-surface-state p {
+  max-width: 420px;
+  color: #b5a697;
+  line-height: 1.6;
+}
+.dace-app .reader-surface-state.error strong {
+  color: #ff6b6b;
+}
+.dace-app .reader-primary-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 0 14px;
+  border: 1px solid rgba(255, 153, 0, 0.5);
+  border-radius: 6px;
+  background: rgba(255, 153, 0, 0.1);
+  color: var(--reader-accent);
+  font-family: var(--font-mono);
+  font-size: var(--type-micro);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.dace-app .reader-primary-btn:hover {
+  background: rgba(255, 153, 0, 0.18);
+}
+
+/* Divider ---------------------------------------------------------------- */
+.dace-app .reader-divider {
+  position: relative;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  min-width: 10px;
+  height: 100%;
+  border-left: 1px solid var(--reader-border);
+  border-right: 1px solid var(--reader-border);
+  background: #0b0b0b;
+  cursor: col-resize;
+  touch-action: none;
+}
+.dace-app .reader-divider-handle {
+  width: 2px;
+  height: 38px;
+  border-radius: 2px;
+  background: rgba(181, 166, 151, 0.28);
+  transition: height 150ms ease, background-color 150ms ease;
+}
+.dace-app .reader-divider:hover .reader-divider-handle,
+.dace-app .reader-divider.is-dragging .reader-divider-handle,
+.dace-app .reader-divider:focus-visible .reader-divider-handle {
+  height: 62px;
+  background: var(--reader-accent);
+}
+.dace-app .reader-divider:focus-visible {
+  outline: 1px solid rgba(255, 153, 0, 0.6);
+  outline-offset: -2px;
+}
+
+/* Writing workspace ------------------------------------------------------ */
+.dace-app .reader-writing-pane {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--reader-surface);
+}
+.dace-app .reader-writing-source {
+  flex: 0 0 auto;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--reader-border);
+  background: #0b0b0b;
+}
+.dace-app .reader-writing-source button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  margin-top: 4px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #f4e9dd;
+  font-family: var(--font-display);
+  font-size: var(--type-small);
+  cursor: pointer;
+}
+.dace-app .reader-writing-source button span:last-child {
+  color: var(--reader-accent);
+  font-family: var(--font-mono);
+  font-size: var(--type-micro);
+}
+.dace-app .reader-writing-source button:hover {
+  color: var(--reader-accent);
+}
+.dace-app .reader-shell .reader-drawer {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  border: 0;
+  border-left: 0;
+  border-radius: 0;
+  background: var(--reader-surface);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+.dace-app .reader-shell .reader-drawer-tabs {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  flex: 0 0 auto;
+  height: 40px;
+  padding: 0 8px;
+  border-bottom: 1px solid var(--reader-border);
+  background: #0b0b0b;
+}
+.dace-app .reader-shell .drawer-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: #77716b;
+  font-family: var(--font-mono);
+  font-size: var(--type-micro);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.dace-app .reader-shell .drawer-tab:hover {
+  color: #f4e9dd;
+}
+.dace-app .reader-shell .drawer-tab.active {
+  border-bottom-color: var(--reader-accent);
+  color: var(--reader-accent);
+}
+.dace-app .reader-shell .drawer-close-btn {
+  margin-left: auto;
+}
+.dace-app .reader-shell .reader-drawer-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 20px clamp(16px, 2vw, 30px) 48px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.dace-app .reader-section-label {
+  color: #77716b;
+  font-family: var(--font-mono);
+  font-size: var(--type-micro);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.dace-app .reader-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.dace-app .reader-note-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 52vh;
+  padding: 32px;
+  text-align: center;
+}
+.dace-app .reader-note-empty-mark {
+  color: rgba(255, 153, 0, 0.32);
+  font-family: var(--font-mono);
+  font-size: var(--type-micro);
+  letter-spacing: 0.32em;
+}
+.dace-app .reader-note-empty h2 {
+  margin-top: 18px;
+  color: #f4e9dd;
+  font-family: var(--font-display);
+  font-size: var(--type-lg);
+  font-weight: 500;
+}
+.dace-app .reader-note-empty p {
+  max-width: 380px;
+  margin: 10px 0 20px;
+  color: #77716b;
+  font-size: var(--type-small);
+  line-height: 1.7;
+}
+.dace-app .reader-note-empty p strong {
+  color: #b5a697;
+  font-weight: 500;
+}
+.dace-app .reader-note-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+.dace-app .reader-note-title {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #f4e9dd;
+  font-family: var(--font-editorial);
+  font-size: clamp(21px, 2vw, 29px);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+.dace-app .reader-note-title:focus {
+  outline: none;
+}
+.dace-app .reader-note-tags {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  color: #77716b;
+}
+.dace-app .reader-note-tags input {
+  min-width: 0;
+  flex: 1 1 auto;
+  padding: 2px 0;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  background: transparent;
+  color: #b5a697;
+  font-family: var(--font-mono);
+  font-size: var(--type-micro);
+  letter-spacing: 0.06em;
+}
+.dace-app .reader-note-tags input:focus {
+  outline: none;
+  border-bottom-color: rgba(255, 153, 0, 0.45);
+}
+.dace-app .reader-note-tags input::placeholder {
+  color: #5f5a55;
+}
+.dace-app .reader-save-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  color: #77716b;
+  font-family: var(--font-mono);
+  font-size: var(--type-micro);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.dace-app .reader-save-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #77716b;
+}
+.dace-app .reader-save-status.status-saved .reader-save-dot {
+  background: #6fa876;
+}
+.dace-app .reader-save-status.status-saving .reader-save-dot,
+.dace-app .reader-save-status.status-unsaved .reader-save-dot {
+  background: var(--reader-accent);
+}
+.dace-app .reader-save-status.status-error {
+  color: #ff6b6b;
+}
+.dace-app .reader-save-status.status-error .reader-save-dot {
+  background: #ff6b6b;
+}
+.dace-app .reader-format-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 6px 0 12px;
+  border-bottom: 1px solid var(--reader-border);
+}
+.dace-app .reader-format-bar button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 26px;
+  padding: 0 8px;
+  border: 1px solid var(--reader-border);
+  border-radius: 5px;
+  background: transparent;
+  color: #b5a697;
+  font-family: var(--font-mono);
+  font-size: var(--type-micro);
+  cursor: pointer;
+}
+.dace-app .reader-format-bar button:hover {
+  border-color: rgba(255, 153, 0, 0.45);
+  color: var(--reader-accent);
+}
+.dace-app .reader-source-passages {
+  margin: 14px 0 10px;
+}
+.dace-app .reader-source-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.dace-app .reader-source-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  max-width: 100%;
+  min-height: 28px;
+  padding: 0 9px;
+  border: 1px solid rgba(255, 153, 0, 0.24);
+  border-radius: 999px;
+  background: rgba(255, 153, 0, 0.05);
+  color: #b5a697;
+  font-family: var(--font-mono);
+  font-size: var(--type-micro);
+  cursor: pointer;
+}
+.dace-app .reader-source-chip span:first-child {
+  color: var(--reader-accent);
+}
+.dace-app .reader-source-chip:hover {
+  border-color: rgba(255, 153, 0, 0.6);
+  background: rgba(255, 153, 0, 0.1);
+}
+.dace-app .reader-note-editor {
+  display: block;
+  width: 100%;
+  min-height: 280px;
+  margin-top: 14px;
+  padding: 18px 0;
+  border: 0;
+  border-top: 1px solid var(--reader-border);
+  border-bottom: 1px solid var(--reader-border);
+  background: transparent;
+  color: #f4e9dd;
+  font-family: var(--font-editorial);
+  font-size: 16px;
+  line-height: 1.78;
+  resize: vertical;
+  user-select: text;
+}
+.dace-app .reader-note-editor:focus {
+  outline: none;
+}
+.dace-app .reader-note-editor::placeholder {
+  color: #5f5a55;
+}
+.dace-app .reader-note-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  color: #77716b;
+  font-family: var(--font-mono);
+  font-size: var(--type-micro);
+}
+.dace-app .reader-tertiary-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 0;
+  border: 0;
+  background: transparent;
+  color: var(--reader-accent);
+  font-family: var(--font-mono);
+  font-size: var(--type-micro);
+  cursor: pointer;
+}
+.dace-app .reader-highlights-section {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--reader-border);
+}
+.dace-app .reader-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+.dace-app .reader-inline-empty {
+  padding: 24px 0;
+  color: #77716b;
+  font-size: var(--type-small);
+  line-height: 1.7;
+  text-align: center;
+}
+.dace-app .reader-inline-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 8px;
+}
+.dace-app .card-action-link.primary {
+  color: var(--reader-accent);
+  font-weight: 600;
+}
+.dace-app .reader-outline-list,
+.dace-app .reader-linked-records {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.dace-app .reader-outline-group {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.dace-app .reader-outline-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: rgba(23, 23, 23, 0.6);
+  color: #b5a697;
+  font-family: var(--font-interface);
+  font-size: var(--type-small);
+  text-align: left;
+  cursor: pointer;
+}
+.dace-app .reader-outline-item.nested {
+  margin-left: 14px;
+  background: transparent;
+  color: #77716b;
+}
+.dace-app .reader-outline-item span:last-child {
+  color: var(--reader-accent);
+  font-family: var(--font-mono);
+  font-size: var(--type-micro);
+}
+.dace-app .reader-outline-item:hover {
+  border-color: rgba(255, 153, 0, 0.35);
+  color: #f4e9dd;
+}
+.dace-app .reader-view-intro {
+  margin-bottom: 14px;
+  color: #b5a697;
+  font-size: var(--type-small);
+  line-height: 1.7;
+}
+.dace-app .reader-linked-record {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--reader-border);
+  border-radius: 5px;
+  background: var(--reader-elevated);
+  color: #f4e9dd;
+  font-size: var(--type-small);
+  text-align: left;
+  cursor: pointer;
+}
+.dace-app .reader-linked-record:hover {
+  border-color: rgba(255, 153, 0, 0.5);
+  color: var(--reader-accent);
+}
+.dace-app .reader-embedded-graph {
+  height: 240px;
+  margin-top: 18px;
+  overflow: hidden;
+  border: 1px solid var(--reader-border);
+  border-radius: 6px;
+  background: #080808;
+}
+.dace-app .reader-info-view {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.dace-app .reader-info-row {
+  display: grid;
+  grid-template-columns: 130px minmax(0, 1fr);
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--reader-border);
+  color: #b5a697;
+  font-size: var(--type-small);
+}
+.dace-app .reader-info-row code {
+  display: block;
+  overflow-wrap: anywhere;
+  color: #77716b;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+/* Selection toolbar ------------------------------------------------------ */
+.dace-app .floating-selection-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  max-width: min(680px, calc(100% - 24px));
+  padding: 6px;
+  flex-wrap: wrap;
+}
+.dace-app .reader-selection-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 26px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: #b5a697;
+  font-family: var(--font-mono);
+  font-size: var(--type-micro);
+  cursor: pointer;
+}
+.dace-app .reader-selection-action:hover {
+  background: rgba(255, 153, 0, 0.12);
+  color: var(--reader-accent);
+}
+.dace-app .reader-narrow-switch {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  z-index: 30;
+  min-height: 34px;
+  padding: 0 14px;
+  border: 1px solid rgba(255, 153, 0, 0.5);
+  border-radius: 999px;
+  background: rgba(11, 11, 11, 0.94);
+  color: var(--reader-accent);
+  font-family: var(--font-mono);
+  font-size: var(--type-micro);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+}
+
+/* Narrow measured surfaces ---------------------------------------------- */
+.dace-app .reader-shell.is-narrow .reader-toolbar {
+  gap: 8px;
+  padding: 0 10px;
+}
+.dace-app .reader-shell.is-narrow .reader-toolbar-brand,
+.dace-app .reader-shell.is-narrow .reader-doc-trigger span,
+.dace-app .reader-shell.is-narrow .reader-zoom span {
+  display: none;
+}
+.dace-app .reader-shell.is-narrow .reader-mode-btn {
+  padding: 0 8px;
+}
+.dace-app .reader-shell.is-narrow .reader-page-nav,
+.dace-app .reader-shell.is-narrow .reader-zoom {
+  padding: 0 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dace-app .research-reader-container,
+  .dace-app .reader-adaptive-body,
+  .dace-app .reader-divider-handle,
+  .dace-app .reader-compact-btn,
+  .dace-app .reader-icon-btn,
+  .dace-app .reader-mode-btn {
+    transition: none !important;
+  }
+}

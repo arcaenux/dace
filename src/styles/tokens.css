@@ -1,92 +1,207 @@
+/* ==========================================================================
+   Dace — Canonical Cinematic Design Tokens
+
+   One permanent identity. No appearance modes, no theme scopes, and no
+   duplicated palettes. Colour, type, spacing, motion and state values are
+   defined exactly once and retargeted through semantic aliases only.
+   ========================================================================== */
+
 :root {
-  /* Color Palette — Quiet Intellectual Workspace */
-  --bg-app: #0d0f14;
-  --bg-surface: #14171f;
-  --bg-surface-elevated: #1a1e28;
-  --bg-surface-active: #222735;
-  --bg-surface-subtle: rgba(255, 255, 255, 0.02);
+  /* ----------------------------------------------------------------------
+     Palette — supplied cinematic reference
+     ---------------------------------------------------------------------- */
+  --dace-black: #0b0b0b;
+  --dace-surface: #141414;
+  --dace-elevated: #1e1e1e;
+  --dace-active: #2a2a2a;
+  --dace-border: #2a2a2a;
+  --dace-ivory: #f8ede1;
+  --dace-sand: #cbb9a3;
+  --dace-muted: #8a8a8a;
+  --dace-amber: #ff8a00;
+  --dace-amber-bright: #ffab4d;
+  --dace-amber-deep: #8a4410;
+  --dace-danger: #ff4d4d;
 
-  --border-subtle: #1f2430;
-  --border-medium: #2a3142;
-  --border-active: #3e485e;
-
-  --text-primary: #e6ebf2;
-  --text-secondary: #9aa4b5;
-  --text-muted: #5e687a;
-  --text-dim: #3f4756;
-
-  --accent-primary: #7697c6;
-  --accent-hover: #8ba9d6;
-  --accent-muted: rgba(118, 151, 198, 0.15);
-
-  --badge-bg: rgba(255, 255, 255, 0.05);
-  --badge-text: #828c9e;
-
-  --overlay-backdrop: rgba(7, 9, 12, 0.75);
-
-  /* Typography — Three-Layer Naturalist & Interface System */
-  --font-interface: "Manrope Variable", Manrope, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  /* ----------------------------------------------------------------------
+     Typography
+     ---------------------------------------------------------------------- */
+  --font-interface: "Space Grotesk Variable", "Space Grotesk", "Manrope Variable", Manrope, sans-serif;
   --font-sans: var(--font-interface);
+  --font-display: "Space Grotesk Variable", "Space Grotesk", "Manrope Variable", sans-serif;
   --font-editorial: "Newsreader Variable", Newsreader, "Cormorant Garamond", Garamond, Georgia, serif;
   --font-quotation: "Newsreader Variable", Newsreader, "Cormorant Garamond", Georgia, serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
+  --letter-spacing-display: -0.035em;
   --letter-spacing-editorial: -0.018em;
   --letter-spacing-interface: -0.006em;
   --letter-spacing-quote: 0.01em;
   --letter-spacing-caps: 0.07em;
+  --letter-spacing-overline: 0.18em;
 
   --font-weight-regular: 400;
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
   --font-weight-bold: 700;
+  --font-weight-heading: 500;
 
-  --font-size-xs: 0.75rem;    /* 12px */
-  --font-size-sm: 0.8125rem;  /* 13px */
-  --font-size-base: 0.875rem; /* 14px */
-  --font-size-md: 0.9375rem;  /* 15px */
-  --font-size-lg: 1.125rem;   /* 18px */
-  --font-size-xl: 1.375rem;   /* 22px */
-  --font-size-2xl: 1.75rem;   /* 28px */
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.8125rem;
+  --font-size-base: 0.875rem;
+  --font-size-md: 0.9375rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.375rem;
+  --font-size-2xl: 1.75rem;
+  --font-size-3xl: 2.5rem;
+  --font-size-4xl: 3.75rem;
+
+  --type-micro: 9px;
+  --type-mono: 10px;
+  --type-small: 11px;
+  --type-body: 13px;
+  --type-lede: clamp(15px, 1.12vw, 18px);
+  --type-section: clamp(20px, 1.35vw, 23px);
+  --type-clock: clamp(38px, 3.25vw, 54px);
+  --type-display: clamp(74px, 8.2vw, 138px);
 
   --line-height-tight: 1.25;
   --line-height-normal: 1.5;
   --line-height-relaxed: 1.65;
 
-  /* Spacing */
+  /* ----------------------------------------------------------------------
+     Spacing & layout
+     ---------------------------------------------------------------------- */
   --space-1: 0.25rem;
   --space-2: 0.5rem;
   --space-3: 0.75rem;
   --space-4: 1rem;
   --space-5: 1.25rem;
   --space-6: 1.5rem;
+  --space-7: 1.75rem;
   --space-8: 2rem;
+  --space-9: 2.25rem;
   --space-10: 2.5rem;
   --space-12: 3rem;
+  --space-14: 3.5rem;
   --space-16: 4rem;
+  --space-18: 4.5rem;
 
-  /* Layout */
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
-  --radius-xl: 12px;
+  --layout-rail: 84px;
+  --layout-topbar: 70px;
+  --layout-content-max: 1320px;
+  --layout-gutter: clamp(20px, 3vw, 44px);
+  --layout-panel: 340px;
 
-  /* Motion */
-  --duration-fast: 120ms;
-  --duration-normal: 180ms;
-  --ease-standard: cubic-bezier(0.16, 1, 0.3, 1);
+  /* ----------------------------------------------------------------------
+     Radii, borders, surfaces & state
+     ---------------------------------------------------------------------- */
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 22px;
+  --radius-pill: 999px;
+  --radius-full: 50%;
 
-  /* Shadows */
-  --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.3);
-  --shadow-elevated: 0 12px 36px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.25);
+  --border-hairline: 1px solid var(--dace-border);
+  --border-focus: 1px solid rgba(255, 138, 0, 0.55);
+  --border-dim: var(--dace-border);
+
+  --bg-app: var(--dace-black);
+  --bg-surface: var(--dace-surface);
+  --bg-surface-elevated: var(--dace-elevated);
+  --bg-surface-active: var(--dace-active);
+  --bg-surface-subtle: rgba(248, 237, 225, 0.035);
+  --bg-selection: rgba(255, 138, 0, 0.2);
+
+  --text-primary: var(--dace-ivory);
+  --text-secondary: var(--dace-sand);
+  --text-muted: var(--dace-muted);
+  --text-dim: #5c5c5c;
+  --text-bright: #fffaf4;
+  --text-normal: var(--dace-ivory);
+
+  --accent-primary: var(--dace-amber);
+  --accent-hover: var(--dace-amber-bright);
+  --accent-muted: rgba(255, 138, 0, 0.15);
+  --accent-secondary: var(--dace-amber-deep);
+  --accent-subtle: rgba(255, 138, 0, 0.08);
+  --accent-text: var(--dace-amber);
+  --accent-pink: var(--dace-amber);
+  --accent-pink-muted: rgba(255, 138, 0, 0.14);
+  --accent-violet: var(--dace-amber-deep);
+  --accent-violet-muted: rgba(138, 68, 16, 0.18);
+  --accent-yellow: var(--dace-amber-bright);
+  --accent-yellow-muted: rgba(255, 171, 77, 0.16);
+
+  --badge-bg: rgba(255, 138, 0, 0.1);
+  --badge-text: var(--dace-sand);
+  --overlay-backdrop: rgba(5, 5, 5, 0.82);
+
+  --shadow-subtle: 0 2px 12px rgba(0, 0, 0, 0.45);
+  --shadow-elevated: 0 24px 70px rgba(0, 0, 0, 0.72), 0 2px 10px rgba(0, 0, 0, 0.5);
+  --glow-accent: 0 0 24px rgba(255, 138, 0, 0.18);
+  --glow-soft: 0 0 60px rgba(255, 138, 0, 0.1);
+  --glow-pink: 0 0 18px rgba(255, 138, 0, 0.12);
+  --glow-yellow: 0 0 22px rgba(255, 171, 77, 0.15);
+  --ambient-veil: radial-gradient(circle at 74% 18%, rgba(255, 138, 0, 0.11), transparent 42%);
+
+  --brand-symbol-radius: 50%;
+  --brand-symbol-shadow: 0 0 0 2px var(--dace-border);
+  --brand-symbol-color: var(--dace-sand);
+
+  --state-hover: rgba(255, 237, 225, 0.045);
+  --state-active: rgba(255, 138, 0, 0.12);
+  --state-selected: rgba(255, 138, 0, 0.16);
+  --state-disabled: 0.42;
+  --state-focus-ring: 0 0 0 2px rgba(255, 138, 0, 0.55);
+
+  --status-danger: var(--dace-danger);
+  --status-warning: #ffb547;
+  --status-success: #7fd6a3;
+  --danger: var(--dace-danger);
+  --danger-border: rgba(255, 77, 77, 0.55);
+  --danger-subtle: rgba(255, 77, 77, 0.1);
+
+  /* Research highlights — warm cinematic family */
+  --hl-important-bg: rgba(255, 138, 0, 0.2);
+  --hl-important-border: rgba(255, 138, 0, 0.7);
+  --hl-important-text: #ffc07a;
+  --hl-question-bg: rgba(203, 185, 163, 0.18);
+  --hl-question-border: rgba(203, 185, 163, 0.6);
+  --hl-question-text: #e6d8c7;
+  --hl-insight-bg: rgba(127, 214, 163, 0.16);
+  --hl-insight-border: rgba(127, 214, 163, 0.55);
+  --hl-insight-text: #a9e5c5;
+  --hl-definition-bg: rgba(255, 171, 77, 0.14);
+  --hl-definition-border: rgba(255, 171, 77, 0.5);
+  --hl-definition-text: #ffd3a1;
+
+  /* ----------------------------------------------------------------------
+     Motion
+     ---------------------------------------------------------------------- */
+  --duration-fast: 140ms;
+  --duration-normal: 240ms;
+  --duration-slow: 420ms;
+  --duration-ambient: 18s;
+  --ease-standard: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-enter: cubic-bezier(0.16, 1, 0.3, 1);
+  --motion-drift: 18s ease-in-out infinite alternate;
 }
 
 @media (prefers-reduced-motion: reduce) {
   :root {
     --duration-fast: 0ms;
     --duration-normal: 0ms;
+    --duration-slow: 0ms;
+    --duration-ambient: 0ms;
+    --motion-drift: none;
   }
-  *, *::before, *::after {
+
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
