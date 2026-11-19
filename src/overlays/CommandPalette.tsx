@@ -1,22 +1,29 @@
-import { FC, useState, useEffect, useRef, KeyboardEvent, MouseEvent } from "react";
+import { FC, useState, useEffect, useRef, KeyboardEvent, RefObject } from "react";
 import { CommandItem } from "../core/types";
 import { filterCommands } from "../core/commandRegistry";
+import { useDismissable } from "../core/useDismissable";
 
 interface CommandPaletteProps {
   commands: CommandItem[];
   isOpen: boolean;
   onClose: () => void;
+  triggerRef?: RefObject<HTMLElement | null>;
 }
 
 export const CommandPalette: FC<CommandPaletteProps> = ({
   commands,
   isOpen,
   onClose,
+  triggerRef,
 }) => {
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  useDismissable(isOpen, onClose, containerRef, {
+    triggerRef,
+    group: "workspace-overlay",
+  });
 
   const filteredCommands = filterCommands(commands, query);
 
@@ -61,14 +68,13 @@ export const CommandPalette: FC<CommandPaletteProps> = ({
     }
   };
 
-  const handleBackdropClick = (e: MouseEvent<HTMLDivElement>) => {
-    if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-      onClose();
-    }
-  };
-
   return (
-    <div className="overlay-backdrop" onClick={handleBackdropClick} role="dialog" aria-modal="true" aria-label="Command Palette">
+    <div
+      className="overlay-backdrop"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Command Palette"
+    >
       <div className="command-palette" ref={containerRef}>
         <div className="command-input-wrapper">
           <svg className="command-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -139,7 +145,7 @@ export const CommandPalette: FC<CommandPaletteProps> = ({
               <kbd>esc</kbd> close
             </span>
           </div>
-          <span>NOVA DOME</span>
+          <span>Dace</span>
         </div>
       </div>
     </div>

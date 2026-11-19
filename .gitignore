@@ -7,10 +7,13 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Dependencies and build output
 node_modules
 dist
 dist-ssr
 *.local
+.vite/
+*.tsbuildinfo
 
 # Editor directories and files
 .vscode/*
@@ -26,3 +29,35 @@ dist-ssr
 # Personal Engineering Learning Vault (Local educational library)
 .learning-vault/
 
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.pfx
+*.p12
+
+# Local databases and runtime state
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# Generated screenshots and verification artefacts
+/screenshots/
+
+# Internal design and agent-generated planning documents
+/DACE_*.md
+
+# Supplied visual references and unused design prototypes
+/public/ui_spec.png
+/public/Dace*.png
+/public/DACE*.png
+/src/assets/design/
+
+# Unused framework template assets
+/public/vite.svg
+/public/tauri.svg
+/src/assets/react.svg

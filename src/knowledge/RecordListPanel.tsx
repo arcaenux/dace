@@ -1,5 +1,6 @@
 import { FC, useState, useEffect, useRef, KeyboardEvent } from "react";
 import { KnowledgeRecordSummary, TagItem } from "./types";
+import { useDismissable } from "../core/useDismissable";
 
 interface RecordListPanelProps {
   isOpen: boolean;
@@ -32,6 +33,12 @@ export const RecordListPanel: FC<RecordListPanelProps> = ({
   const [focusedIndex, setFocusedIndex] = useState(0);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLElement>(null);
+
+  useDismissable(isOpen, onClose, panelRef, {
+    group: "desk-panel",
+    restoreFocus: true,
+  });
 
   // Focus search input when panel opens
   useEffect(() => {
@@ -82,8 +89,10 @@ export const RecordListPanel: FC<RecordListPanelProps> = ({
 
   return (
     <aside
+      ref={panelRef}
       className={`record-list-panel ${isOpen ? "open" : ""}`}
       aria-label="Knowledge Records Navigation"
+      aria-hidden={!isOpen}
       onKeyDown={handleKeyDown}
     >
       {/* Panel Header */}

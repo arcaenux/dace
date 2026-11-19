@@ -1,6 +1,6 @@
 import { FocusSpaceProvider } from "./focus/FocusSpaceContext";
 import { WorkspaceShell } from "./workspace/WorkspaceShell";
-import "./styles/workspace.css";
+import "./styles/dace-cinematic.css";
 
 function App() {
   return (
