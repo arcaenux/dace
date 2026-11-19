@@ -6,18 +6,22 @@ import * as api from "./knowledgeApi";
 import { pickAndImportAttachment } from "../attachments/attachmentsApi";
 import { RecordEditor, RecordEditorHandle } from "./RecordEditor";
 import { RecordListPanel } from "./RecordListPanel";
+import { KnowledgeContextPanel, extractDeskOutline, DeskOutlineItem } from "./KnowledgeContextPanel";
 import { useFocusSpace } from "../focus/FocusSpaceContext";
+import { useDismissable } from "../core/useDismissable";
 
 interface KnowledgeDeskProps {
   onShowNotice: (msg: string) => void;
   initialRecordId?: string | null;
   onOpenInReader?: (attachmentId: string, pageNumber: number) => void;
+  onOpenGraphView?: () => void;
 }
 
 export const KnowledgeDesk: FC<KnowledgeDeskProps> = ({
   onShowNotice,
   initialRecordId,
   onOpenInReader,
+  onOpenGraphView,
 }) => {
   const [records, setRecords] = useState<KnowledgeRecordSummary[]>([]);
   const [activeRecord, setActiveRecord] = useState<KnowledgeRecord | null>(null);
@@ -33,12 +37,49 @@ export const KnowledgeDesk: FC<KnowledgeDeskProps> = ({
 
   // Navigation History Stack for Relationship Back-Tracking
   const [navigationHistory, setNavigationHistory] = useState<string[]>([]);
+  const [outline, setOutline] = useState<DeskOutlineItem[]>([]);
 
   const editorRef = useRef<RecordEditorHandle>(null);
+  const outlineSignatureRef = useRef<string>("");
   const isSwitchingRef = useRef<boolean>(false);
   const pendingSwitchTargetRef = useRef<string | null>(null);
+  const deleteDialogRef = useRef<HTMLDivElement>(null);
+  const closeErrorDialogRef = useRef<HTMLDivElement>(null);
+
+  useDismissable(
+    deleteConfirmId !== null,
+    () => setDeleteConfirmId(null),
+    deleteDialogRef,
+    { group: "desk-dialog", autoFocus: true }
+  );
+  useDismissable(
+    closeErrorModalOpen,
+    () => setCloseErrorModalOpen(false),
+    closeErrorDialogRef,
+    { group: "desk-dialog", autoFocus: true }
+  );
 
   const { isFocusSpace } = useFocusSpace();
+
+  // The Outline view is derived only from headings that actually exist in the
+  // active record; a signature guard avoids re-rendering on every keystroke.
+  const handleContentSnapshot = useCallback((content: string) => {
+    const items = extractDeskOutline(content);
+    const signature = JSON.stringify(items);
+    if (signature !== outlineSignatureRef.current) {
+      outlineSignatureRef.current = signature;
+      setOutline(items);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeRecord) {
+      handleContentSnapshot(activeRecord.content);
+    } else {
+      outlineSignatureRef.current = "";
+      setOutline([]);
+    }
+  }, [activeRecord?.id, activeRecord?.content, handleContentSnapshot]);
 
   // Load tag list from SQLite
   const refreshTags = useCallback(async () => {
@@ -395,22 +436,32 @@ export const KnowledgeDesk: FC<KnowledgeDeskProps> = ({
       {/* 2. Main Writing / Record Area */}
       <div className="knowledge-main-area">
         {activeRecord ? (
-          <RecordEditor
-            ref={editorRef}
-            key={activeRecord.id}
-            record={activeRecord}
-            onSaveRecord={handleSaveRecord}
-            onDeleteRecord={(id) => setDeleteConfirmId(id)}
-            isFocusSpace={isFocusSpace}
-            onToggleRecordList={() => setIsListOpen((prev) => !prev)}
-            isListOpen={isListOpen}
-            onNavigateToRecord={handleNavigateToRecord}
-            onShowNotice={onShowNotice}
-            canNavigateBack={navigationHistory.length > 0}
-            onNavigateBack={handleNavigateBack}
-            previousRecordTitle={previousRecordTitle}
-            onOpenExcerptInReader={onOpenInReader}
-          />
+          <div className="desk-workspace">
+            <RecordEditor
+              ref={editorRef}
+              key={activeRecord.id}
+              record={activeRecord}
+              onSaveRecord={handleSaveRecord}
+              onDeleteRecord={(id) => setDeleteConfirmId(id)}
+              isFocusSpace={isFocusSpace}
+              onToggleRecordList={() => setIsListOpen((prev) => !prev)}
+              isListOpen={isListOpen}
+              onContentChange={handleContentSnapshot}
+              canNavigateBack={navigationHistory.length > 0}
+              onNavigateBack={handleNavigateBack}
+              previousRecordTitle={previousRecordTitle}
+            />
+            <KnowledgeContextPanel
+              record={activeRecord}
+              outline={outline}
+              isFocusSpace={isFocusSpace}
+              onNavigateToRecord={handleNavigateToRecord}
+              onShowNotice={onShowNotice}
+              onOpenExcerptInReader={onOpenInReader}
+              onJumpToLine={(line) => editorRef.current?.jumpToLine(line)}
+              onOpenFullGraph={onOpenGraphView}
+            />
+          </div>
         ) : (
           <div className="desk-empty-state">
             <h2 className="desk-empty-heading">Knowledge Desk</h2>
@@ -439,7 +490,7 @@ export const KnowledgeDesk: FC<KnowledgeDeskProps> = ({
           aria-modal="true"
           aria-label="Confirm Record Deletion"
         >
-          <div className="delete-confirm-dialog">
+          <div ref={deleteDialogRef} className="delete-confirm-dialog">
             <h3 className="confirm-title">Delete Knowledge Record?</h3>
             <p className="confirm-message">
               This record will be permanently deleted from the SQLite database. This action cannot be undone.
@@ -472,7 +523,7 @@ export const KnowledgeDesk: FC<KnowledgeDeskProps> = ({
           aria-modal="true"
           aria-label="Unsaved Changes on Close"
         >
-          <div className="delete-confirm-dialog">
+          <div ref={closeErrorDialogRef} className="delete-confirm-dialog">
             <h3 className="confirm-title">Unsaved Changes</h3>
             <p className="confirm-message">
               {closeErrorMessage || "An error occurred while saving your record to SQLite."}
