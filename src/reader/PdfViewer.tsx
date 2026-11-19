@@ -23,14 +23,21 @@ interface PdfViewerProps {
   documentTitle: string;
   highlights: Highlight[];
   currentPage: number;
+  totalPages: number;
   onPageChange: (page: number) => void;
   onTotalPagesDetected: (total: number) => void;
   onOutlineLoaded?: (outline: OutlineItem[]) => void;
   onHighlightCreated: (highlight: Highlight) => void;
   onHighlightSelected?: (highlightId: string) => void;
   onRecordCreatedFromExcerpt?: (recordId: string) => void;
+  onExcerptAdded?: (highlight: Highlight) => Promise<void>;
   onShowNotice: (msg: string) => void;
   isDistractionFree?: boolean;
+  zoom: number;
+  onZoomChange: (zoom: number) => void;
+  fitWidth: boolean;
+  onFitWidthChange: (fit: boolean) => void;
+  annotationType?: HighlightType | null;
 }
 
 export const PdfViewer: FC<PdfViewerProps> = ({
@@ -39,18 +46,24 @@ export const PdfViewer: FC<PdfViewerProps> = ({
   documentTitle,
   highlights,
   currentPage,
+  totalPages,
   onPageChange,
   onTotalPagesDetected,
   onOutlineLoaded,
   onHighlightCreated,
   onHighlightSelected,
   onRecordCreatedFromExcerpt,
+  onExcerptAdded,
   onShowNotice,
   isDistractionFree = false,
+  zoom,
+  onZoomChange,
+  fitWidth,
+  onFitWidthChange,
+  annotationType = null,
 }) => {
   const [pdfDoc, setPdfDoc] = useState<pdfjsLib.PDFDocumentProxy | null>(null);
-  const [totalPages, setTotalPages] = useState<number>(1);
-  const [scale, setScale] = useState<number>(1.25);
+  const [basePageWidth, setBasePageWidth] = useState<number>(0);
   const [isScanned, setIsScanned] = useState<boolean>(false);
   const [selectedHighlightId, setSelectedHighlightId] = useState<string | null>(null);
 
@@ -69,6 +82,12 @@ export const PdfViewer: FC<PdfViewerProps> = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const textLayerRef = useRef<HTMLDivElement>(null);
   const renderTaskRef = useRef<any>(null);
+  const zoomRef = useRef(zoom);
+  const scale = zoom;
+
+  useEffect(() => {
+    zoomRef.current = zoom;
+  }, [zoom]);
 
   // 1. Load PDF Document from Data URL or binary buffer
   useEffect(() => {
@@ -81,7 +100,6 @@ export const PdfViewer: FC<PdfViewerProps> = ({
         if (!isMounted) return;
 
         setPdfDoc(doc);
-        setTotalPages(doc.numPages);
         onTotalPagesDetected(doc.numPages);
 
         // Extract PDF Outline / Bookmarks if available
@@ -130,6 +148,10 @@ export const PdfViewer: FC<PdfViewerProps> = ({
         if (cancelled) return;
 
         const viewport = page.getViewport({ scale });
+        const unscaledWidth = page.getViewport({ scale: 1 }).width;
+        if (Math.abs(unscaledWidth - basePageWidth) > 0.5) {
+          setBasePageWidth(unscaledWidth);
+        }
         const canvas = canvasRef.current;
         if (!canvas) return;
 
@@ -200,6 +222,33 @@ export const PdfViewer: FC<PdfViewerProps> = ({
       }
     };
   }, [pdfDoc, currentPage, scale]);
+
+  // Fit the rendered page to the measured document pane without touching the
+  // PDF.js loading or rendering internals. Debounced to keep divider drags cheap.
+  useEffect(() => {
+    const element = containerRef.current;
+    if (!fitWidth || !element || basePageWidth <= 0 || typeof ResizeObserver === "undefined") return;
+    let timer: number | null = null;
+
+    const applyFit = () => {
+      const available = element.clientWidth - 56;
+      if (available <= 0) return;
+      const next = Math.min(2.5, Math.max(0.6, +(available / basePageWidth).toFixed(2)));
+      if (Math.abs(next - zoomRef.current) > 0.02) onZoomChange(next);
+    };
+
+    const observer = new ResizeObserver(() => {
+      if (timer !== null) window.clearTimeout(timer);
+      timer = window.setTimeout(applyFit, 140);
+    });
+    observer.observe(element);
+    applyFit();
+
+    return () => {
+      observer.disconnect();
+      if (timer !== null) window.clearTimeout(timer);
+    };
+  }, [fitWidth, basePageWidth, onZoomChange]);
 
   // 3. Text Selection Detection for Highlights
   const handleMouseUp = useCallback(() => {
@@ -289,7 +338,77 @@ export const PdfViewer: FC<PdfViewerProps> = ({
   };
 
   const handleAddNoteToSelection = () => {
-    handleCreateHighlight("insight", "Personal note...");
+    if (!selectionRange) return;
+    void handleCreateHighlight(annotationType || "insight");
+  };
+
+  const handleAddToNotesSelection = async () => {
+    if (!selectionRange || !onExcerptAdded) return;
+
+    const existing = highlights.find(
+      (highlight) =>
+        highlight.page_number === currentPage &&
+        highlight.selected_text === selectionRange!.text
+    );
+    let highlight: Highlight;
+    if (existing) {
+      highlight = existing;
+    } else {
+      const anchorData = JSON.stringify({
+        rects: selectionRange.rects,
+        pageNumber: currentPage,
+        textLength: selectionRange.text.length,
+      });
+      highlight = await readerApi.createHighlight({
+        attachment_id: attachmentId,
+        page_number: currentPage,
+        selected_text: selectionRange.text,
+        anchor_data: anchorData,
+        highlight_type: annotationType || "insight",
+      });
+      onHighlightCreated(highlight);
+    }
+
+    await onExcerptAdded(highlight);
+    setSelectionRange(null);
+    window.getSelection()?.removeAllRanges();
+  };
+
+  const handleCreateExcerptSelection = async () => {
+    if (!selectionRange) return;
+
+    const existing = highlights.find(
+      (highlight) =>
+        highlight.page_number === currentPage &&
+        highlight.selected_text === selectionRange!.text
+    );
+    if (existing) {
+      onShowNotice("Excerpt already captured");
+      setSelectionRange(null);
+      window.getSelection()?.removeAllRanges();
+      return;
+    }
+
+    const anchorData = JSON.stringify({
+      rects: selectionRange.rects,
+      pageNumber: currentPage,
+      textLength: selectionRange.text.length,
+    });
+    try {
+      const highlight = await readerApi.createHighlight({
+        attachment_id: attachmentId,
+        page_number: currentPage,
+        selected_text: selectionRange.text,
+        anchor_data: anchorData,
+        highlight_type: annotationType || "important",
+      });
+      onHighlightCreated(highlight);
+      onShowNotice("Excerpt captured from this passage");
+      setSelectionRange(null);
+      window.getSelection()?.removeAllRanges();
+    } catch (err: any) {
+      onShowNotice(`Could not create excerpt: ${err?.message || err}`);
+    }
   };
 
   const handleConnectSelection = async () => {
@@ -339,19 +458,21 @@ export const PdfViewer: FC<PdfViewerProps> = ({
         }
       } else if (e.key === "+" || e.key === "=") {
         e.preventDefault();
-        setScale((s) => Math.min(2.5, +(s + 0.15).toFixed(2)));
+        onZoomChange(Math.min(2.5, +(scale + 0.15).toFixed(2)));
+        onFitWidthChange(false);
       } else if (e.key === "-" || e.key === "_") {
         e.preventDefault();
-        setScale((s) => Math.max(0.6, +(s - 0.15).toFixed(2)));
+        onZoomChange(Math.max(0.6, +(scale - 0.15).toFixed(2)));
+        onFitWidthChange(false);
       } else if (e.key === "0") {
         e.preventDefault();
-        setScale(1.25);
+        onFitWidthChange(true);
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [currentPage, totalPages, onPageChange, setScale]);
+  }, [currentPage, totalPages, onPageChange, onZoomChange, onFitWidthChange, scale]);
 
   // Current page highlights
   const pageHighlights = highlights.filter((h) => h.page_number === currentPage);
@@ -377,35 +498,6 @@ export const PdfViewer: FC<PdfViewerProps> = ({
           </div>
         </div>
       )}
-
-      {/* Zoom Bar */}
-      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "14px" }}>
-        <button
-          className="reader-nav-btn"
-          onClick={() => setScale((s) => Math.max(0.6, +(s - 0.15).toFixed(2)))}
-          title="Zoom out (-)"
-        >
-          -
-        </button>
-        <span style={{ fontSize: "0.78rem", color: "var(--text-dim)", minWidth: "44px", textAlign: "center" }}>
-          {Math.round(scale * 100)}%
-        </span>
-        <button
-          className="reader-nav-btn"
-          onClick={() => setScale((s) => Math.min(2.5, +(s + 0.15).toFixed(2)))}
-          title="Zoom in (+)"
-        >
-          +
-        </button>
-        <button
-          className="card-action-link"
-          style={{ fontSize: "0.75rem", border: "1px solid var(--border-subtle)", borderRadius: "3px", padding: "2px 6px" }}
-          onClick={() => setScale(1.25)}
-          title="Reset zoom"
-        >
-          Reset
-        </button>
-      </div>
 
       {/* Rendered PDF Page with Text and Highlights Overlays */}
       <div
@@ -458,8 +550,11 @@ export const PdfViewer: FC<PdfViewerProps> = ({
             position={selectionRange.toolbarPos}
             onHighlight={(type) => handleCreateHighlight(type)}
             onAddNote={handleAddNoteToSelection}
+            onAddToNotes={handleAddToNotesSelection}
+            onExcerpt={handleCreateExcerptSelection}
             onConnectExcerpt={handleConnectSelection}
             onClose={() => setSelectionRange(null)}
+            preferredType={annotationType}
           />
         )}
       </div>

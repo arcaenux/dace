@@ -1,64 +1,78 @@
-import { FC } from "react";
+import { FC, useRef } from "react";
+import { BookOpen, Link2, PenLine, Quote } from "lucide-react";
 import { HighlightType } from "./types.ts";
+import { useDismissable } from "../core/useDismissable";
 
 interface FloatingSelectionToolbarProps {
   position: { top: number; left: number };
   onHighlight: (type: HighlightType) => void;
   onAddNote: () => void;
+  onAddToNotes: () => void;
+  onExcerpt: () => void;
   onConnectExcerpt: () => void;
   onClose: () => void;
+  preferredType?: HighlightType | null;
 }
 
 export const FloatingSelectionToolbar: FC<FloatingSelectionToolbarProps> = ({
   position,
   onHighlight,
   onAddNote,
+  onAddToNotes,
+  onExcerpt,
   onConnectExcerpt,
+  onClose,
+  preferredType = null,
 }) => {
+  const toolbarRef = useRef<HTMLDivElement>(null);
+  useDismissable(true, onClose, toolbarRef, {
+    group: "reader-popover",
+    closeOnOutsideClick: true,
+    restoreFocus: false,
+    outsideClickGraceMs: 180,
+  });
+
   return (
     <div
+      ref={toolbarRef}
       className="floating-selection-toolbar"
       style={{
         top: `${Math.max(10, position.top - 46)}px`,
         left: `${Math.max(10, position.left)}px`,
       }}
-      onMouseDown={(e) => {
-        // Prevent selection from clearing when clicking toolbar buttons
-        e.preventDefault();
-        e.stopPropagation();
+      onMouseDown={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
       }}
     >
       <button
-        className="toolbar-hl-btn"
+        className={`toolbar-hl-btn ${preferredType === "important" ? "active" : ""}`}
         onClick={() => onHighlight("important")}
-        title="Highlight: Important passage (Gold)"
+        title="Highlight: Important passage"
       >
         <span className="hl-dot important" />
         <span>Important</span>
       </button>
-
       <button
-        className="toolbar-hl-btn"
+        className={`toolbar-hl-btn ${preferredType === "question" ? "active" : ""}`}
         onClick={() => onHighlight("question")}
-        title="Highlight: Question / Open problem (Cyan)"
+        title="Highlight: Question / open problem"
       >
         <span className="hl-dot question" />
         <span>Question</span>
       </button>
-
       <button
-        className="toolbar-hl-btn"
+        className={`toolbar-hl-btn ${preferredType === "insight" ? "active" : ""}`}
         onClick={() => onHighlight("insight")}
-        title="Highlight: Core Insight / Discovery (Emerald)"
+        title="Highlight: Core insight"
       >
         <span className="hl-dot insight" />
         <span>Insight</span>
       </button>
-
       <button
-        className="toolbar-hl-btn"
+        className={`toolbar-hl-btn ${preferredType === "definition" ? "active" : ""}`}
         onClick={() => onHighlight("definition")}
-        title="Highlight: Term / Definition (Amethyst)"
+        title="Highlight: Term / definition"
       >
         <span className="hl-dot definition" />
         <span>Definition</span>
@@ -66,27 +80,24 @@ export const FloatingSelectionToolbar: FC<FloatingSelectionToolbarProps> = ({
 
       <div className="toolbar-divider" />
 
-      <button
-        className="toolbar-icon-btn"
-        onClick={onAddNote}
-        title="Attach personal annotation to this passage"
-      >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M12 20h9"></path>
-          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
-        </svg>
-        <span>Note</span>
+      <button className="reader-selection-action" onClick={onAddToNotes} title="Add exact passage to notes">
+        <BookOpen size={13} />
+        <span>Add to notes</span>
       </button>
-
+      <button className="reader-selection-action" onClick={onExcerpt} title="Create a source excerpt without changing the note">
+        <Quote size={13} />
+        <span>Excerpt</span>
+      </button>
+      <button className="reader-selection-action" onClick={onAddNote} title="Attach an annotation to this passage">
+        <PenLine size={13} />
+        <span>Annotate</span>
+      </button>
       <button
-        className="toolbar-icon-btn"
+        className="reader-selection-action"
         onClick={onConnectExcerpt}
-        title="Capture quotation / Connect to Knowledge Desk"
+        title="Capture quotation / connect to Knowledge Desk"
       >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
-          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
-        </svg>
+        <Link2 size={13} />
         <span>Connect</span>
       </button>
     </div>

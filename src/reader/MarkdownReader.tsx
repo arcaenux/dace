@@ -17,8 +17,11 @@ interface MarkdownReaderProps {
   onHighlightCreated: (highlight: Highlight) => void;
   onHighlightSelected?: (highlightId: string) => void;
   onRecordCreatedFromExcerpt?: (recordId: string) => void;
+  onExcerptAdded?: (highlight: Highlight) => Promise<void>;
   onShowNotice: (msg: string) => void;
   isDistractionFree?: boolean;
+  zoom: number;
+  annotationType?: HighlightType | null;
 }
 
 export const MarkdownReader: FC<MarkdownReaderProps> = ({
@@ -29,8 +32,11 @@ export const MarkdownReader: FC<MarkdownReaderProps> = ({
   onHighlightCreated,
   onHighlightSelected,
   onRecordCreatedFromExcerpt,
+  onExcerptAdded,
   onShowNotice,
   isDistractionFree = false,
+  zoom,
+  annotationType = null,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const articleRef = useRef<HTMLDivElement>(null);
@@ -76,62 +82,75 @@ export const MarkdownReader: FC<MarkdownReaderProps> = ({
     });
   }, []);
 
-  const handleCreateHighlight = async (type: HighlightType, initialNote?: string) => {
-    if (!selectionRange) return;
-
+  const persistSelectionHighlight = async (type: HighlightType): Promise<Highlight | null> => {
+    if (!selectionRange) return null;
     const anchorData = JSON.stringify({
       pageNumber: 1,
       textLength: selectionRange.text.length,
     });
-
     try {
-      const newHl = await readerApi.createHighlight({
+      const highlight = await readerApi.createHighlight({
         attachment_id: attachmentId,
         page_number: 1,
         selected_text: selectionRange.text,
         anchor_data: anchorData,
         highlight_type: type,
-        annotation_content: initialNote || null,
       });
-
-      onHighlightCreated(newHl);
-      onShowNotice(`Highlighted passage as "${type}"`);
-      setSelectionRange(null);
-      window.getSelection()?.removeAllRanges();
-
-      if (initialNote) {
-        onHighlightSelected?.(newHl.id);
-      }
+      onHighlightCreated(highlight);
+      return highlight;
     } catch (err: any) {
       console.error("Failed to create highlight:", err);
       onShowNotice(`Failed to create highlight: ${err?.message || err}`);
+      return null;
     }
+  };
+
+  const handleCreateHighlight = async (type: HighlightType) => {
+    const highlight = await persistSelectionHighlight(type);
+    if (highlight) onShowNotice(`Highlighted passage as "${type}"`);
+    setSelectionRange(null);
+    window.getSelection()?.removeAllRanges();
+  };
+
+  const handleAddToNotesSelection = async () => {
+    if (!selectionRange || !onExcerptAdded) return;
+    const existing = highlights.find(
+      (highlight) =>
+        highlight.page_number === 1 && highlight.selected_text === selectionRange!.text
+    );
+    const highlight = existing || (await persistSelectionHighlight(annotationType || "insight"));
+    if (!highlight) return;
+    await onExcerptAdded(highlight);
+    setSelectionRange(null);
+    window.getSelection()?.removeAllRanges();
+  };
+
+  const handleCreateExcerptSelection = async () => {
+    if (!selectionRange) return;
+    const existing = highlights.find(
+      (highlight) =>
+        highlight.page_number === 1 && highlight.selected_text === selectionRange!.text
+    );
+    if (existing) {
+      onShowNotice("Excerpt already captured");
+      setSelectionRange(null);
+      window.getSelection()?.removeAllRanges();
+      return;
+    }
+    const highlight = await persistSelectionHighlight(annotationType || "important");
+    if (!highlight) return;
+    onShowNotice("Excerpt captured from this passage");
+    setSelectionRange(null);
+    window.getSelection()?.removeAllRanges();
   };
 
   const handleConnectSelection = async () => {
     if (!selectionRange) return;
-
-    const anchorData = JSON.stringify({
-      pageNumber: 1,
-      textLength: selectionRange.text.length,
-    });
-
-    try {
-      const newHl = await readerApi.createHighlight({
-        attachment_id: attachmentId,
-        page_number: 1,
-        selected_text: selectionRange.text,
-        anchor_data: anchorData,
-        highlight_type: "important",
-      });
-
-      onHighlightCreated(newHl);
-      setSelectionRange(null);
-      window.getSelection()?.removeAllRanges();
-      setConnectHighlight(newHl);
-    } catch (e: any) {
-      onShowNotice(`Could not prepare highlight for connection: ${e?.message || e}`);
-    }
+    const highlight = await persistSelectionHighlight("important");
+    if (!highlight) return;
+    setSelectionRange(null);
+    window.getSelection()?.removeAllRanges();
+    setConnectHighlight(highlight);
   };
 
   return (
@@ -143,7 +162,11 @@ export const MarkdownReader: FC<MarkdownReaderProps> = ({
       <article
         ref={articleRef}
         className="markdown-reader-content"
-        style={{ position: "relative" }}
+        style={{
+          position: "relative",
+          fontSize: `${Math.round(15 * zoom)}px`,
+          maxWidth: `${Math.round(760 / Math.max(0.8, zoom))}px`,
+        }}
       >
         {highlights.length > 0 && (
           <div style={{ marginBottom: "20px", display: "flex", gap: "6px", flexWrap: "wrap" }}>
@@ -174,9 +197,12 @@ export const MarkdownReader: FC<MarkdownReaderProps> = ({
           <FloatingSelectionToolbar
             position={selectionRange.toolbarPos}
             onHighlight={(type) => handleCreateHighlight(type)}
-            onAddNote={() => handleCreateHighlight("insight", "Personal note...")}
+            onAddNote={() => handleCreateHighlight(annotationType || "insight")}
+            onAddToNotes={handleAddToNotesSelection}
+            onExcerpt={handleCreateExcerptSelection}
             onConnectExcerpt={handleConnectSelection}
             onClose={() => setSelectionRange(null)}
+            preferredType={annotationType}
           />
         )}
       </article>
