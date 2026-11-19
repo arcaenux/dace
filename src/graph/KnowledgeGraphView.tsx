@@ -13,15 +13,22 @@ import type { KnowledgeGraphData } from "../knowledge/types";
 import { getRelationMeta } from "../knowledge/relationshipConstants";
 import * as api from "../knowledge/knowledgeApi";
 import { GraphSimulation, SimNode, SimLink } from "./graphSimulation";
+import { useDismissable } from "../core/useDismissable";
 
 interface KnowledgeGraphViewProps {
   onOpenRecordInDesk: (recordId: string) => void;
   onShowNotice: (msg: string) => void;
+  /** Render the existing graph engine inside the Knowledge Desk context rail. */
+  embedded?: boolean;
+  /** Record to select and centre when the graph is embedded. */
+  focusRecordId?: string | null;
 }
 
 export const KnowledgeGraphView: FC<KnowledgeGraphViewProps> = ({
   onOpenRecordInDesk,
   onShowNotice,
+  embedded = false,
+  focusRecordId = null,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -43,6 +50,14 @@ export const KnowledgeGraphView: FC<KnowledgeGraphViewProps> = ({
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [isSearchFocused, setIsSearchFocused] = useState<boolean>(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const graphSearchRef = useRef<HTMLDivElement>(null);
+  const isSearchDropdownOpen = isSearchFocused && searchQuery.trim().length > 0;
+  useDismissable(
+    isSearchDropdownOpen,
+    () => setIsSearchFocused(false),
+    graphSearchRef,
+    { group: "graph-dropdown", restoreFocus: false }
+  );
 
   // Simulation instance
   const simulationRef = useRef<GraphSimulation>(new GraphSimulation());
@@ -74,6 +89,19 @@ export const KnowledgeGraphView: FC<KnowledgeGraphViewProps> = ({
   useEffect(() => {
     loadGraph();
   }, [loadGraph]);
+
+  // An embedded graph opens on the active record, using the same data and
+  // simulation as the full workspace graph.
+  useEffect(() => {
+    if (!embedded || !focusRecordId || isLoading) return;
+    const node = simulationRef.current.nodeMap.get(focusRecordId);
+    if (!node) return;
+    setSelectedNodeId(focusRecordId);
+    setSelectedEdgeId(null);
+    setZoom(1);
+    setPan({ x: -node.x, y: -node.y });
+    simulationRef.current.reheat(0.18);
+  }, [embedded, focusRecordId, isLoading]);
 
   // Compute 1-hop connected neighbors of selected node for highlight queries
   const neighborSet = useMemo(() => {
@@ -111,8 +139,8 @@ export const KnowledgeGraphView: FC<KnowledgeGraphViewProps> = ({
     ctx.save();
     ctx.scale(dpr, dpr);
 
-    // 1. Deep midnight astronomical background
-    ctx.fillStyle = "#070a14";
+    // 1. Deep space / workspace background
+    ctx.fillStyle = "#0b0b0b";
     ctx.fillRect(0, 0, width, height);
 
     // 2. Subtle radial atmospheric nebula gradient
@@ -126,9 +154,9 @@ export const KnowledgeGraphView: FC<KnowledgeGraphViewProps> = ({
       centerY,
       Math.max(width, height) * 0.75
     );
-    nebulaGrad.addColorStop(0, "rgba(14, 165, 233, 0.045)");
-    nebulaGrad.addColorStop(0.5, "rgba(99, 102, 241, 0.025)");
-    nebulaGrad.addColorStop(1, "rgba(7, 10, 20, 0)");
+    nebulaGrad.addColorStop(0, "rgba(255, 138, 0, 0.07)");
+    nebulaGrad.addColorStop(0.5, "rgba(138, 68, 16, 0.035)");
+    nebulaGrad.addColorStop(1, "rgba(11, 11, 11, 0)");
     ctx.fillStyle = nebulaGrad;
     ctx.fillRect(0, 0, width, height);
 
@@ -151,17 +179,17 @@ export const KnowledgeGraphView: FC<KnowledgeGraphViewProps> = ({
         selectedNodeId !== null &&
         (link.sourceId === selectedNodeId || link.targetId === selectedNodeId);
 
-      let strokeStyle = "rgba(90, 140, 210, 0.22)";
+      let strokeStyle = "rgba(203, 185, 163, 0.22)";
       let lineWidth = 1.2;
 
       if (isLinkSelected) {
-        strokeStyle = "rgba(56, 189, 248, 0.95)";
+        strokeStyle = "rgba(255, 138, 0, 0.95)";
         lineWidth = 2.4;
       } else if (isConnectedToSelected) {
-        strokeStyle = "rgba(56, 189, 248, 0.75)";
+        strokeStyle = "rgba(255, 138, 0, 0.78)";
         lineWidth = 1.8;
       } else if (hasSelection) {
-        strokeStyle = "rgba(60, 80, 110, 0.08)";
+        strokeStyle = "rgba(203, 185, 163, 0.07)";
         lineWidth = 0.8;
       }
 
@@ -206,15 +234,17 @@ export const KnowledgeGraphView: FC<KnowledgeGraphViewProps> = ({
         const labelText = meta.label;
 
         ctx.save();
-        ctx.font = `500 ${Math.max(9 / zoom, 8)}px "Manrope Variable", Manrope, sans-serif`;
+        ctx.font = `500 ${Math.max(9 / zoom, 8)}px "IBM Plex Mono", monospace`;
         const textMetrics = ctx.measureText(labelText);
         const padX = 6 / zoom;
         const pillW = textMetrics.width + padX * 2;
         const pillH = 14 / zoom;
 
         // Label Background Capsule
-        ctx.fillStyle = "rgba(10, 15, 30, 0.85)";
-        ctx.strokeStyle = isLinkSelected ? "rgba(56, 189, 248, 0.8)" : "rgba(56, 189, 248, 0.4)";
+        ctx.fillStyle = "rgba(20, 20, 20, 0.92)";
+        ctx.strokeStyle = isLinkSelected
+          ? "rgba(255, 138, 0, 0.85)"
+          : "rgba(203, 185, 163, 0.35)";
         ctx.lineWidth = 1 / zoom;
         ctx.beginPath();
         ctx.roundRect(midX - pillW / 2, midY - pillH / 2, pillW, pillH, 4 / zoom);
@@ -222,7 +252,7 @@ export const KnowledgeGraphView: FC<KnowledgeGraphViewProps> = ({
         ctx.stroke();
 
         // Label Text
-        ctx.fillStyle = isLinkSelected ? "#38bdf8" : "#bae6fd";
+        ctx.fillStyle = isLinkSelected ? "#ff8a00" : "#cbb9a3";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.fillText(labelText, midX, midY);
@@ -245,20 +275,20 @@ export const KnowledgeGraphView: FC<KnowledgeGraphViewProps> = ({
       const glow = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, glowRadius);
 
       if (isSelected) {
-        glow.addColorStop(0, "rgba(56, 189, 248, 0.55)");
-        glow.addColorStop(0.5, "rgba(56, 189, 248, 0.2)");
-        glow.addColorStop(1, "rgba(56, 189, 248, 0)");
+        glow.addColorStop(0, "rgba(255, 138, 0, 0.5)");
+        glow.addColorStop(0.5, "rgba(255, 138, 0, 0.18)");
+        glow.addColorStop(1, "rgba(255, 138, 0, 0)");
       } else if (isNeighbor || isHovered) {
-        glow.addColorStop(0, "rgba(147, 197, 253, 0.4)");
-        glow.addColorStop(0.6, "rgba(99, 102, 241, 0.15)");
-        glow.addColorStop(1, "rgba(99, 102, 241, 0)");
+        glow.addColorStop(0, "rgba(203, 185, 163, 0.34)");
+        glow.addColorStop(0.6, "rgba(138, 68, 16, 0.14)");
+        glow.addColorStop(1, "rgba(138, 68, 16, 0)");
       } else if (isDimmed) {
-        glow.addColorStop(0, "rgba(60, 80, 110, 0.05)");
-        glow.addColorStop(1, "rgba(60, 80, 110, 0)");
+        glow.addColorStop(0, "rgba(138, 138, 138, 0.04)");
+        glow.addColorStop(1, "rgba(138, 138, 138, 0)");
       } else {
-        glow.addColorStop(0, "rgba(56, 189, 248, 0.22)");
-        glow.addColorStop(0.7, "rgba(30, 58, 138, 0.08)");
-        glow.addColorStop(1, "rgba(15, 23, 42, 0)");
+        glow.addColorStop(0, "rgba(203, 185, 163, 0.2)");
+        glow.addColorStop(0.7, "rgba(138, 68, 16, 0.07)");
+        glow.addColorStop(1, "rgba(11, 11, 11, 0)");
       }
 
       ctx.fillStyle = glow;
@@ -273,20 +303,20 @@ export const KnowledgeGraphView: FC<KnowledgeGraphViewProps> = ({
       ctx.arc(node.x, node.y, r, 0, Math.PI * 2);
 
       if (isSelected) {
-        ctx.fillStyle = "#0284c7";
-        ctx.strokeStyle = "#ffffff";
+        ctx.fillStyle = "#ff8a00";
+        ctx.strokeStyle = "#f8ede1";
         ctx.lineWidth = 2.2 / zoom;
       } else if (isNeighbor) {
-        ctx.fillStyle = "#0c234a";
-        ctx.strokeStyle = "#38bdf8";
+        ctx.fillStyle = "#2a2016";
+        ctx.strokeStyle = "#ffab4d";
         ctx.lineWidth = 1.8 / zoom;
       } else if (isDimmed) {
-        ctx.fillStyle = "#090d1a";
-        ctx.strokeStyle = "rgba(71, 85, 105, 0.3)";
+        ctx.fillStyle = "#0d0d0c";
+        ctx.strokeStyle = "rgba(138, 138, 138, 0.24)";
         ctx.lineWidth = 1 / zoom;
       } else {
-        ctx.fillStyle = "#0c172e";
-        ctx.strokeStyle = "rgba(125, 211, 252, 0.55)";
+        ctx.fillStyle = "#171410";
+        ctx.strokeStyle = "rgba(203, 185, 163, 0.45)";
         ctx.lineWidth = 1.4 / zoom;
       }
 
@@ -303,14 +333,8 @@ export const KnowledgeGraphView: FC<KnowledgeGraphViewProps> = ({
         const baseFontSize = Math.max(11 / zoom, 9);
         const fontSize = isSelected ? baseFontSize * 1.15 : baseFontSize;
 
-        // Conceptual titles use Editorial / Naturalist serif; selected concept uses expressive emphasis
-        if (isSelected) {
-          ctx.font = `italic 600 ${fontSize}px "Newsreader Variable", Newsreader, "Cormorant Garamond", Georgia, serif`;
-        } else if (isHovered || isNeighbor) {
-          ctx.font = `500 ${fontSize}px "Newsreader Variable", Newsreader, "Cormorant Garamond", Georgia, serif`;
-        } else {
-          ctx.font = `400 ${fontSize}px "Newsreader Variable", Newsreader, "Cormorant Garamond", Georgia, serif`;
-        }
+        // Node titles use the primary interface typeface with restrained emphasis.
+        ctx.font = `${isSelected ? 600 : 500} ${fontSize}px "Space Grotesk", "IBM Plex Mono", sans-serif`;
 
         const label = node.title || "Untitled Concept";
         const textMetrics = ctx.measureText(label);
@@ -320,7 +344,7 @@ export const KnowledgeGraphView: FC<KnowledgeGraphViewProps> = ({
         const textH = fontSize * 1.2;
 
         // Subtle background pill for label readability
-        ctx.fillStyle = "rgba(7, 10, 20, 0.72)";
+        ctx.fillStyle = "rgba(11, 11, 11, 0.82)";
         ctx.beginPath();
         ctx.roundRect(
           node.x - textW / 2 - 4 / zoom,
@@ -333,13 +357,13 @@ export const KnowledgeGraphView: FC<KnowledgeGraphViewProps> = ({
 
         // Text fill
         if (isSelected) {
-          ctx.fillStyle = "#38bdf8";
+          ctx.fillStyle = "#ff8a00";
         } else if (isNeighbor || isHovered) {
-          ctx.fillStyle = "#e2e8f0";
+          ctx.fillStyle = "#f8ede1";
         } else if (isDimmed) {
-          ctx.fillStyle = "rgba(148, 163, 184, 0.3)";
+          ctx.fillStyle = "rgba(138, 138, 138, 0.26)";
         } else {
-          ctx.fillStyle = "#cbd5e1";
+          ctx.fillStyle = "#cbb9a3";
         }
 
         ctx.textAlign = "center";
@@ -672,6 +696,7 @@ export const KnowledgeGraphView: FC<KnowledgeGraphViewProps> = ({
       setIsSearchFocused(false);
       render();
     } else if (
+      !embedded &&
       (e.key === "/" || (e.ctrlKey && e.key === "f")) &&
       document.activeElement !== searchInputRef.current
     ) {
@@ -683,10 +708,10 @@ export const KnowledgeGraphView: FC<KnowledgeGraphViewProps> = ({
   return (
     <div
       ref={containerRef}
-      className="knowledge-graph-container"
+      className={`knowledge-graph-container ${embedded ? "embedded" : ""}`}
       tabIndex={0}
       onKeyDown={handleKeyDown}
-      aria-label="Knowledge Graph Workspace"
+      aria-label={embedded ? "Record relationship graph" : "Knowledge Graph Workspace"}
     >
       {/* 1. High-Performance Astronomical Canvas */}
       <canvas
@@ -700,7 +725,7 @@ export const KnowledgeGraphView: FC<KnowledgeGraphViewProps> = ({
       />
 
       {/* 2. Floating Search Field (Astronomical Glass Bar) */}
-      <div className="graph-floating-search-bar">
+      <div ref={graphSearchRef} className="graph-floating-search-bar">
         <div className="graph-search-input-wrap">
           <span className="search-icon">✦</span>
           <input
@@ -726,7 +751,7 @@ export const KnowledgeGraphView: FC<KnowledgeGraphViewProps> = ({
         </div>
 
         {/* Live Search Results Dropdown */}
-        {isSearchFocused && searchQuery.trim() && (
+        {isSearchDropdownOpen && (
           <div className="graph-search-dropdown">
             {matchingSearchNodes.length === 0 ? (
               <div className="search-empty">No concepts matching “{searchQuery}”</div>

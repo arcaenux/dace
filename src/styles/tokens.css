@@ -1,335 +1,15 @@
 /* ==========================================================================
-   Dace — Semantic Design Tokens & Dual Appearance System
-   (Expression Mode & Dull Mode)
+   Dace — Canonical Cinematic Design Tokens
+
+   One permanent identity. No appearance modes, no theme scopes, and no
+   duplicated palettes. Colour, type, spacing, motion and state values are
+   defined exactly once and retargeted through semantic aliases only.
    ========================================================================== */
 
 :root {
-  /* ------------------------------------------------------------------------
-     Shared Typography — Editorial, Interface, Display & Mono System
-     ------------------------------------------------------------------------ */
-  --font-interface: "Manrope Variable", Manrope, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-sans: var(--font-interface);
-  --font-editorial: "Newsreader Variable", Newsreader, "Cormorant Garamond", Garamond, Georgia, serif;
-  --font-quotation: "Newsreader Variable", Newsreader, "Cormorant Garamond", Georgia, serif;
-  --font-display: "Arial Black", "Avenir Next Condensed", "Century Gothic", "Futura", "Trebuchet MS", sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-
-  --letter-spacing-editorial: -0.018em;
-  --letter-spacing-interface: -0.006em;
-  --letter-spacing-quote: 0.01em;
-  --letter-spacing-caps: 0.07em;
-
-  --font-weight-regular: 400;
-  --font-weight-medium: 500;
-  --font-weight-semibold: 600;
-  --font-weight-bold: 700;
-  --font-weight-heading: 500;
-
-  --font-size-xs: 0.75rem;    /* 12px */
-  --font-size-sm: 0.8125rem;  /* 13px */
-  --font-size-base: 0.875rem; /* 14px */
-  --font-size-md: 0.9375rem;  /* 15px */
-  --font-size-lg: 1.125rem;   /* 18px */
-  --font-size-xl: 1.375rem;   /* 22px */
-  --font-size-2xl: 1.75rem;   /* 28px */
-
-  --line-height-tight: 1.25;
-  --line-height-normal: 1.5;
-  --line-height-relaxed: 1.65;
-
-  /* ------------------------------------------------------------------------
-     Shared Spacing & Dimensions
-     ------------------------------------------------------------------------ */
-  --space-1: 0.25rem;
-  --space-2: 0.5rem;
-  --space-3: 0.75rem;
-  --space-4: 1rem;
-  --space-5: 1.25rem;
-  --space-6: 1.5rem;
-  --space-8: 2rem;
-  --space-10: 2.5rem;
-  --space-12: 3rem;
-  --space-16: 4rem;
-
-  /* ------------------------------------------------------------------------
-     Shared Motion Primitives
-     ------------------------------------------------------------------------ */
-  --duration-fast: 120ms;
-  --duration-normal: 180ms;
-  --duration-slow: 280ms;
-  --ease-standard: cubic-bezier(0.16, 1, 0.3, 1);
-
-  /* ------------------------------------------------------------------------
-     Default Appearance: Dull Mode (Quiet, Restrained Intellectual Workspace)
-     ------------------------------------------------------------------------ */
-  --bg-app: #0d0f14;
-  --bg-surface: #14171f;
-  --bg-surface-elevated: #1a1e28;
-  --bg-surface-active: #222735;
-  --bg-surface-subtle: rgba(255, 255, 255, 0.025);
-  --bg-selection: rgba(118, 151, 198, 0.22);
-
-  --border-subtle: #1f2430;
-  --border-medium: #2a3142;
-  --border-active: #3e485e;
-
-  --text-primary: #e6ebf2;
-  --text-secondary: #9aa4b5;
-  --text-muted: #5e687a;
-  --text-dim: #3f4756;
-  --text-bright: #ffffff;
-
-  --accent-primary: #7697c6;
-  --accent-hover: #8ba9d6;
-  --accent-muted: rgba(118, 151, 198, 0.15);
-  --accent-secondary: #829ab1;
-
-  --accent-pink: #c0788d;
-  --accent-pink-muted: rgba(192, 120, 141, 0.15);
-  --accent-violet: #8878b0;
-  --accent-violet-muted: rgba(136, 120, 176, 0.15);
-  --accent-yellow: #b5a86d;
-  --accent-yellow-muted: rgba(181, 168, 109, 0.15);
-
-  --badge-bg: rgba(255, 255, 255, 0.05);
-  --badge-text: #828c9e;
-
-  --overlay-backdrop: rgba(7, 9, 12, 0.75);
-
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
-  --radius-xl: 12px;
-
-  --brand-symbol-radius: 50%;
-  --brand-symbol-shadow: 0 0 0 2px var(--border-medium);
-  --brand-symbol-color: var(--text-muted);
-
-  --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.3);
-  --shadow-elevated: 0 12px 36px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.25);
-  --glow-accent: none;
-  --glow-pink: none;
-  --glow-yellow: none;
-
-  /* Research Highlights (Dull / Naturalist) */
-  --hl-important-bg: rgba(245, 158, 11, 0.2);
-  --hl-important-border: rgba(245, 158, 11, 0.65);
-  --hl-important-text: #fcd34d;
-
-  --hl-question-bg: rgba(56, 189, 248, 0.2);
-  --hl-question-border: rgba(56, 189, 248, 0.65);
-  --hl-question-text: #7dd3fc;
-
-  --hl-insight-bg: rgba(16, 185, 129, 0.2);
-  --hl-insight-border: rgba(16, 185, 129, 0.65);
-  --hl-insight-text: #6ee7b7;
-
-  --hl-definition-bg: rgba(168, 85, 247, 0.2);
-  --hl-definition-border: rgba(168, 85, 247, 0.65);
-  --hl-definition-text: #d8b4fe;
-
-  --status-danger: #f87171;
-  --status-warning: #fbbf24;
-  --status-success: #4ade80;
-}
-
-/* ==========================================================================
-   Appearance: Dull Mode (Explicit Scope)
-   ========================================================================== */
-:root[data-theme="dull"],
-html[data-theme="dull"],
-.theme-dull {
-  --bg-app: #0d0f14;
-  --bg-surface: #14171f;
-  --bg-surface-elevated: #1a1e28;
-  --bg-surface-active: #222735;
-  --bg-surface-subtle: rgba(255, 255, 255, 0.025);
-  --bg-selection: rgba(118, 151, 198, 0.22);
-
-  --border-subtle: #1f2430;
-  --border-medium: #2a3142;
-  --border-active: #3e485e;
-
-  --text-primary: #e6ebf2;
-  --text-secondary: #9aa4b5;
-  --text-muted: #5e687a;
-  --text-dim: #3f4756;
-  --text-bright: #ffffff;
-
-  --accent-primary: #7697c6;
-  --accent-hover: #8ba9d6;
-  --accent-muted: rgba(118, 151, 198, 0.15);
-  --accent-secondary: #829ab1;
-
-  --accent-pink: #c0788d;
-  --accent-pink-muted: rgba(192, 120, 141, 0.15);
-  --accent-violet: #8878b0;
-  --accent-violet-muted: rgba(136, 120, 176, 0.15);
-  --accent-yellow: #b5a86d;
-  --accent-yellow-muted: rgba(181, 168, 109, 0.15);
-
-  --badge-bg: rgba(255, 255, 255, 0.05);
-  --badge-text: #828c9e;
-
-  --overlay-backdrop: rgba(7, 9, 12, 0.75);
-
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
-  --radius-xl: 12px;
-
-  --brand-symbol-radius: 50%;
-  --brand-symbol-shadow: 0 0 0 2px var(--border-medium);
-  --brand-symbol-color: var(--text-muted);
-
-  --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.3);
-  --shadow-elevated: 0 12px 36px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.25);
-  --glow-accent: none;
-  --glow-pink: none;
-  --glow-yellow: none;
-
-  --font-weight-heading: 500;
-
-  --hl-important-bg: rgba(245, 158, 11, 0.2);
-  --hl-important-border: rgba(245, 158, 11, 0.65);
-  --hl-important-text: #fcd34d;
-
-  --hl-question-bg: rgba(56, 189, 248, 0.2);
-  --hl-question-border: rgba(56, 189, 248, 0.65);
-  --hl-question-text: #7dd3fc;
-
-  --hl-insight-bg: rgba(16, 185, 129, 0.2);
-  --hl-insight-border: rgba(16, 185, 129, 0.65);
-  --hl-insight-text: #6ee7b7;
-
-  --hl-definition-bg: rgba(168, 85, 247, 0.2);
-  --hl-definition-border: rgba(168, 85, 247, 0.65);
-  --hl-definition-text: #d8b4fe;
-}
-
-/* ==========================================================================
-   Appearance: Expression Mode (Editorial, Bold, Planetarium-Inspired)
-   - Predominantly black surfaces with vivid outlined controls
-   - Yellow, hot pink, and violet accents
-   - Geometric display typography paired with monospaced supporting text
-   - Pixel/halftone/grain artwork and strong editorial composition
-   ========================================================================== */
-:root[data-theme="expression"],
-html[data-theme="expression"],
-.theme-expression {
-  --bg-app: #050506;
-  --bg-surface: #0b0b10;
-  --bg-surface-elevated: #12121a;
-  --bg-surface-active: #1a1a26;
-  --bg-surface-subtle: rgba(255, 255, 255, 0.03);
-  --bg-selection: rgba(255, 47, 146, 0.28);
-
-  --border-subtle: #2a2438;
-  --border-medium: #ff2f92;
-  --border-active: #ffe95a;
-
-  --text-primary: #fffdf7;
-  --text-secondary: #f0d9ff;
-  --text-muted: #b79fd1;
-  --text-dim: #7b678f;
-  --text-bright: #ffffff;
-
-  /* Expressive Accents: Yellow, Hot Pink, Violet */
-  --accent-primary: #ff2f92;        /* Hot Pink */
-  --accent-hover: #ff5fb0;
-  --accent-muted: rgba(255, 47, 146, 0.2);
-  --accent-secondary: #8b3dff;      /* Violet */
-
-  --accent-pink: #ff2f92;
-  --accent-pink-muted: rgba(255, 47, 146, 0.22);
-  --accent-violet: #8b3dff;
-  --accent-violet-muted: rgba(139, 61, 255, 0.22);
-  --accent-yellow: #ffe95a;         /* Yellow */
-  --accent-yellow-muted: rgba(255, 233, 90, 0.22);
-
-  --badge-bg: rgba(255, 233, 90, 0.12);
-  --badge-text: #ffe95a;
-
-  --overlay-backdrop: rgba(5, 5, 6, 0.9);
-
-  /* Crisp editorial geometry */
-  --radius-sm: 0px;
-  --radius-md: 2px;
-  --radius-lg: 4px;
-  --radius-xl: 6px;
-
-  --brand-symbol-radius: 0px;
-  --brand-symbol-shadow: 0 0 0 2px #ff2f92, 4px 4px 0 #ffe95a;
-  --brand-symbol-color: #ffe95a;
-
-  --shadow-subtle: 0 0 0 1px rgba(255, 47, 146, 0.25);
-  --shadow-elevated: 0 18px 40px rgba(0, 0, 0, 0.85), 0 0 0 2px rgba(255, 47, 146, 0.35);
-  --glow-accent: 0 0 0 1px rgba(255, 233, 90, 0.5);
-  --glow-pink: 0 0 0 1px rgba(255, 47, 146, 0.6);
-  --glow-yellow: 0 0 0 1px rgba(255, 233, 90, 0.7);
-
-  --font-weight-heading: 800;
-
-  /* Research Highlights (Expression — Yellow/Pink/Violet) */
-  --hl-important-bg: rgba(255, 233, 90, 0.28);
-  --hl-important-border: #ffe95a;
-  --hl-important-text: #ffe95a;
-
-  --hl-question-bg: rgba(139, 61, 255, 0.28);
-  --hl-question-border: #8b3dff;
-  --hl-question-text: #d4b8ff;
-
-  --hl-insight-bg: rgba(255, 47, 146, 0.28);
-  --hl-insight-border: #ff2f92;
-  --hl-insight-text: #ff8fcb;
-
-  --hl-definition-bg: rgba(255, 233, 90, 0.18);
-  --hl-definition-border: #ffe95a;
-  --hl-definition-text: #fff3a8;
-}
-
-/* --------------------------------------------------------------------------
-   Subtle Theme Switching Transition
-   Applied dynamically only during user-initiated appearance switching.
-   -------------------------------------------------------------------------- */
-html.theme-transitioning,
-html.theme-transitioning *,
-html.theme-transitioning *::before,
-html.theme-transitioning *::after {
-  transition: background-color 180ms cubic-bezier(0.16, 1, 0.3, 1),
-              border-color 180ms cubic-bezier(0.16, 1, 0.3, 1),
-              color 180ms cubic-bezier(0.16, 1, 0.3, 1),
-              box-shadow 180ms cubic-bezier(0.16, 1, 0.3, 1),
-              outline-color 180ms cubic-bezier(0.16, 1, 0.3, 1) !important;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  :root {
-    --duration-fast: 0ms;
-    --duration-normal: 0ms;
-    --duration-slow: 0ms;
-  }
-  html.theme-transitioning,
-  html.theme-transitioning * {
-    transition: none !important;
-  }
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-}
-
-/* ==========================================================================
-   Cinematic Dace Layer
-   The legacy semantic palettes above remain available for compatibility.
-   These later, equally specific declarations retarget them to the supplied
-   cinematic direction while preserving the two appearance modes.
-   ========================================================================== */
-
-:root {
-  /* Palette --------------------------------------------------------------- */
+  /* ----------------------------------------------------------------------
+     Palette — supplied cinematic reference
+     ---------------------------------------------------------------------- */
   --dace-black: #0b0b0b;
   --dace-surface: #141414;
   --dace-elevated: #1e1e1e;
@@ -343,96 +23,148 @@ html.theme-transitioning *::after {
   --dace-amber-deep: #8a4410;
   --dace-danger: #ff4d4d;
 
-  /* Typography ------------------------------------------------------------ */
-  --font-interface: "Space Grotesk Variable", "Space Grotesk", "Manrope Variable", sans-serif;
+  /* ----------------------------------------------------------------------
+     Typography
+     ---------------------------------------------------------------------- */
+  --font-interface: "Space Grotesk Variable", "Space Grotesk", "Manrope Variable", Manrope, sans-serif;
   --font-sans: var(--font-interface);
   --font-display: "Space Grotesk Variable", "Space Grotesk", "Manrope Variable", sans-serif;
-  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
-  --font-weight-heading: 500;
+  --font-editorial: "Newsreader Variable", Newsreader, "Cormorant Garamond", Garamond, Georgia, serif;
+  --font-quotation: "Newsreader Variable", Newsreader, "Cormorant Garamond", Georgia, serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
   --letter-spacing-display: -0.035em;
+  --letter-spacing-editorial: -0.018em;
+  --letter-spacing-interface: -0.006em;
+  --letter-spacing-quote: 0.01em;
+  --letter-spacing-caps: 0.07em;
   --letter-spacing-overline: 0.18em;
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-heading: 500;
+
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.8125rem;
+  --font-size-base: 0.875rem;
+  --font-size-md: 0.9375rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.375rem;
+  --font-size-2xl: 1.75rem;
   --font-size-3xl: 2.5rem;
   --font-size-4xl: 3.75rem;
 
-  /* Spacing --------------------------------------------------------------- */
+  --type-micro: 9px;
+  --type-mono: 10px;
+  --type-small: 11px;
+  --type-body: 13px;
+  --type-lede: clamp(15px, 1.12vw, 18px);
+  --type-section: clamp(20px, 1.35vw, 23px);
+  --type-clock: clamp(38px, 3.25vw, 54px);
+  --type-display: clamp(74px, 8.2vw, 138px);
+
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.65;
+
+  /* ----------------------------------------------------------------------
+     Spacing & layout
+     ---------------------------------------------------------------------- */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
   --space-7: 1.75rem;
+  --space-8: 2rem;
   --space-9: 2.25rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
   --space-14: 3.5rem;
+  --space-16: 4rem;
   --space-18: 4.5rem;
 
-  /* Radii & borders ------------------------------------------------------- */
-  --radius-xs: 4px;
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 22px;
-  --radius-pill: 999px;
-  --border-hairline: 1px solid var(--dace-border);
-  --border-focus: 1px solid rgba(255, 138, 0, 0.55);
-
-  /* Shadows, glow & atmosphere ------------------------------------------- */
-  --shadow-subtle: 0 2px 12px rgba(0, 0, 0, 0.45);
-  --shadow-elevated: 0 24px 70px rgba(0, 0, 0, 0.72), 0 2px 10px rgba(0, 0, 0, 0.5);
-  --glow-accent: 0 0 24px rgba(255, 138, 0, 0.18);
-  --glow-soft: 0 0 60px rgba(255, 138, 0, 0.1);
-  --ambient-veil: radial-gradient(circle at 74% 18%, rgba(255, 138, 0, 0.11), transparent 42%);
-
-  /* Motion ---------------------------------------------------------------- */
-  --duration-fast: 140ms;
-  --duration-normal: 240ms;
-  --duration-slow: 420ms;
-  --duration-ambient: 18s;
-  --ease-standard: cubic-bezier(0.22, 1, 0.36, 1);
-  --ease-enter: cubic-bezier(0.16, 1, 0.3, 1);
-  --motion-drift: 18s ease-in-out infinite alternate;
-
-  /* Layout ---------------------------------------------------------------- */
   --layout-rail: 84px;
   --layout-topbar: 70px;
   --layout-content-max: 1320px;
   --layout-gutter: clamp(20px, 3vw, 44px);
   --layout-panel: 340px;
 
-  /* State ----------------------------------------------------------------- */
+  /* ----------------------------------------------------------------------
+     Radii, borders, surfaces & state
+     ---------------------------------------------------------------------- */
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 22px;
+  --radius-pill: 999px;
+  --radius-full: 50%;
+
+  --border-hairline: 1px solid var(--dace-border);
+  --border-focus: 1px solid rgba(255, 138, 0, 0.55);
+  --border-dim: var(--dace-border);
+
+  --bg-app: var(--dace-black);
+  --bg-surface: var(--dace-surface);
+  --bg-surface-elevated: var(--dace-elevated);
+  --bg-surface-active: var(--dace-active);
+  --bg-surface-subtle: rgba(248, 237, 225, 0.035);
+  --bg-selection: rgba(255, 138, 0, 0.2);
+
+  --text-primary: var(--dace-ivory);
+  --text-secondary: var(--dace-sand);
+  --text-muted: var(--dace-muted);
+  --text-dim: #5c5c5c;
+  --text-bright: #fffaf4;
+  --text-normal: var(--dace-ivory);
+
+  --accent-primary: var(--dace-amber);
+  --accent-hover: var(--dace-amber-bright);
+  --accent-muted: rgba(255, 138, 0, 0.15);
+  --accent-secondary: var(--dace-amber-deep);
+  --accent-subtle: rgba(255, 138, 0, 0.08);
+  --accent-text: var(--dace-amber);
+  --accent-pink: var(--dace-amber);
+  --accent-pink-muted: rgba(255, 138, 0, 0.14);
+  --accent-violet: var(--dace-amber-deep);
+  --accent-violet-muted: rgba(138, 68, 16, 0.18);
+  --accent-yellow: var(--dace-amber-bright);
+  --accent-yellow-muted: rgba(255, 171, 77, 0.16);
+
+  --badge-bg: rgba(255, 138, 0, 0.1);
+  --badge-text: var(--dace-sand);
+  --overlay-backdrop: rgba(5, 5, 5, 0.82);
+
+  --shadow-subtle: 0 2px 12px rgba(0, 0, 0, 0.45);
+  --shadow-elevated: 0 24px 70px rgba(0, 0, 0, 0.72), 0 2px 10px rgba(0, 0, 0, 0.5);
+  --glow-accent: 0 0 24px rgba(255, 138, 0, 0.18);
+  --glow-soft: 0 0 60px rgba(255, 138, 0, 0.1);
+  --glow-pink: 0 0 18px rgba(255, 138, 0, 0.12);
+  --glow-yellow: 0 0 22px rgba(255, 171, 77, 0.15);
+  --ambient-veil: radial-gradient(circle at 74% 18%, rgba(255, 138, 0, 0.11), transparent 42%);
+
+  --brand-symbol-radius: 50%;
+  --brand-symbol-shadow: 0 0 0 2px var(--dace-border);
+  --brand-symbol-color: var(--dace-sand);
+
   --state-hover: rgba(255, 237, 225, 0.045);
   --state-active: rgba(255, 138, 0, 0.12);
   --state-selected: rgba(255, 138, 0, 0.16);
   --state-disabled: 0.42;
   --state-focus-ring: 0 0 0 2px rgba(255, 138, 0, 0.55);
 
-  /* Retargeted semantic aliases ------------------------------------------ */
-  --bg-app: var(--dace-black);
-  --bg-surface: var(--dace-surface);
-  --bg-surface-elevated: var(--dace-elevated);
-  --bg-surface-active: var(--dace-active);
-  --bg-surface-subtle: rgba(255, 237, 225, 0.035);
-  --bg-selection: rgba(255, 138, 0, 0.2);
-  --border-subtle: var(--dace-border);
-  --border-medium: #3a342e;
-  --border-active: var(--dace-amber);
-  --text-primary: var(--dace-ivory);
-  --text-secondary: var(--dace-sand);
-  --text-muted: var(--dace-muted);
-  --text-dim: #5c5c5c;
-  --text-bright: #fffaf4;
-  --accent-primary: var(--dace-amber);
-  --accent-hover: var(--dace-amber-bright);
-  --accent-muted: rgba(255, 138, 0, 0.15);
-  --accent-secondary: var(--dace-amber-deep);
-  --accent-pink: var(--accent-primary);
-  --accent-pink-muted: var(--accent-muted);
-  --accent-violet: var(--accent-secondary);
-  --accent-violet-muted: rgba(138, 68, 16, 0.18);
-  --accent-yellow: var(--accent-hover);
-  --accent-yellow-muted: rgba(255, 171, 77, 0.18);
-  --badge-bg: rgba(255, 138, 0, 0.1);
-  --badge-text: var(--dace-sand);
-  --overlay-backdrop: rgba(5, 5, 5, 0.82);
   --status-danger: var(--dace-danger);
   --status-warning: #ffb547;
   --status-success: #7fd6a3;
+  --danger: var(--dace-danger);
+  --danger-border: rgba(255, 77, 77, 0.55);
+  --danger-subtle: rgba(255, 77, 77, 0.1);
 
-  /* Research highlights retuned to warm cinematic family ------------------ */
+  /* Research highlights — warm cinematic family */
   --hl-important-bg: rgba(255, 138, 0, 0.2);
   --hl-important-border: rgba(255, 138, 0, 0.7);
   --hl-important-text: #ffc07a;
@@ -445,88 +177,34 @@ html.theme-transitioning *::after {
   --hl-definition-bg: rgba(255, 171, 77, 0.14);
   --hl-definition-border: rgba(255, 171, 77, 0.5);
   --hl-definition-text: #ffd3a1;
+
+  /* ----------------------------------------------------------------------
+     Motion
+     ---------------------------------------------------------------------- */
+  --duration-fast: 140ms;
+  --duration-normal: 240ms;
+  --duration-slow: 420ms;
+  --duration-ambient: 18s;
+  --ease-standard: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-enter: cubic-bezier(0.16, 1, 0.3, 1);
+  --motion-drift: 18s ease-in-out infinite alternate;
 }
 
-/* Dull mode: quiet, restrained cinematic workspace. */
-:root[data-theme="dull"],
-html[data-theme="dull"],
-.theme-dull {
-  --bg-app: #0b0b0b;
-  --bg-surface: #131313;
-  --bg-surface-elevated: #1b1b1b;
-  --bg-surface-active: #252525;
-  --bg-surface-subtle: rgba(248, 237, 225, 0.025);
-  --bg-selection: rgba(203, 185, 163, 0.16);
-  --border-subtle: #262626;
-  --border-medium: #34302c;
-  --border-active: #c98a45;
-  --text-primary: #f4e9de;
-  --text-secondary: #c2b2a0;
-  --text-muted: #7f7f7f;
-  --text-dim: #575757;
-  --text-bright: #fffaf4;
-  --accent-primary: #d98632;
-  --accent-hover: #f0a04b;
-  --accent-muted: rgba(217, 134, 50, 0.14);
-  --accent-secondary: #8a4410;
-  --accent-pink: #d98632;
-  --accent-pink-muted: rgba(217, 134, 50, 0.14);
-  --accent-violet: #8a4410;
-  --accent-violet-muted: rgba(138, 68, 16, 0.18);
-  --accent-yellow: #f0a04b;
-  --accent-yellow-muted: rgba(240, 160, 75, 0.18);
-  --badge-bg: rgba(248, 237, 225, 0.05);
-  --badge-text: #9c9084;
-  --overlay-backdrop: rgba(6, 6, 6, 0.84);
-  --shadow-subtle: 0 2px 10px rgba(0, 0, 0, 0.4);
-  --shadow-elevated: 0 20px 60px rgba(0, 0, 0, 0.66);
-  --glow-accent: 0 0 18px rgba(217, 134, 50, 0.1);
-  --glow-soft: none;
-  --ambient-veil: radial-gradient(circle at 74% 14%, rgba(217, 134, 50, 0.06), transparent 46%);
-  --state-hover: rgba(248, 237, 225, 0.03);
-  --state-active: rgba(217, 134, 50, 0.09);
-  --state-selected: rgba(217, 134, 50, 0.12);
-  --font-weight-heading: 500;
-}
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0ms;
+    --duration-normal: 0ms;
+    --duration-slow: 0ms;
+    --duration-ambient: 0ms;
+    --motion-drift: none;
+  }
 
-/* Expression mode: the same cinematic identity with fuller amber lighting. */
-:root[data-theme="expression"],
-html[data-theme="expression"],
-.theme-expression {
-  --bg-app: #080807;
-  --bg-surface: #121110;
-  --bg-surface-elevated: #1c1a17;
-  --bg-surface-active: #2a251f;
-  --bg-surface-subtle: rgba(255, 138, 0, 0.05);
-  --bg-selection: rgba(255, 138, 0, 0.24);
-  --border-subtle: #2d2823;
-  --border-medium: #8a4410;
-  --border-active: #ff8a00;
-  --text-primary: #fff4e8;
-  --text-secondary: #e4d2bd;
-  --text-muted: #a4978a;
-  --text-dim: #6d6157;
-  --text-bright: #fffaf3;
-  --accent-primary: #ff8a00;
-  --accent-hover: #ffb05c;
-  --accent-muted: rgba(255, 138, 0, 0.2);
-  --accent-secondary: #ffcf9c;
-  --accent-pink: #ff8a00;
-  --accent-pink-muted: rgba(255, 138, 0, 0.2);
-  --accent-violet: #8a4410;
-  --accent-violet-muted: rgba(138, 68, 16, 0.22);
-  --accent-yellow: #ffb05c;
-  --accent-yellow-muted: rgba(255, 176, 92, 0.2);
-  --badge-bg: rgba(255, 138, 0, 0.14);
-  --badge-text: #ffc084;
-  --overlay-backdrop: rgba(4, 4, 4, 0.88);
-  --shadow-subtle: 0 0 0 1px rgba(255, 138, 0, 0.18);
-  --shadow-elevated: 0 28px 80px rgba(0, 0, 0, 0.8), 0 0 42px rgba(255, 138, 0, 0.09);
-  --glow-accent: 0 0 28px rgba(255, 138, 0, 0.28);
-  --glow-soft: 0 0 80px rgba(255, 138, 0, 0.14);
-  --ambient-veil: radial-gradient(circle at 72% 16%, rgba(255, 138, 0, 0.18), transparent 44%);
-  --state-hover: rgba(255, 138, 0, 0.06);
-  --state-active: rgba(255, 138, 0, 0.16);
-  --state-selected: rgba(255, 138, 0, 0.2);
-  --font-weight-heading: 600;
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

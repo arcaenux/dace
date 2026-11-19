@@ -24,6 +24,7 @@ export const FocusSpaceView: FC<FocusSpaceViewProps> = ({
           className="focus-exit-btn"
           onClick={onOpenCommands}
           title="Open Command Palette (Ctrl+K)"
+          data-dismiss-ignore
         >
           <span>Commands</span>
           <kbd>Ctrl+K</kbd>

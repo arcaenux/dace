@@ -1,0 +1,996 @@
+/* ==========================================================================
+   Dace — Knowledge Desk
+   One writing canvas, one contextual rail. The component vocabulary is scoped
+   to .knowledge-desk-root so the rest of the cinematic shell is unaffected.
+   ========================================================================== */
+
+.dace-app .knowledge-desk-root {
+  --dace-surface: #101010;
+  --dace-elevated: #151515;
+  --dace-active: #1b1b1b;
+  --dace-border: #292929;
+  --dace-ivory: #f4e9dd;
+  --dace-sand: #b5a697;
+  --dace-muted: #77716b;
+  --dace-amber: #ff9900;
+  --dace-amber-bright: #ffb04d;
+  --dace-amber-deep: #8a4a0a;
+  --status-success: #7ea98b;
+  --status-danger: #a65b57;
+
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  padding-top: 118px;
+  padding-left: var(--rail-plane);
+  overflow: hidden;
+  background: #101010;
+}
+
+.dace-app .knowledge-main-area,
+.dace-app .desk-workspace,
+.dace-app .editor-container {
+  height: 100%;
+  min-height: 0;
+}
+
+.dace-app .knowledge-main-area {
+  flex: 1;
+  min-width: 0;
+}
+
+.dace-app .desk-workspace {
+  display: flex;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.dace-app .editor-container {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  background: transparent;
+}
+
+/* --------------------------------------------------------------------------
+   Compact toolbar
+   -------------------------------------------------------------------------- */
+
+.dace-app .desk-toolbar {
+  position: relative;
+  z-index: 20;
+  display: flex;
+  flex: 0 0 52px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  height: 52px;
+  padding: 0 46px 0 52px;
+  border-bottom: 1px solid #292929;
+  background: #101010;
+}
+
+.dace-app .desk-toolbar-left,
+.dace-app .desk-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.dace-app .desk-toolbar-right {
+  position: relative;
+}
+
+.dace-app .desk-toolbar-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: #77716b;
+  cursor: pointer;
+  transition: color 140ms ease, border-color 140ms ease, background-color 140ms ease;
+}
+
+.dace-app .desk-toolbar-icon:hover,
+.dace-app .desk-toolbar-icon[aria-expanded="true"] {
+  border-color: #292929;
+  background: #151515;
+  color: #f4e9dd;
+}
+
+.dace-app .desk-toolbar-rule {
+  width: 1px;
+  height: 17px;
+  background: #292929;
+}
+
+.dace-app .desk-toolbar-context {
+  color: #f4e9dd;
+  font-family: var(--font-interface);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.dace-app .desk-save-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-left: 12px;
+  color: #77716b;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.dace-app .desk-save-status .status-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.dace-app .desk-save-status.saved { color: var(--status-success); }
+.dace-app .desk-save-status.saving { color: #b5a697; }
+.dace-app .desk-save-status.unsaved { color: #ff9900; }
+.dace-app .desk-save-status.error { color: var(--status-danger); }
+
+.dace-app .desk-save-status button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  cursor: pointer;
+}
+
+.dace-app .desk-save-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 28px;
+  padding: 0 11px;
+  border: 1px solid #8a4a0a;
+  border-radius: 4px;
+  background: rgba(255, 153, 0, 0.06);
+  color: #ff9900;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.07em;
+  cursor: pointer;
+  transition: background-color 140ms ease, border-color 140ms ease;
+}
+
+.dace-app .desk-save-button:hover {
+  border-color: #ff9900;
+  background: rgba(255, 153, 0, 0.12);
+}
+
+.dace-app .desk-actions-menu {
+  position: absolute;
+  top: 35px;
+  right: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  width: 176px;
+  padding: 6px;
+  border: 1px solid #292929;
+  border-radius: 6px;
+  background: #151515;
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.55);
+}
+
+.dace-app .desk-actions-menu button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 9px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: #b5a697;
+  font-family: var(--font-interface);
+  font-size: 11px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dace-app .desk-actions-menu button:hover {
+  background: #1b1b1b;
+  color: #f4e9dd;
+}
+
+.dace-app .desk-actions-menu button.destructive { color: #a65b57; }
+.dace-app .desk-actions-menu button.destructive:hover {
+  background: rgba(166, 91, 87, 0.12);
+  color: #c9827d;
+}
+
+.dace-app .desk-actions-menu kbd {
+  color: #77716b;
+  font-family: var(--font-mono);
+  font-size: 9px;
+}
+
+.dace-app .desk-actions-divider {
+  height: 1px;
+  margin: 5px 3px;
+  background: #292929;
+}
+
+/* --------------------------------------------------------------------------
+   The writing canvas
+   -------------------------------------------------------------------------- */
+
+.dace-app .editor-scroll-area {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  padding: 54px 48px 0 84px;
+  background: #101010;
+}
+
+.dace-app .editor-document {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 900px;
+  height: 100%;
+  min-height: 0;
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.dace-app .editor-title-input {
+  display: block;
+  flex: 0 0 auto;
+  width: 100%;
+  min-height: 58px;
+  padding: 0;
+  border: none;
+  outline: none;
+  resize: none;
+  overflow: hidden;
+  background: transparent;
+  color: #f4e9dd;
+  font-family: var(--font-editorial);
+  font-size: clamp(40px, 3.35vw, 56px);
+  font-weight: 400;
+  line-height: 1.06;
+  letter-spacing: -0.035em;
+  caret-color: #ff9900;
+}
+
+.dace-app .editor-title-input::placeholder {
+  color: rgba(181, 166, 151, 0.32);
+  font-style: italic;
+}
+
+.dace-app .editor-tags-container {
+  flex: 0 0 auto;
+  margin-top: 30px;
+  padding: 0 0 13px;
+  border-bottom: 1px solid #292929;
+}
+
+.dace-app .editor-tags-container .tags-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 9px 17px;
+  min-height: 26px;
+}
+
+.dace-app .add-tag-button {
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #b5a697;
+  font-family: var(--font-interface);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.dace-app .add-tag-button:hover { color: #ff9900; }
+
+.dace-app .tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #b5a697;
+  font-family: var(--font-interface);
+  font-size: 12px;
+}
+
+.dace-app .tag-chip::before {
+  content: "#";
+  color: #77716b;
+}
+
+.dace-app .tag-remove-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 13px;
+  height: 13px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #77716b;
+  font-family: var(--font-interface);
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.dace-app .tag-remove-btn:hover { color: #ff9900; }
+
+.dace-app .tag-input {
+  width: 108px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-bottom: 1px solid #8a4a0a;
+  border-radius: 0;
+  outline: none;
+  background: transparent;
+  color: #f4e9dd;
+  font-family: var(--font-interface);
+  font-size: 12px;
+}
+
+.dace-app .editor-textarea {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  padding: 56px 6px 40px 0;
+  border: none;
+  outline: none;
+  resize: none;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: transparent;
+  color: #f4e9dd;
+  font-family: var(--font-interface);
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.75;
+  letter-spacing: -0.005em;
+  caret-color: #ff9900;
+}
+
+.dace-app .editor-textarea::placeholder {
+  color: rgba(181, 166, 151, 0.26);
+  font-style: italic;
+}
+
+.dace-app .editor-scroll-area::-webkit-scrollbar,
+.dace-app .editor-textarea::-webkit-scrollbar,
+.dace-app .desk-context-body::-webkit-scrollbar {
+  width: 7px;
+}
+
+.dace-app .editor-scroll-area::-webkit-scrollbar-thumb,
+.dace-app .editor-textarea::-webkit-scrollbar-thumb,
+.dace-app .desk-context-body::-webkit-scrollbar-thumb {
+  border-radius: 4px;
+  background: #292929;
+}
+
+/* Quiet status strip: it never floats over the writing surface. */
+.dace-app .editor-status-bar {
+  display: flex;
+  flex: 0 0 62px;
+  align-items: flex-start;
+  gap: 22px;
+  height: 62px;
+  padding: 13px 46px 0 84px;
+  border-top: 1px solid #292929;
+  background: #101010;
+  color: #77716b;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.dace-app .editor-status-bar .status-dot {
+  width: 5px;
+  height: 5px;
+  margin-top: 3px;
+  border-radius: 50%;
+  background: #7ea98b;
+}
+
+.dace-app .editor-status-bar .status-dot.saving { background: #b5a697; }
+.dace-app .editor-status-bar .status-dot.unsaved { background: #ff9900; }
+.dace-app .editor-status-bar .status-dot.error { background: #a65b57; }
+
+.dace-app .editor-status-spacer { flex: 1; }
+
+.dace-app .editor-status-bar .status-command {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #b5a697;
+}
+
+.dace-app .command-mark {
+  color: #ff9900;
+  font-family: var(--font-interface);
+  font-size: 12px;
+  line-height: 1;
+}
+
+/* --------------------------------------------------------------------------
+   Contextual rail
+   -------------------------------------------------------------------------- */
+
+.dace-app .desk-context-panel {
+  display: flex;
+  flex: 0 0 430px;
+  flex-direction: column;
+  width: 430px;
+  min-height: 0;
+  border-left: 1px solid #292929;
+  background: #101010;
+}
+
+.dace-app .editor-container.in-focus + .desk-context-panel { display: none; }
+
+.dace-app .desk-context-tabs {
+  display: flex;
+  flex: 0 0 52px;
+  align-items: center;
+  gap: 28px;
+  height: 52px;
+  padding: 0 30px 0 50px;
+  border-bottom: 1px solid #292929;
+}
+
+.dace-app .desk-context-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 52px;
+  padding: 0;
+  border: none;
+  border-bottom: 1px solid transparent;
+  background: transparent;
+  color: #77716b;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.07em;
+  cursor: pointer;
+  transition: color 140ms ease, border-color 140ms ease;
+}
+
+.dace-app .desk-context-tab:hover { color: #b5a697; }
+
+.dace-app .desk-context-tab.active {
+  border-bottom-color: #ff9900;
+  color: #f4e9dd;
+}
+
+.dace-app .desk-context-body {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 58px 49px 60px 70px;
+}
+
+.dace-app .desk-context-body.graph-active {
+  overflow: hidden;
+  padding: 0;
+}
+
+.dace-app .desk-context-section {
+  margin-bottom: 28px;
+  padding-bottom: 28px;
+  border-bottom: 1px solid #292929;
+}
+
+.dace-app .desk-context-section:last-child {
+  margin-bottom: 0;
+  border-bottom: none;
+}
+
+.dace-app .desk-section-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #f4e9dd;
+  font-family: var(--font-interface);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.dace-app .desk-section-toggle svg { color: #77716b; }
+
+/* Existing relationship workflow, restyled as a quiet section. */
+.dace-app .desk-context-panel .relationships-panel {
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.dace-app .desk-context-panel .relationships-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.dace-app .desk-context-panel .relationships-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #f4e9dd;
+  cursor: pointer;
+}
+
+.dace-app .desk-context-panel .relationships-title {
+  color: #f4e9dd;
+  font-family: var(--font-interface);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.dace-app .desk-context-panel .relationships-count-badge {
+  margin-left: 7px;
+  color: #77716b;
+  font-family: var(--font-mono);
+  font-size: 9px;
+}
+
+.dace-app .desk-context-panel .relationships-header-actions .desk-btn {
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #b5a697;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
+.dace-app .desk-context-panel .relationships-header-actions .desk-btn:hover { color: #ff9900; }
+
+.dace-app .desk-context-panel .relationships-empty-state,
+.dace-app .desk-context-panel .attachments-empty-state {
+  padding: 0;
+  background: transparent;
+}
+
+.dace-app .desk-context-panel .empty-hint,
+.dace-app .desk-context-panel .empty-desc {
+  display: block;
+  max-width: 310px;
+  margin: 0;
+  color: #77716b;
+  font-family: var(--font-interface);
+  font-size: 11px;
+  line-height: 1.65;
+}
+
+.dace-app .desk-context-panel .relationships-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dace-app .desk-context-panel .section-label {
+  margin-bottom: 8px;
+  color: #77716b;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.dace-app .desk-context-panel .relationship-card {
+  padding: 8px 0;
+  border: none;
+  border-bottom: 1px solid #292929;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.dace-app .desk-context-panel .rel-card-main {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.dace-app .desk-context-panel .rel-badge {
+  border: none;
+  background: transparent;
+  color: #ff9900;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.dace-app .desk-context-panel .rel-target-link {
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #b5a697;
+  font-family: var(--font-interface);
+  font-size: 11px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dace-app .desk-context-panel .rel-target-link:hover { color: #ff9900; }
+.dace-app .desk-context-panel .rel-description {
+  margin-top: 5px;
+  color: #77716b;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.dace-app .desk-context-panel .rel-actions {
+  display: none;
+}
+
+.dace-app .desk-context-panel .relationship-card:hover .rel-actions { display: block; }
+.dace-app .desk-context-panel .rel-delete-btn {
+  margin-top: 4px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #a65b57;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+/* Existing document workflow, restyled as a quiet section. */
+.dace-app .desk-context-panel .record-attachments-section {
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+}
+
+.dace-app .desk-context-panel .attachments-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.dace-app .desk-context-panel .attachments-title-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.dace-app .desk-context-panel .attachments-heading {
+  color: #f4e9dd;
+  font-family: var(--font-interface);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.dace-app .desk-context-panel .attachments-counter {
+  color: #77716b;
+  font-family: var(--font-mono);
+  font-size: 9px;
+}
+
+.dace-app .desk-context-panel .add-attachment-btn.quiet {
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #b5a697;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
+.dace-app .desk-context-panel .add-attachment-btn.quiet:hover { color: #ff9900; }
+
+.dace-app .desk-context-panel .attachments-list-container { margin-top: 0; }
+
+.dace-app .desk-context-panel .attachment-card {
+  margin-bottom: 8px;
+  padding: 10px 0;
+  border: none;
+  border-bottom: 1px solid #292929;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.dace-app .desk-context-panel .attachment-filename {
+  color: #b5a697;
+  font-family: var(--font-interface);
+  font-size: 11px;
+}
+
+.dace-app .desk-context-panel .attachment-card-actions .desk-btn {
+  min-height: 24px;
+  padding: 4px 8px;
+  border-color: #292929;
+  background: #151515;
+  color: #b5a697;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  text-transform: uppercase;
+}
+
+.dace-app .desk-context-panel .record-excerpts-section {
+  margin-top: 22px;
+  padding-top: 20px;
+  border-top: 1px solid #292929;
+}
+
+.dace-app .desk-context-panel .record-excerpts-title {
+  color: #f4e9dd;
+  font-family: var(--font-interface);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* Metadata */
+.dace-app .desk-meta-grid {
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr);
+  column-gap: 14px;
+  row-gap: 10px;
+  margin-top: 16px;
+}
+
+.dace-app .desk-meta-grid span:nth-child(odd) {
+  color: #77716b;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.dace-app .desk-meta-grid span:nth-child(even) {
+  color: #b5a697;
+  font-family: var(--font-interface);
+  font-size: 11px;
+}
+
+/* Outline */
+.dace-app .desk-outline-note,
+.dace-app .desk-empty-note {
+  margin: 0 0 18px;
+  color: #77716b;
+  font-family: var(--font-interface);
+  font-size: 11px;
+  line-height: 1.65;
+}
+
+.dace-app .desk-empty-note code {
+  color: #b5a697;
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+
+.dace-app .desk-outline-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.dace-app .desk-outline-list button {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  width: 100%;
+  padding: 7px 0;
+  border: none;
+  background: transparent;
+  color: #b5a697;
+  font-family: var(--font-interface);
+  font-size: 11px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dace-app .desk-outline-list button:hover { color: #ff9900; }
+
+.dace-app .outline-line {
+  flex: 0 0 18px;
+  color: #77716b;
+  font-family: var(--font-mono);
+  font-size: 9px;
+}
+
+.dace-app .outline-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Existing graph engine, embedded as a real contextual view. */
+.dace-app .desk-graph-view {
+  position: absolute;
+  inset: 0;
+}
+
+.dace-app .knowledge-graph-container.embedded {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  background: #101010;
+}
+
+.dace-app .knowledge-graph-container.embedded .graph-floating-search-bar,
+.dace-app .knowledge-graph-container.embedded .graph-top-actions,
+.dace-app .knowledge-graph-container.embedded .graph-viewport-controls {
+  display: none;
+}
+
+.dace-app .knowledge-graph-container.embedded .graph-contextual-card {
+  position: absolute;
+  top: auto;
+  right: 16px;
+  bottom: 16px;
+  left: 16px;
+  width: auto;
+  padding: 14px;
+  border-color: #292929;
+  border-radius: 6px;
+  background: rgba(16, 16, 16, 0.95);
+}
+
+.dace-app .knowledge-graph-container.embedded .card-actions { display: none; }
+.dace-app .knowledge-graph-container.embedded .card-title {
+  font-family: var(--font-interface);
+  font-size: 12px;
+}
+.dace-app .knowledge-graph-container.embedded .card-preview,
+.dace-app .knowledge-graph-container.embedded .card-connections-info {
+  font-size: 10px;
+}
+
+.dace-app .desk-graph-open {
+  position: absolute;
+  right: 18px;
+  bottom: 18px;
+  z-index: 40;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border: 1px solid #292929;
+  border-radius: 4px;
+  background: #151515;
+  color: #b5a697;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+
+.dace-app .desk-graph-open:hover { color: #ff9900; border-color: #8a4a0a; }
+
+/* Empty desk */
+.dace-app .desk-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 12px;
+  padding: 90px 84px;
+  border: none;
+  background: transparent;
+}
+
+.dace-app .desk-empty-heading {
+  color: #f4e9dd;
+  font-family: var(--font-editorial);
+  font-size: clamp(38px, 4.6vw, 64px);
+  font-weight: 400;
+  letter-spacing: -0.035em;
+  line-height: 1.05;
+}
+
+.dace-app .desk-empty-sub {
+  max-width: 480px;
+  color: #b5a697;
+  font-family: var(--font-interface);
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.dace-app .desk-empty-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
+
+/* --------------------------------------------------------------------------
+   Responsive — reduce chrome, preserve the writing column
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 1280px) {
+  .dace-app .desk-toolbar { padding-right: 32px; padding-left: 40px; }
+  .dace-app .editor-scroll-area { padding-right: 32px; padding-left: 64px; }
+  .dace-app .editor-status-bar { padding-right: 32px; padding-left: 64px; }
+  .dace-app .desk-context-panel { flex-basis: 360px; width: 360px; }
+  .dace-app .desk-context-tabs { padding-left: 36px; gap: 20px; }
+  .dace-app .desk-context-body { padding-right: 36px; padding-left: 48px; }
+}
+
+@media (max-width: 1040px) {
+  .dace-app .desk-workspace { flex-direction: row; }
+  .dace-app .desk-toolbar { padding-right: 24px; padding-left: 28px; }
+  .dace-app .editor-scroll-area { padding-right: 24px; padding-left: 44px; }
+  .dace-app .editor-status-bar { padding-right: 24px; padding-left: 44px; }
+  .dace-app .desk-context-panel { flex-basis: 300px; width: 300px; }
+  .dace-app .desk-context-tabs { padding: 0 18px 0 24px; gap: 14px; }
+  .dace-app .desk-context-body { padding: 44px 22px 48px 30px; }
+  .dace-app .editor-title-input { font-size: clamp(36px, 4.4vw, 48px); }
+}
+
+@media (max-width: 880px) {
+  .dace-app .desk-toolbar { padding-right: 18px; padding-left: 20px; }
+  .dace-app .desk-toolbar-context,
+  .dace-app .desk-save-status { display: none; }
+  .dace-app .editor-scroll-area { padding-right: 18px; padding-left: 30px; }
+  .dace-app .editor-status-bar { padding-right: 18px; padding-left: 30px; gap: 12px; }
+  .dace-app .desk-context-panel { flex-basis: 260px; width: 260px; }
+  .dace-app .desk-context-tabs { padding: 0 12px 0 16px; gap: 10px; }
+  .dace-app .desk-context-tab { gap: 4px; font-size: 9px; }
+  .dace-app .desk-context-body { padding: 36px 18px 40px 22px; }
+}
+
+@media (max-width: 720px) {
+  .dace-app .desk-context-panel { display: none; }
+  .dace-app .editor-scroll-area { padding: 44px 22px 0; }
+  .dace-app .editor-status-bar { padding-right: 14px; padding-left: 22px; }
+  .dace-app .desk-toolbar { padding-right: 12px; padding-left: 14px; }
+  .dace-app .desk-empty-state { padding: 70px 28px; }
+}

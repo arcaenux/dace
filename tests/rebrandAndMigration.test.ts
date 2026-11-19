@@ -26,12 +26,12 @@ test("1. Project branding and metadata consistently reference Dace", () => {
 
   // WorkspaceIntro
   const introTsx = fs.readFileSync(path.resolve("src/workspace/WorkspaceIntro.tsx"), "utf-8");
-  assert.ok(introTsx.includes("Welcome to Dace"));
-  assert.ok(introTsx.includes("A space for discovery."));
+  assert.ok(introTsx.includes("WELCOME TO DACE"));
+  assert.ok(introTsx.includes("A SPACE FOR DISCOVERY"));
 
-  // WorkspaceNavigation
-  const navTsx = fs.readFileSync(path.resolve("src/workspace/WorkspaceNavigation.tsx"), "utf-8");
-  assert.ok(navTsx.includes('<span className="brand-title">Dace</span>'));
+  // WorkspaceRail (branded navigation rail)
+  const railTsx = fs.readFileSync(path.resolve("src/workspace/WorkspaceRail.tsx"), "utf-8");
+  assert.ok(railTsx.includes("DACE"), "Workspace rail must display Dace branding");
 });
 
 test("2. Legacy data migration protocol: non-destructive copy with receipt and sentinel", () => {

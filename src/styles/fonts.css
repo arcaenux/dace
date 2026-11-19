@@ -1,14 +1,44 @@
 /* ==========================================================================
-   Dace — Typography System Fonts
-   Layer 1: Editorial / Naturalist (Newsreader Variable) - SIL OFL
-   Layer 2: Interface Typography (Manrope Variable) - SIL OFL
-   Layer 3: Expressive Quotation (Newsreader Variable Italic) - SIL OFL
+   Dace — self-hosted typefaces
+
+   Newsreader and Manrope remain available for editorial/legacy surfaces.
+   The cinematic system uses the bundled Space Grotesk and IBM Plex Mono
+   files directly so the intended faces cannot be silently replaced by a
+   platform fallback.
    ========================================================================== */
 
 @import "@fontsource-variable/newsreader/index.css";
 @import "@fontsource-variable/newsreader/wght-italic.css";
 @import "@fontsource-variable/manrope/index.css";
-@import "@fontsource-variable/space-grotesk/wght.css";
-@import "@fontsource/ibm-plex-mono/latin-400.css";
-@import "@fontsource/ibm-plex-mono/latin-500.css";
-@import "@fontsource/ibm-plex-mono/latin-600.css";
+
+@font-face {
+  font-family: "Space Grotesk Variable";
+  src: url("../assets/fonts/space-grotesk/space-grotesk-latin-wght-normal.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  src: url("../assets/fonts/ibm-plex-mono/ibm-plex-mono-latin-400-normal.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  src: url("../assets/fonts/ibm-plex-mono/ibm-plex-mono-latin-500-normal.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  src: url("../assets/fonts/ibm-plex-mono/ibm-plex-mono-latin-600-normal.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+}

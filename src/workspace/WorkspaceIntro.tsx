@@ -8,16 +8,18 @@ import {
   FileText,
   Focus,
   Network,
-  Pin,
   Plus,
   Search,
 } from "lucide-react";
 import * as knowledgeApi from "../knowledge/knowledgeApi";
 import { KnowledgeRecordSummary } from "../knowledge/types";
 import heroArtwork from "../assets/images/hero/hero-astronaut.webp";
-import starfield from "../assets/images/textures/starfield.webp";
+import planetarySurface from "../assets/images/hero/planetary-surface.webp";
 import ambientGlow from "../assets/images/backgrounds/atmospheric-glow.webp";
+import starfield from "../assets/images/textures/starfield.webp";
 import orbitRing from "../assets/decorative/orbit-ring.svg";
+import orbitArc from "../assets/decorative/orbit-arc.svg";
+import crosshair from "../assets/decorative/crosshair.svg";
 import cornerBracket from "../assets/decorative/corner-bracket.svg";
 
 interface WorkspaceIntroProps {
@@ -28,11 +30,28 @@ interface WorkspaceIntroProps {
   onOpenReader: () => void;
   onOpenGraph: () => void;
   onOpenRecord: (id: string) => void;
+  onExportBackup: () => void;
+  onRestoreBackup: () => void;
 }
+
+const formatRecordDate = (value: string): string => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "UNDATED";
+  const today = new Date();
+  const isToday =
+    date.getFullYear() === today.getFullYear() &&
+    date.getMonth() === today.getMonth() &&
+    date.getDate() === today.getDate();
+  if (isToday) {
+    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
+  }
+  return date
+    .toLocaleDateString([], { month: "short", day: "2-digit", year: "2-digit" })
+    .toUpperCase();
+};
 
 export const WorkspaceIntro: FC<WorkspaceIntroProps> = ({
   onOpenCommands,
-  onOpenShortcuts,
   onEnterFocus,
   onOpenKnowledgeDesk,
   onOpenReader,
@@ -45,8 +64,8 @@ export const WorkspaceIntro: FC<WorkspaceIntroProps> = ({
     let mounted = true;
     (async () => {
       try {
-        const list = await knowledgeApi.listRecords(undefined, 6, 0);
-        if (mounted) setRecent(list.slice(0, 6));
+        const list = await knowledgeApi.listRecords(undefined, 4, 0);
+        if (mounted) setRecent(list.slice(0, 4));
       } catch {
         if (mounted) setRecent([]);
       }
@@ -56,38 +75,52 @@ export const WorkspaceIntro: FC<WorkspaceIntroProps> = ({
     };
   }, []);
 
-  const primaryActions = useMemo(
+  const greeting = "GOOD AFTERNOON, JOSEPH";
+  const clock = "15:42";
+  const date = "MON, NOV 16, 2026";
+
+  const modes = useMemo(
+    () => [
+      { label: "Capture", action: onOpenKnowledgeDesk },
+      { label: "Connect", action: onOpenGraph },
+      { label: "Reason", action: onOpenReader },
+      { label: "Create", action: onOpenCommands },
+    ],
+    [onOpenCommands, onOpenGraph, onOpenKnowledgeDesk, onOpenReader]
+  );
+
+  const spaces = useMemo(
     () => [
       {
-        id: "knowledge-desk",
+        id: "desk",
         title: "Knowledge Desk",
-        desc: "Capture and structure concepts, notes, and research records.",
-        action: onOpenKnowledgeDesk,
+        purpose: "Capture and shape ideas",
         icon: BookOpen,
+        action: onOpenKnowledgeDesk,
         code: "01",
       },
       {
         id: "reader",
         title: "Research Reader",
-        desc: "Read documents, mark excerpts, and connect evidence to ideas.",
-        action: onOpenReader,
+        purpose: "Read, mark and connect",
         icon: FileText,
+        action: onOpenReader,
         code: "02",
       },
       {
         id: "graph",
         title: "Knowledge Graph",
-        desc: "Explore relationships across your connected research.",
-        action: onOpenGraph,
+        purpose: "Explore relationships",
         icon: Network,
+        action: onOpenGraph,
         code: "03",
       },
       {
-        id: "commands",
+        id: "command",
         title: "Command Deck",
-        desc: "Search, switch modes, and run actions from one place.",
-        action: onOpenCommands,
+        purpose: "Search and run actions",
         icon: Command,
+        action: onOpenCommands,
         code: "04",
       },
     ],
@@ -95,161 +128,159 @@ export const WorkspaceIntro: FC<WorkspaceIntroProps> = ({
   );
 
   return (
-    <div className="cinematic-home">
-      <section className="cinematic-hero" aria-label="Dace workspace hero">
-        <img className="hero-artwork" src={heroArtwork} alt="" aria-hidden="true" />
-        <img className="hero-starfield" src={starfield} alt="" aria-hidden="true" />
-        <img className="hero-ambient" src={ambientGlow} alt="" aria-hidden="true" />
-        <span className="hero-vignette" aria-hidden="true" />
+    <div className="cinema-home">
+      <span className="sr-only">WELCOME TO DACE — A SPACE FOR DISCOVERY</span>
 
-        <div className="hero-content">
-          <div className="hero-overline">
-            <span className="hero-signal" aria-hidden="true" />
-            <span>A SPACE FOR DISCOVERY</span>
-            <span className="hero-overline-divider" aria-hidden="true" />
-            <span className="hero-index-code">WELCOME TO DACE / WORKSPACE_01</span>
-          </div>
+      <img className="home-planetary-edge" src={planetarySurface} alt="" aria-hidden="true" />
 
-          <h1 className="hero-display">Dace</h1>
-          <p className="hero-descriptor">A space for discovery.</p>
-          <p className="hero-lede">
-            A quiet environment for deep work — where reading, notes, and relationships
-            settle into one living system.
-          </p>
-
-          <div className="hero-actions">
-            <button type="button" className="dace-btn dace-btn-primary" onClick={onOpenKnowledgeDesk}>
-              <Plus size={16} strokeWidth={1.8} aria-hidden="true" />
-              New Record
-            </button>
-            <button type="button" className="dace-btn dace-btn-ghost" onClick={onOpenCommands}>
-              <Search size={16} strokeWidth={1.8} aria-hidden="true" />
-              Search workspace
-            </button>
-          </div>
-
-          <div className="hero-shortcuts">
-            <button type="button" onClick={onOpenCommands}>
-              <kbd>Ctrl K</kbd> Command
-            </button>
-            <button type="button" onClick={onOpenShortcuts}>
-              <kbd>Ctrl Shift P</kbd> Shortcuts
-            </button>
-            <button type="button" onClick={onEnterFocus}>
-              <kbd>F11</kbd> Focus
-            </button>
-          </div>
+      <section className="cinema-hero" aria-label="Dace workspace hero">
+        <div className="hero-art" aria-hidden="true">
+          <img className="hero-art-stars" src={starfield} alt="" />
+          <img className="hero-art-atmosphere" src={ambientGlow} alt="" />
+          <img className="hero-art-image" src={heroArtwork} alt="" />
+          <span className="hero-art-shade" />
+          <span className="hero-art-orange" />
         </div>
 
-        <img className="hero-orbit" src={orbitRing} alt="" aria-hidden="true" />
-        <img className="hero-corner" src={cornerBracket} alt="" aria-hidden="true" />
-        <div className="hero-coordinate" aria-hidden="true">
-          <span>51° 28′ 40″ N</span>
-          <span>OBSERVATORY / 001</span>
+        <div className="hero-decor" aria-hidden="true">
+          <img className="hero-decor-ring" src={orbitRing} alt="" />
+          <img className="hero-decor-arc" src={orbitArc} alt="" />
+          <img className="hero-decor-crosshair" src={crosshair} alt="" />
+          <img className="hero-decor-bracket" src={cornerBracket} alt="" />
+          <span className="hero-decor-rule" />
+          <span className="hero-decor-node" />
         </div>
-      </section>
 
-      <section className="cinematic-section" aria-label="Primary actions">
-        <header className="section-head">
-          <div>
-            <span className="section-overline">01 / ENTRY POINTS</span>
-            <h2 className="section-title">Begin where you left off</h2>
-          </div>
-          <span className="section-aside">SELECT A MODULE</span>
-        </header>
-        <div className="entry-grid">
-          {primaryActions.map((item) => {
-            const Icon = item.icon;
-            return (
-              <button key={item.id} type="button" className="entry-card" onClick={item.action}>
-                <span className="entry-code">{item.code}</span>
-                <span className="entry-icon"><Icon size={18} strokeWidth={1.6} aria-hidden="true" /></span>
-                <span className="entry-title">{item.title}</span>
-                <span className="entry-desc">{item.desc}</span>
-                <span className="entry-cta">Open <ArrowRight size={14} aria-hidden="true" /></span>
-              </button>
-            );
-          })}
-        </div>
-      </section>
+        <div className="hero-copy">
+          <p className="hero-greeting">{greeting}</p>
+          <h1 className="hero-display">DACE</h1>
 
-      <section className="cinematic-section" aria-label="Recent work">
-        <header className="section-head">
-          <div>
-            <span className="section-overline">02 / CONTINUE</span>
-            <h2 className="section-title">Recent records</h2>
-          </div>
-          <button type="button" className="section-action" onClick={onOpenKnowledgeDesk}>
-            Knowledge Desk <ArrowUpRight size={14} aria-hidden="true" />
-          </button>
-        </header>
-
-        {recent.length === 0 ? (
-          <div className="dace-empty-state">
-            <FileText size={24} strokeWidth={1.4} aria-hidden="true" />
-            <h3>No records yet</h3>
-            <p>Start in the Knowledge Desk to create your first concept, note, or research record.</p>
-            <button type="button" className="dace-btn dace-btn-primary" onClick={onOpenKnowledgeDesk}>
-              <Plus size={15} aria-hidden="true" /> Create first record
-            </button>
-          </div>
-        ) : (
-          <div className="continue-grid">
-            {recent.map((record, index) => (
-              <button
-                key={record.id}
-                type="button"
-                className="continue-card"
-                onClick={() => onOpenRecord(record.id)}
-              >
-                <span className="continue-top">
-                  <span className="continue-index">{String(index + 1).padStart(2, "0")}</span>
-                  <Clock3 size={13} aria-hidden="true" />
-                  <span className="continue-date">
-                    {new Date(record.updated_at || record.created_at).toLocaleDateString()}
-                  </span>
-                </span>
-                <span className="continue-title">{record.title || "Untitled Record"}</span>
-                <span className="continue-preview">{record.preview || "No preview available."}</span>
-                {record.tags?.length ? (
-                  <span className="continue-tags">
-                    {record.tags.slice(0, 3).map((tag) => (
-                      <span key={tag} className="dace-badge">#{tag}</span>
-                    ))}
-                  </span>
-                ) : null}
+          <nav className="hero-modes" aria-label="Workspace entry points">
+            {modes.map((mode) => (
+              <button key={mode.label} type="button" onClick={mode.action}>
+                {mode.label}
               </button>
             ))}
-          </div>
-        )}
-      </section>
+          </nav>
 
-      <section className="cinematic-context" aria-label="Workspace context">
-        <article className="context-card">
-          <header>
-            <Pin size={15} aria-hidden="true" />
-            <span className="section-overline">PINNED SPACES</span>
-          </header>
-          <p>Your working modules stay one gesture away.</p>
-          <div className="context-links">
-            <button type="button" onClick={onOpenKnowledgeDesk}><BookOpen size={15} /> Knowledge Desk</button>
-            <button type="button" onClick={onOpenReader}><FileText size={15} /> Research Reader</button>
-            <button type="button" onClick={onOpenGraph}><Network size={15} /> Knowledge Graph</button>
-          </div>
-        </article>
+          <p className="hero-lede">
+            Your space for ideas, research, learning
+            <br />
+            and creative work.
+          </p>
 
-        <article className="context-card focus-card">
-          <header>
-            <Focus size={15} aria-hidden="true" />
-            <span className="section-overline">FOCUS SPACE</span>
-          </header>
-          <p>Step into a distraction-free view while Dace keeps your place.</p>
-          <button type="button" className="dace-btn dace-btn-ghost" onClick={onEnterFocus}>
-            Enter Focus <kbd>F11</kbd>
+          <button type="button" className="hero-new-record" onClick={onOpenKnowledgeDesk}>
+            <Plus size={15} strokeWidth={1.8} aria-hidden="true" />
+            New Record
           </button>
-          <span className="focus-orbit" aria-hidden="true" />
-        </article>
+        </div>
+
+        <aside className="hero-context" aria-label="Workspace context">
+          <div className="hero-clock">
+            <span className="hero-clock-date">{date}</span>
+            <span className="hero-clock-time">{clock}</span>
+          </div>
+          <button type="button" className="hero-focus" onClick={onEnterFocus}>
+            <span className="hero-focus-label">
+              <Focus size={13} strokeWidth={1.6} aria-hidden="true" />
+              Focus
+            </span>
+            <kbd>60min</kbd>
+            <span className="sr-only">Enter a distraction-free workspace</span>
+          </button>
+          <span className="hero-context-rule" aria-hidden="true" />
+        </aside>
       </section>
+
+      <section className="home-lower" aria-label="Recent work and spaces">
+        <div className="home-continue">
+          <header className="home-section-head">
+            <div>
+              <span className="home-section-index">01 / RECENT WORK</span>
+              <h2>Continue</h2>
+            </div>
+            <button type="button" onClick={onOpenKnowledgeDesk}>
+              Open all <ArrowUpRight size={12} aria-hidden="true" />
+            </button>
+          </header>
+
+          {recent.length === 0 ? (
+            <div className="home-empty">
+              <FileText size={20} strokeWidth={1.4} aria-hidden="true" />
+              <div>
+                <strong>No records yet</strong>
+                <p>Your most recent work will appear here.</p>
+              </div>
+              <button type="button" onClick={onOpenKnowledgeDesk}>
+                Create a record <ArrowRight size={12} aria-hidden="true" />
+              </button>
+            </div>
+          ) : (
+            <div className="home-continue-list">
+              {recent.map((record, index) => {
+                const category = record.tags?.[0] || "Knowledge record";
+                return (
+                  <button
+                    key={record.id}
+                    type="button"
+                    className="home-continue-row"
+                    onClick={() => onOpenRecord(record.id)}
+                    title={record.title || "Untitled record"}
+                  >
+                    <span className="home-row-index">0{index + 1}</span>
+                    <span className="home-row-title">{record.title || "Untitled record"}</span>
+                    <span className="home-row-date">
+                      <Clock3 size={10} aria-hidden="true" />
+                      {formatRecordDate(record.updated_at || record.created_at)}
+                    </span>
+                    <span className="home-row-category">{category}</span>
+                    <ArrowUpRight className="home-row-arrow" size={12} aria-hidden="true" />
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        <span className="home-separator" aria-hidden="true" />
+
+        <div className="home-spaces">
+          <header className="home-section-head">
+            <div>
+              <span className="home-section-index">02 / DESTINATIONS</span>
+              <h2>Pinned Spaces</h2>
+            </div>
+          </header>
+          <div className="home-space-grid">
+            {spaces.map((space) => {
+              const Icon = space.icon;
+              return (
+                <button key={space.id} type="button" className="home-space-tile" onClick={space.action}>
+                  <span className="home-space-code">{space.code}</span>
+                  <Icon size={16} strokeWidth={1.5} aria-hidden="true" />
+                  <span className="home-space-name">{space.title}</span>
+                  <span className="home-space-purpose">{space.purpose}</span>
+                  <ArrowUpRight className="home-space-arrow" size={12} aria-hidden="true" />
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      <button type="button" className="home-command" onClick={onOpenCommands} data-dismiss-ignore>
+        <Search size={16} strokeWidth={1.6} aria-hidden="true" />
+        <span>Search or run a command.</span>
+        <span className="home-command-keys">
+          <kbd>Ctrl</kbd>
+          <kbd>K</kbd>
+        </span>
+      </button>
+
+      <div className="home-coordinate" aria-hidden="true">
+        <span>05.6037° N</span>
+        <span>00.1870° W</span>
+      </div>
     </div>
   );
 };

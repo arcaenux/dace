@@ -1,4 +1,5 @@
 import { FC, useState, useEffect, useCallback, KeyboardEvent } from "react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import {
   KnowledgeRecordSummary,
   RecordRelationshipsResponse,
@@ -152,9 +153,13 @@ export const RecordRelationshipsPanel: FC<RecordRelationshipsPanelProps> = ({
           onClick={() => setIsExpanded((prev) => !prev)}
           title={isExpanded ? "Collapse connections" : "Expand connections"}
         >
-          <span className="toggle-icon">{isExpanded ? "▼" : "▶"}</span>
+          {isExpanded ? (
+            <ChevronDown size={13} strokeWidth={1.6} aria-hidden="true" />
+          ) : (
+            <ChevronRight size={13} strokeWidth={1.6} aria-hidden="true" />
+          )}
           <span className="relationships-title">
-            Connected Concepts
+            Connections
             <span className="relationships-count-badge">{totalCount}</span>
           </span>
         </button>
@@ -177,17 +182,8 @@ export const RecordRelationshipsPanel: FC<RecordRelationshipsPanelProps> = ({
           {totalCount === 0 ? (
             <div className="relationships-empty-state">
               <span className="empty-hint">
-                This record has no connected concepts yet. Connecting concepts allows you to form
-                coherent webs of knowledge.
+                Link related ideas to build a network of knowledge.
               </span>
-              <button
-                type="button"
-                className="desk-btn primary"
-                onClick={handleOpenAddModal}
-                style={{ marginTop: "6px" }}
-              >
-                + Add First Connection
-              </button>
             </div>
           ) : (
             <div className="relationships-grid">

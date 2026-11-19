@@ -1,0 +1,13 @@
+/* ==========================================================================
+   Dace — Cinematic stylesheet entry
+   Legacy stylesheets are imported first so the dedicated cinematic layers can
+   authoritatively override their geometry, typography and motion.
+   ========================================================================== */
+
+@import "./workspace.css";
+@import "./cinematic-shell.css";
+@import "./cinematic-home.css";
+@import "./cinematic-workspaces.css";
+@import "./cinematic-overlays.css";
+@import "./knowledge-desk.css";
+@import "./reader-adaptive.css";

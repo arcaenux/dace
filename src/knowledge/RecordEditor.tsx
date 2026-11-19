@@ -3,20 +3,22 @@ import {
   useEffect,
   useRef,
   useCallback,
+  useLayoutEffect,
+  useMemo,
   forwardRef,
   useImperativeHandle,
   KeyboardEvent,
 } from "react";
+import { ArrowLeft, MoreHorizontal, PanelLeft, Save } from "lucide-react";
 import { KnowledgeRecord, SaveStatus } from "./types";
-import { RecordRelationshipsPanel } from "./RecordRelationshipsPanel";
-import { RecordAttachmentsPanel } from "../attachments/RecordAttachmentsPanel";
-import { RecordExcerptsSection } from "../reader/RecordExcerptsSection";
+import { useDismissable } from "../core/useDismissable";
 
 export interface RecordEditorHandle {
   flushSave: () => Promise<boolean>;
   isDirty: () => boolean;
   isSaving: () => boolean;
   getRecordId: () => string;
+  jumpToLine: (line: number) => void;
 }
 
 export interface RecordEditorProps {
@@ -26,13 +28,18 @@ export interface RecordEditorProps {
   isFocusSpace: boolean;
   onToggleRecordList: () => void;
   isListOpen: boolean;
-  onNavigateToRecord: (targetId: string) => void;
-  onShowNotice: (msg: string) => void;
+  onContentChange: (content: string) => void;
   canNavigateBack?: boolean;
   onNavigateBack?: () => void;
   previousRecordTitle?: string | null;
-  onOpenExcerptInReader?: (attachmentId: string, pageNumber: number) => void;
 }
+
+const statusLabels: Record<SaveStatus, string> = {
+  saved: "Saved",
+  saving: "Saving…",
+  unsaved: "Unsaved",
+  error: "Save error",
+};
 
 export const RecordEditor = forwardRef<RecordEditorHandle, RecordEditorProps>(function RecordEditor(
   {
@@ -42,12 +49,10 @@ export const RecordEditor = forwardRef<RecordEditorHandle, RecordEditorProps>(fu
     isFocusSpace,
     onToggleRecordList,
     isListOpen,
-    onNavigateToRecord,
-    onShowNotice,
+    onContentChange,
     canNavigateBack,
     onNavigateBack,
     previousRecordTitle,
-    onOpenExcerptInReader,
   },
   ref
 ) {
@@ -55,8 +60,16 @@ export const RecordEditor = forwardRef<RecordEditorHandle, RecordEditorProps>(fu
   const [content, setContent] = useState(record.content);
   const [tags, setTags] = useState<string[]>(record.tags);
   const [tagInput, setTagInput] = useState("");
+  const [isAddingTag, setIsAddingTag] = useState(false);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
+
+  const titleTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const bodyTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const tagInputRef = useRef<HTMLInputElement>(null);
+  const moreMenuRef = useRef<HTMLDivElement>(null);
+  const moreTriggerRef = useRef<HTMLButtonElement>(null);
 
   const debounceTimerRef = useRef<number | null>(null);
   const inFlightPromiseRef = useRef<Promise<boolean> | null>(null);
@@ -71,6 +84,12 @@ export const RecordEditor = forwardRef<RecordEditorHandle, RecordEditorProps>(fu
   const titleRef = useRef<string>(record.title);
   const contentRef = useRef<string>(record.content);
   const tagsRef = useRef<string[]>(record.tags);
+
+  useDismissable(isMoreMenuOpen, () => setIsMoreMenuOpen(false), moreMenuRef, {
+    triggerRef: moreTriggerRef,
+    group: "workspace-overlay",
+    restoreFocus: true,
+  });
 
   // Core persistence function ensuring at most one active save per record,
   // queuing changes made during an active save, and never overwriting newer edits.
@@ -174,6 +193,22 @@ export const RecordEditor = forwardRef<RecordEditorHandle, RecordEditorProps>(fu
     return await performSave();
   }, [performSave]);
 
+  // Move the caret to a real line in the body canvas (used by the Outline view).
+  const jumpToLine = useCallback((line: number) => {
+    const textarea = bodyTextareaRef.current;
+    if (!textarea) return;
+    const lines = textarea.value.split(/\r?\n/);
+    const target = Math.max(1, Math.min(line, lines.length));
+    let offset = 0;
+    for (let index = 0; index < target - 1; index += 1) {
+      offset += lines[index].length + 1;
+    }
+    textarea.focus();
+    textarea.setSelectionRange(offset, offset + (lines[target - 1]?.length || 0));
+    const lineHeight = parseFloat(window.getComputedStyle(textarea).lineHeight) || 26;
+    textarea.scrollTop = Math.max(0, (target - 1) * lineHeight - textarea.clientHeight / 3);
+  }, []);
+
   // Expose imperatively to parent coordinator (KnowledgeDesk)
   useImperativeHandle(
     ref,
@@ -182,8 +217,9 @@ export const RecordEditor = forwardRef<RecordEditorHandle, RecordEditorProps>(fu
       isDirty: () => isDirtyRef.current || mutationSeqRef.current > lastSavedSeqRef.current,
       isSaving: () => inFlightPromiseRef.current !== null,
       getRecordId: () => currentRecordIdRef.current,
+      jumpToLine,
     }),
-    [flushSave]
+    [flushSave, jumpToLine]
   );
 
   // Sync internal state when active record changes (controlled by KnowledgeDesk)
@@ -207,10 +243,12 @@ export const RecordEditor = forwardRef<RecordEditorHandle, RecordEditorProps>(fu
       setContent(record.content);
       setTags(record.tags);
       setTagInput("");
+      setIsAddingTag(false);
       setSaveStatus("saved");
       setErrorMessage(null);
+      onContentChange(record.content);
     }
-  }, [record.id, record.title, record.content, record.tags]);
+  }, [record.id, record.title, record.content, record.tags, onContentChange]);
 
   // Global save event listener (Ctrl+S or command palette)
   useEffect(() => {
@@ -230,6 +268,19 @@ export const RecordEditor = forwardRef<RecordEditorHandle, RecordEditorProps>(fu
     };
   }, [flushSave, record.id]);
 
+  // Long titles wrap naturally instead of being clipped by a single-line input.
+  useLayoutEffect(() => {
+    const textarea = titleTextareaRef.current;
+    if (!textarea) return;
+    textarea.style.height = "auto";
+    textarea.style.height = `${textarea.scrollHeight}px`;
+  }, [title]);
+
+  const wordCount = useMemo(() => {
+    const trimmed = content.trim();
+    return trimmed ? trimmed.split(/\s+/).length : 0;
+  }, [content]);
+
   const handleTitleChange = (val: string) => {
     titleRef.current = val;
     setTitle(val);
@@ -241,6 +292,7 @@ export const RecordEditor = forwardRef<RecordEditorHandle, RecordEditorProps>(fu
     contentRef.current = val;
     setContent(val);
     mutationSeqRef.current += 1;
+    onContentChange(val);
     triggerAutosave();
   };
 
@@ -250,10 +302,11 @@ export const RecordEditor = forwardRef<RecordEditorHandle, RecordEditorProps>(fu
       const updated = [...tags, clean];
       tagsRef.current = updated;
       setTags(updated);
-      setTagInput("");
       mutationSeqRef.current += 1;
       triggerAutosave();
     }
+    setTagInput("");
+    setIsAddingTag(false);
   };
 
   const handleRemoveTag = (tagToRemove: string) => {
@@ -268,157 +321,175 @@ export const RecordEditor = forwardRef<RecordEditorHandle, RecordEditorProps>(fu
     if (e.key === "Enter") {
       e.preventDefault();
       handleAddTag();
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      setTagInput("");
+      setIsAddingTag(false);
     } else if (e.key === "Backspace" && !tagInput && tags.length > 0) {
       handleRemoveTag(tags[tags.length - 1]);
     }
   };
 
+  const handleStartAddingTag = () => {
+    setIsAddingTag(true);
+    requestAnimationFrame(() => tagInputRef.current?.focus());
+  };
+
+  const runDelete = () => {
+    setIsMoreMenuOpen(false);
+    onDeleteRecord(record.id);
+  };
+
   return (
     <div className={`editor-container ${isFocusSpace ? "in-focus" : ""}`}>
-      {/* Editor Meta & Control Bar */}
-      <div className="editor-meta-bar">
-        <div className="editor-meta-left">
+      <div className="desk-toolbar">
+        <div className="desk-toolbar-left">
           {canNavigateBack && onNavigateBack && (
             <button
               type="button"
-              className="desk-btn"
+              className="desk-toolbar-icon"
               onClick={onNavigateBack}
               title={`Return to '${previousRecordTitle || "previous concept"}'`}
+              aria-label="Back to previous record"
             >
-              <span className="btn-icon">←</span>
-              <span>Back</span>
+              <ArrowLeft size={15} strokeWidth={1.6} aria-hidden="true" />
             </button>
           )}
 
           <button
             type="button"
-            className="desk-btn"
+            className="desk-toolbar-icon"
+            data-dismiss-ignore
             onClick={onToggleRecordList}
-            title={isListOpen ? "Hide record list (Ctrl+B)" : "Show record list (Ctrl+B)"}
+            aria-expanded={isListOpen}
+            title={isListOpen ? "Hide records (Ctrl+B)" : "Browse records (Ctrl+B)"}
+            aria-label={isListOpen ? "Hide records" : "Browse records"}
           >
-            <span className="btn-icon">{isListOpen ? "◀" : "▶"}</span>
-            <span>{isListOpen ? "Hide List" : "Records"}</span>
+            <PanelLeft size={15} strokeWidth={1.6} aria-hidden="true" />
           </button>
 
-          {/* Real-time Save Status Indicator */}
-          <div className="save-status-indicator" aria-live="polite">
-            {saveStatus === "saving" && (
-              <span className="status-saving">
-                <span className="status-dot pulsing"></span> Saving…
-              </span>
-            )}
-            {saveStatus === "unsaved" && (
-              <span className="status-unsaved">
-                <span className="status-dot yellow"></span> Unsaved
-              </span>
-            )}
-            {saveStatus === "saved" && (
-              <span className="status-saved">
-                <span className="status-dot green"></span> Saved
-              </span>
-            )}
-            {saveStatus === "error" && (
-              <span
-                className="status-error"
-                title={errorMessage || "Database write error. Click to retry."}
-                onClick={flushSave}
-                style={{ cursor: "pointer" }}
-              >
-                <span className="status-dot red"></span> Error saving (click to retry)
-              </span>
+          <span className="desk-toolbar-rule" aria-hidden="true" />
+          <span className="desk-toolbar-context">Record</span>
+
+          <div className={`desk-save-status ${saveStatus}`} aria-live="polite">
+            {saveStatus === "error" ? (
+              <button type="button" onClick={flushSave} title={errorMessage || "Click to retry save"}>
+                <span className="status-dot" />
+                {statusLabels[saveStatus]}
+              </button>
+            ) : (
+              <>
+                <span className="status-dot" />
+                {statusLabels[saveStatus]}
+              </>
             )}
           </div>
         </div>
 
-        <div className="editor-meta-right">
+        <div className="desk-toolbar-right">
           <button
+            ref={moreTriggerRef}
             type="button"
-            className="desk-btn"
-            onClick={flushSave}
-            title="Save immediately (Ctrl+S)"
+            className="desk-toolbar-icon"
+            data-dismiss-ignore
+            aria-haspopup="menu"
+            aria-expanded={isMoreMenuOpen}
+            onClick={() => setIsMoreMenuOpen((current) => !current)}
+            title="More actions"
+            aria-label="More actions"
           >
-            Save
+            <MoreHorizontal size={16} strokeWidth={1.6} aria-hidden="true" />
           </button>
-          <button
-            type="button"
-            className="desk-btn danger"
-            onClick={() => onDeleteRecord(record.id)}
-            title="Delete this record"
-          >
-            Delete
+
+          {isMoreMenuOpen && (
+            <div ref={moreMenuRef} className="desk-actions-menu" role="menu">
+              <button type="button" role="menuitem" onClick={flushSave}>
+                Save now
+                <kbd>Ctrl S</kbd>
+              </button>
+              <span className="desk-actions-divider" aria-hidden="true" />
+              <button type="button" role="menuitem" className="destructive" onClick={runDelete}>
+                Delete record
+              </button>
+            </div>
+          )}
+
+          <button type="button" className="desk-save-button" onClick={flushSave} title="Save (Ctrl+S)">
+            <Save size={13} strokeWidth={1.6} aria-hidden="true" />
+            Save
           </button>
         </div>
       </div>
 
-      {/* Editor Body */}
-      <div className="editor-body">
-        {/* Title Input */}
-        <input
-          type="text"
-          className="editor-title-input"
-          placeholder="Untitled Record"
-          value={title}
-          onChange={(e) => handleTitleChange(e.target.value)}
-          aria-label="Record title"
-        />
+      <div className="editor-scroll-area">
+        <div className="editor-document">
+          <textarea
+            ref={titleTextareaRef}
+            className="editor-title-input"
+            rows={1}
+            placeholder="Untitled Record"
+            value={title}
+            onChange={(e) => handleTitleChange(e.target.value)}
+            aria-label="Record title"
+          />
 
-        {/* Tags Row */}
-        <div className="editor-tags-container">
-          <div className="tags-list">
-            {tags.map((t) => (
-              <span key={t} className="tag-chip">
-                #{t}
-                <button
-                  type="button"
-                  className="tag-remove-btn"
-                  onClick={() => handleRemoveTag(t)}
-                  aria-label={`Remove tag ${t}`}
-                >
-                  ×
-                </button>
-              </span>
-            ))}
-            <input
-              type="text"
-              className="tag-input"
-              placeholder="+ add tag (Enter)"
-              value={tagInput}
-              onChange={(e) => setTagInput(e.target.value)}
-              onKeyDown={handleTagKeyDown}
-            />
+          <div className="editor-tags-container">
+            <div className="tags-list">
+              <button type="button" className="add-tag-button" onClick={handleStartAddingTag}>
+                + Add tag
+              </button>
+
+              {tags.map((t) => (
+                <span key={t} className="tag-chip">
+                  {t}
+                  <button
+                    type="button"
+                    className="tag-remove-btn"
+                    onClick={() => handleRemoveTag(t)}
+                    aria-label={`Remove tag ${t}`}
+                    title={`Remove ${t}`}
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+
+              {isAddingTag && (
+                <input
+                  ref={tagInputRef}
+                  type="text"
+                  className="tag-input"
+                  placeholder="tag name"
+                  value={tagInput}
+                  onChange={(e) => setTagInput(e.target.value)}
+                  onKeyDown={handleTagKeyDown}
+                  onBlur={handleAddTag}
+                  aria-label="Tag name"
+                />
+              )}
+            </div>
           </div>
+
+          <textarea
+            ref={bodyTextareaRef}
+            className="editor-textarea"
+            placeholder="Write knowledge here… (Markdown supported)"
+            value={content}
+            onChange={(e) => handleContentChange(e.target.value)}
+            aria-label="Record content"
+          />
         </div>
+      </div>
 
-        {/* Content Textarea */}
-        <textarea
-          className="editor-textarea"
-          placeholder="Write knowledge here... (Markdown supported)"
-          value={content}
-          onChange={(e) => handleContentChange(e.target.value)}
-          aria-label="Record content"
-        />
-
-        {/* Connected Concepts Section */}
-        <RecordRelationshipsPanel
-          recordId={record.id}
-          recordTitle={title}
-          onNavigateToRecord={onNavigateToRecord}
-          onShowNotice={onShowNotice}
-        />
-
-        {/* Managed Research Documents & Ingestion Section */}
-        <RecordAttachmentsPanel
-          recordId={record.id}
-          onShowNotice={onShowNotice}
-          onOpenInReader={onOpenExcerptInReader}
-        />
-
-        {/* Connected Research Excerpts & Quotations */}
-        <RecordExcerptsSection
-          recordId={record.id}
-          onOpenExcerptInReader={onOpenExcerptInReader}
-          onShowNotice={onShowNotice}
-        />
+      <div className="editor-status-bar" aria-label="Editor status">
+        <span>{wordCount} {wordCount === 1 ? "word" : "words"}</span>
+        <span>Markdown</span>
+        <span className={`status-dot ${saveStatus}`} />
+        <span>{statusLabels[saveStatus]}</span>
+        <span className="editor-status-spacer" />
+        <span className="status-command">
+          <span className="command-mark">⌘</span> Command
+        </span>
       </div>
     </div>
   );
