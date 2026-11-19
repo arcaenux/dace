@@ -1,4 +1,5 @@
 pub mod attachments;
+pub mod backup;
 pub mod db;
 pub mod knowledge;
 pub mod migration;
@@ -73,8 +74,38 @@ pub fn run() {
             std::fs::create_dir_all(&app_data_dir)
                 .map_err(|e| format!("Failed to create app data dir {:?}: {}", app_data_dir, e))?;
 
-            // Safe legacy data migration: detect and migrate com.novadome.app data if present
-            let report = migration::DataMigrator::migrate_if_needed(&app_data_dir);
+            // Apply a staged restore before any SQLite or attachment handles are
+            // opened. This also finalizes or rolls back an interrupted attempt.
+            let mut restore_applied = false;
+            match backup::restore::apply_pending_restore(&app_data_dir) {
+                Ok(Some(outcome)) => {
+                    restore_applied = true;
+                    if outcome.success {
+                        eprintln!("[Dace] Restore completed: {}", outcome.message);
+                    } else {
+                        eprintln!("[Dace] Restore failed: {}", outcome.message);
+                    }
+                }
+                Ok(None) => {}
+                Err(e) => eprintln!("[Dace] Could not apply pending restore: {}", e),
+            }
+
+            // Safe legacy data migration: detect and migrate com.novadome.app data if present.
+            // Skip it after a restore so a partial prior migration cannot replace the
+            // just-restored (or rolled-back) database with legacy data.
+            let report = if restore_applied {
+                migration::MigrationReport {
+                    legacy_dir_found: None,
+                    db_migrated: false,
+                    attachments_migrated: 0,
+                    already_migrated: true,
+                    details: "Legacy migration skipped because a restore was applied at startup"
+                        .to_string(),
+                    error: None,
+                }
+            } else {
+                migration::DataMigrator::migrate_if_needed(&app_data_dir)
+            };
             if let Some(ref err) = report.error {
                 eprintln!("[Dace] Legacy data migration notice: {}", err);
             }
@@ -97,6 +128,14 @@ pub fn run() {
                 .map_err(|e| format!("Failed to initialize attachment storage {:?}: {}", attachments_dir, e))?;
             storage.run_reconciliation();
 
+            // Confirm the restored environment with the live handles before the
+            // frontend is allowed to consume (and report) the restore result.
+            if let Err(e) =
+                backup::restore::confirm_startup_restore(&app_data_dir, &database, &storage)
+            {
+                eprintln!("[Dace] Could not confirm restored environment: {}", e);
+            }
+
             app.manage(database);
             app.manage(storage);
             Ok(())
@@ -109,6 +148,10 @@ pub fn run() {
             is_fullscreen,
             close_window,
             destroy_window,
+            backup::export_backup,
+            backup::inspect_backup_archive,
+            backup::restore_backup_archive,
+            backup::get_restore_result,
             knowledge::commands::create_record,
             knowledge::commands::get_record,
             knowledge::commands::list_records,
