@@ -17,6 +17,13 @@ interface ReaderDividerProps {
   disabled?: boolean;
 }
 
+interface DragListeners {
+  pointerId: number;
+  move: (event: PointerEvent) => void;
+  up: (event: PointerEvent) => void;
+  cancel: (event: PointerEvent) => void;
+}
+
 export const ReaderDivider: FC<ReaderDividerProps> = ({
   ratio,
   containerRef,
@@ -27,6 +34,18 @@ export const ReaderDivider: FC<ReaderDividerProps> = ({
   const draggingRef = useRef(false);
   const frameRef = useRef<number | null>(null);
   const pointerRef = useRef(0);
+  const listenersRef = useRef<DragListeners | null>(null);
+  const onRatioChangeRef = useRef(onRatioChange);
+  onRatioChangeRef.current = onRatioChange;
+
+  const detachListeners = useCallback(() => {
+    const listeners = listenersRef.current;
+    if (!listeners) return;
+    window.removeEventListener("pointermove", listeners.move);
+    window.removeEventListener("pointerup", listeners.up);
+    window.removeEventListener("pointercancel", listeners.cancel);
+    listenersRef.current = null;
+  }, []);
 
   const commit = useCallback(() => {
     frameRef.current = null;
@@ -34,31 +53,38 @@ export const ReaderDivider: FC<ReaderDividerProps> = ({
     if (!container) return;
     const rect = container.getBoundingClientRect();
     if (rect.width <= 0) return;
-    onRatioChange(clampSplitRatio((pointerRef.current - rect.left) / rect.width));
-  }, [containerRef, onRatioChange]);
+    onRatioChangeRef.current(clampSplitRatio((pointerRef.current - rect.left) / rect.width));
+  }, [containerRef]);
 
   const stopDragging = useCallback(() => {
     draggingRef.current = false;
     setIsDragging(false);
     document.body.classList.remove("reader-is-resizing");
+    detachListeners();
     if (frameRef.current !== null) {
       cancelAnimationFrame(frameRef.current);
       frameRef.current = null;
     }
-  }, []);
+  }, [detachListeners]);
 
-  useEffect(() => stopDragging, [stopDragging]);
+  useEffect(() => {
+    return () => {
+      stopDragging();
+    };
+  }, [stopDragging]);
 
   const handlePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (disabled) return;
     event.preventDefault();
+    detachListeners();
     draggingRef.current = true;
     pointerRef.current = event.clientX;
     setIsDragging(true);
     document.body.classList.add("reader-is-resizing");
+    event.currentTarget.setPointerCapture?.(event.pointerId);
 
-    const handleMove = (moveEvent: PointerEvent) => {
-      if (!draggingRef.current) return;
+    const move = (moveEvent: PointerEvent) => {
+      if (!draggingRef.current || moveEvent.pointerId !== event.pointerId) return;
       moveEvent.preventDefault();
       pointerRef.current = moveEvent.clientX;
       if (frameRef.current === null) {
@@ -66,16 +92,15 @@ export const ReaderDivider: FC<ReaderDividerProps> = ({
       }
     };
 
-    const handleUp = () => {
+    const up = (upEvent: PointerEvent) => {
+      if (upEvent.pointerId !== event.pointerId) return;
       stopDragging();
-      window.removeEventListener("pointermove", handleMove);
-      window.removeEventListener("pointerup", handleUp);
-      window.removeEventListener("pointercancel", handleUp);
     };
 
-    window.addEventListener("pointermove", handleMove);
-    window.addEventListener("pointerup", handleUp);
-    window.addEventListener("pointercancel", handleUp);
+    listenersRef.current = { pointerId: event.pointerId, move, up, cancel: up };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+    window.addEventListener("pointercancel", up);
   };
 
   const handleKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {

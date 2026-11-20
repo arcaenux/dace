@@ -12,34 +12,37 @@ export const FocusSpaceView: FC<FocusSpaceViewProps> = ({
 }) => {
   const { isFocusSpace, exitFocusSpace } = useFocusSpace();
 
-  if (!isFocusSpace) {
-    return <>{children}</>;
-  }
-
+  // Keep one stable container across focus transitions. Swapping a fragment for
+  // a wrapper remounts the active workspace (and therefore the PDF viewer),
+  // which loses reader state and forces a fresh document load.
   return (
-    <div className="focus-space-container" style={{ width: "100%", height: "100%", position: "relative" }}>
-      {/* Subtle ambient controls, unobtrusive until hovered or focused */}
-      <div className="focus-ambient-trigger" aria-label="Focus Space Controls">
-        <button
-          className="focus-exit-btn"
-          onClick={onOpenCommands}
-          title="Open Command Palette (Ctrl+K)"
-          data-dismiss-ignore
-        >
-          <span>Commands</span>
-          <kbd>Ctrl+K</kbd>
-        </button>
-        <button
-          className="focus-exit-btn"
-          onClick={() => exitFocusSpace()}
-          title="Exit Focus Space (F11 or Esc)"
-        >
-          <span>Exit Focus</span>
-          <kbd>F11</kbd>
-        </button>
-      </div>
+    <div
+      className={isFocusSpace ? "focus-space-container" : "focus-space-shell"}
+      style={{ width: "100%", height: "100%", position: "relative" }}
+    >
+      {isFocusSpace && (
+        <div className="focus-ambient-trigger" aria-label="Focus Space Controls">
+          <button
+            className="focus-exit-btn"
+            onClick={onOpenCommands}
+            title="Open Command Palette (Ctrl+K)"
+            data-dismiss-ignore
+          >
+            <span>Commands</span>
+            <kbd>Ctrl+K</kbd>
+          </button>
+          <button
+            className="focus-exit-btn"
+            onClick={() => exitFocusSpace()}
+            title="Exit Focus Space (F11 or Esc)"
+            data-dismiss-ignore
+          >
+            <span>Exit Focus</span>
+            <kbd>F11</kbd>
+          </button>
+        </div>
+      )}
 
-      {/* The active workspace remains front and center */}
       {children}
     </div>
   );

@@ -82,6 +82,48 @@ mod tests {
     }
 
     #[test]
+    fn test_highlight_and_annotation_persist_across_reopen() {
+        let dir = std::env::temp_dir().join(format!("dace-reader-{}", Uuid::new_v4()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let db_path = dir.join("library.db");
+
+        let att_id = {
+            let db = Database::init(&db_path).expect("Could not create on-disk database");
+            let id = insert_test_attachment(&db, "persistence.pdf", "sha_persist_1");
+            let mut conn = db.conn.lock().unwrap();
+            let input = CreateHighlightInput {
+                attachment_id: id.clone(),
+                page_number: 6,
+                selected_text: "Measured values remain stable across runs.".to_string(),
+                anchor_data: r#"{"pageNumber":6,"startOffset":4,"endOffset":44}"#.to_string(),
+                highlight_type: "important".to_string(),
+                color: None,
+                annotation_content: Some("Re-check calibration table.".to_string()),
+            };
+            let hl = ReaderRepository::create_highlight(&mut conn, input).unwrap();
+            ReaderRepository::save_annotation(&mut conn, &hl.id, "Final reflection after review.")
+                .expect("Could not update annotation");
+            drop(conn);
+            id
+        };
+
+        {
+            let db = Database::init(&db_path).expect("Could not reopen database");
+            let conn = db.conn.lock().unwrap();
+            let highlights = ReaderRepository::get_attachment_highlights(&conn, &att_id).unwrap();
+            assert_eq!(highlights.len(), 1);
+            assert_eq!(highlights[0].page_number, 6);
+            assert_eq!(highlights[0].selected_text, "Measured values remain stable across runs.");
+            assert_eq!(
+                highlights[0].annotation.as_ref().unwrap().content,
+                "Final reflection after review."
+            );
+        }
+
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
     fn test_stale_anchor_detection_on_checksum_mismatch() {
         let db = setup_test_db();
         let att_id = insert_test_attachment(&db, "relativity.pdf", "original_sha_111");
