@@ -1,14 +1,27 @@
-import { RefObject, useCallback, useEffect, useRef, useState } from "react";
+import {
+  RefObject,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { AttachmentSummary } from "../attachments/types.ts";
 import * as knowledgeApi from "../knowledge/knowledgeApi.ts";
+import type { KnowledgeRecord } from "../knowledge/types.ts";
 import { Highlight } from "./types.ts";
 import {
+  appendExcerptToContent,
   excerptFromHighlight,
-  formatExcerptBlock,
+  excerptMatches,
   parseNoteExcerpts,
+  stripExcerptMarker,
 } from "./noteExcerpts.ts";
+import { NoteSaveTracker, readerNoteTag, withReaderNoteTag } from "./noteSaveState.ts";
 
 export type ReaderNoteSaveStatus = "idle" | "unsaved" | "saving" | "saved" | "error";
+export type ReaderNoteSaveResult = "saved" | "skipped" | "error";
 
 export interface ReaderNoteState {
   recordId: string | null;
@@ -29,13 +42,18 @@ interface ReaderNoteApi extends ReaderNoteState {
     highlight: Highlight,
     documentTitle: string
   ) => Promise<"inserted" | "duplicate">;
-  flushSave: () => Promise<void>;
+  removeExcerpt: (excerptId: string) => void;
+  flushSave: () => Promise<ReaderNoteSaveResult>;
   insertMarkdown: (prefix: string, suffix?: string) => void;
   contentRef: RefObject<HTMLTextAreaElement | null>;
 }
 
+interface ReaderNoteOptions {
+  onSaveError?: (message: string) => void;
+}
+
 const noteKey = (attachmentId: string) => `dace:reader-note:${attachmentId}`;
-const AUTOSAVE_DELAY = 900;
+const AUTOSAVE_DELAY = 700;
 
 const emptyState = (): ReaderNoteState => ({
   recordId: null,
@@ -46,215 +64,351 @@ const emptyState = (): ReaderNoteState => ({
   error: null,
 });
 
-export function useReaderNote(attachment: AttachmentSummary | null): ReaderNoteApi {
+const errorMessage = (error: unknown) =>
+  error instanceof Error ? error.message : typeof error === "string" ? error : "Could not save note";
+
+export function useReaderNote(
+  attachment: AttachmentSummary | null,
+  options: ReaderNoteOptions = {}
+): ReaderNoteApi {
   const [state, setState] = useState<ReaderNoteState>(emptyState);
   const stateRef = useRef(state);
-  const dirtyRef = useRef(false);
-  const readyRef = useRef(false);
-  const saveTimerRef = useRef<number | null>(null);
+  const noteAttachmentRef = useRef<string | null>(null);
+  const trackerRef = useRef<NoteSaveTracker>(new NoteSaveTracker());
+  const dirtyTimerRef = useRef<number | null>(null);
+  const inFlightRef = useRef<Promise<ReaderNoteSaveResult> | null>(null);
+  const scheduleSaveRef = useRef<() => void>(() => {});
+  const startPromiseRef = useRef<Promise<void> | null>(null);
+  const selectionRequestRef = useRef<{ start: number; end: number } | null>(null);
   const contentRef = useRef<HTMLTextAreaElement | null>(null);
+  const onSaveErrorRef = useRef(options.onSaveError);
+  onSaveErrorRef.current = options.onSaveError;
 
-  useEffect(() => {
-    stateRef.current = state;
-  }, [state]);
+  const applyState = useCallback((next: ReaderNoteState) => {
+    // Keep the ref ahead of React so an immediate save always sees the newest
+    // keystroke, even before the next render commits.
+    stateRef.current = next;
+    setState(next);
+  }, []);
 
   const clearTimer = useCallback(() => {
-    if (saveTimerRef.current !== null) {
-      window.clearTimeout(saveTimerRef.current);
-      saveTimerRef.current = null;
+    if (dirtyTimerRef.current !== null) {
+      window.clearTimeout(dirtyTimerRef.current);
+      dirtyTimerRef.current = null;
     }
   }, []);
 
-  const saveNow = useCallback(async () => {
-    const snapshot = stateRef.current;
-    if (!snapshot.recordId || !dirtyRef.current) return;
-    clearTimer();
-    dirtyRef.current = false;
-    setState((current) => ({ ...current, saveStatus: "saving", error: null }));
-    try {
-      await knowledgeApi.updateRecord({
-        id: snapshot.recordId,
-        title: snapshot.title.trim() || "Untitled Record",
-        content: snapshot.content,
-        tags: snapshot.tags,
+  const captureSnapshot = useCallback(() => {
+    const current = stateRef.current;
+    if (!current.recordId) return null;
+    return {
+      recordId: current.recordId,
+      title: current.title.trim() || "Untitled Record",
+      content: current.content,
+      tags: withReaderNoteTag(current.tags, noteAttachmentRef.current || ""),
+    };
+  }, []);
+
+  const enqueueSave = useCallback(
+    (snapshot: NonNullable<ReturnType<typeof captureSnapshot>>, version: number) => {
+      const previous = inFlightRef.current || Promise.resolve<ReaderNoteSaveResult>("skipped");
+      const task = previous
+        .catch(() => "skipped" as const)
+        .then(async (): Promise<ReaderNoteSaveResult> => {
+          try {
+            applyState({ ...stateRef.current, saveStatus: "saving", error: null });
+            await knowledgeApi.updateRecord({
+              id: snapshot.recordId,
+              title: snapshot.title,
+              content: snapshot.content,
+              tags: snapshot.tags,
+            });
+
+            if (trackerRef.current.commit(version, stateRef.current.recordId, snapshot.recordId)) {
+              if (trackerRef.current.hasPending) {
+                applyState({ ...stateRef.current, saveStatus: "unsaved" });
+                scheduleSaveRef.current();
+              } else {
+                applyState({ ...stateRef.current, saveStatus: "saved", error: null });
+              }
+            }
+            return "saved";
+          } catch (err) {
+            const message = errorMessage(err);
+            if (stateRef.current.recordId === snapshot.recordId) {
+              applyState({ ...stateRef.current, saveStatus: "error", error: message });
+            }
+            onSaveErrorRef.current?.(message);
+            return "error";
+          }
+        });
+
+      inFlightRef.current = task;
+      void task.finally(() => {
+        if (inFlightRef.current === task) inFlightRef.current = null;
       });
-      setState((current) => ({
-        ...current,
-        saveStatus: current.recordId === snapshot.recordId ? "saved" : current.saveStatus,
-      }));
-    } catch (err: any) {
-      dirtyRef.current = true;
-      setState((current) => ({
-        ...current,
-        saveStatus: "error",
-        error: err?.message || "Could not save note",
-      }));
+      return task;
+    },
+    [applyState]
+  );
+
+  const saveNow = useCallback((): Promise<ReaderNoteSaveResult> => {
+    clearTimer();
+    if (!trackerRef.current.hasPending) {
+      return inFlightRef.current || Promise.resolve<ReaderNoteSaveResult>("skipped");
     }
-  }, [clearTimer]);
+    const snapshot = captureSnapshot();
+    if (!snapshot) return Promise.resolve<ReaderNoteSaveResult>("skipped");
+    return enqueueSave(snapshot, trackerRef.current.currentVersion);
+  }, [captureSnapshot, clearTimer, enqueueSave]);
+
+  const scheduleSave = useCallback(() => {
+    clearTimer();
+    dirtyTimerRef.current = window.setTimeout(() => {
+      dirtyTimerRef.current = null;
+      void saveNow();
+    }, AUTOSAVE_DELAY);
+  }, [clearTimer, saveNow]);
+  scheduleSaveRef.current = scheduleSave;
+
+  const markDirty = useCallback(
+    (patch: Partial<ReaderNoteState>) => {
+      trackerRef.current.markDirty();
+      applyState({
+        ...stateRef.current,
+        ...patch,
+        saveStatus: "unsaved",
+        error: null,
+      });
+      scheduleSave();
+    },
+    [applyState, scheduleSave]
+  );
+
+  const loadNote = useCallback(
+    async (target: AttachmentSummary, isCancelled: () => boolean) => {
+      const attachmentId = target.id;
+      noteAttachmentRef.current = attachmentId;
+      trackerRef.current.reset();
+      applyState({ ...emptyState(), saveStatus: "saved" });
+
+      try {
+        let recordId = window.localStorage.getItem(noteKey(attachmentId));
+        let record: KnowledgeRecord | null = recordId ? await knowledgeApi.getRecord(recordId) : null;
+
+        if ((!recordId || !record) && recordId) {
+          window.localStorage.removeItem(noteKey(attachmentId));
+          recordId = null;
+        }
+
+        if (!record) {
+          // The tag is stored in SQLite and therefore survives in backups even
+          // when webview localStorage does not.
+          const tag = readerNoteTag(attachmentId);
+          const summaries = await knowledgeApi.listRecords(tag);
+          const match = summaries.find((candidate) => candidate.tags?.includes(tag)) || summaries[0];
+          record = match ? await knowledgeApi.getRecord(match.id) : null;
+          if (record) window.localStorage.setItem(noteKey(attachmentId), record.id);
+        }
+
+        if (isCancelled() || !record) return;
+        trackerRef.current.markClean();
+        applyState({
+          recordId: record.id,
+          title: record.title,
+          content: record.content,
+          tags: Array.isArray(record.tags) ? [...record.tags] : [],
+          saveStatus: "saved",
+          error: null,
+        });
+      } catch (err) {
+        if (!isCancelled()) {
+          applyState({
+            ...emptyState(),
+            saveStatus: "error",
+            error: errorMessage(err),
+          });
+        }
+      }
+    },
+    [applyState]
+  );
 
   useEffect(() => {
     if (!attachment) {
-      readyRef.current = false;
-      setState(emptyState());
+      noteAttachmentRef.current = null;
+      trackerRef.current.reset();
+      applyState(emptyState());
       return;
     }
 
     let cancelled = false;
-    readyRef.current = false;
-    dirtyRef.current = false;
-    clearTimer();
-    setState({ ...emptyState(), saveStatus: "saved" });
-
-    async function loadNote() {
-      try {
-        const recordId = window.localStorage.getItem(noteKey(attachment!.id));
-        if (!recordId) return;
-        const record = await knowledgeApi.getRecord(recordId);
-        if (cancelled || !record) return;
-        setState({
-          recordId: record.id,
-          title: record.title,
-          content: record.content,
-          tags: record.tags,
-          saveStatus: "saved",
-          error: null,
-        });
-      } catch (err: any) {
-        if (!cancelled) {
-          setState({
-            ...emptyState(),
-            saveStatus: "error",
-            error: err?.message || "Could not load note",
-          });
-        }
-      } finally {
-        if (!cancelled) readyRef.current = true;
-      }
-    }
-
-    void loadNote();
+    void loadNote(attachment, () => cancelled);
 
     return () => {
       cancelled = true;
-      readyRef.current = false;
       clearTimer();
-      if (dirtyRef.current) void saveNow();
+      if (trackerRef.current.hasPending) {
+        void saveNow().then((result) => {
+          if (result === "error") {
+            onSaveErrorRef.current?.("Research note could not be saved before leaving the document");
+          }
+        });
+      }
     };
-  }, [attachment, clearTimer, saveNow]);
+  }, [attachment?.id, applyState, clearTimer, loadNote, saveNow]);
 
   useEffect(() => {
-    if (!readyRef.current || !dirtyRef.current || !state.recordId) return;
-    clearTimer();
-    setState((current) => ({ ...current, saveStatus: "unsaved" }));
-    saveTimerRef.current = window.setTimeout(() => {
-      void saveNow();
-    }, AUTOSAVE_DELAY);
-    return clearTimer;
-  }, [state.title, state.content, state.recordId, clearTimer, saveNow]);
+    const clearMapping = (event: Event) => {
+      const recordId = (event as CustomEvent<string>).detail;
+      if (recordId && stateRef.current.recordId === recordId) {
+        const attachmentId = noteAttachmentRef.current;
+        if (attachmentId) window.localStorage.removeItem(noteKey(attachmentId));
+        trackerRef.current.reset();
+        applyState(emptyState());
+      }
+    };
+    window.addEventListener("dace:record-deleted", clearMapping);
+    return () => window.removeEventListener("dace:record-deleted", clearMapping);
+  }, [applyState]);
+
+  useLayoutEffect(() => {
+    const request = selectionRequestRef.current;
+    if (!request) return;
+    selectionRequestRef.current = null;
+    const element = contentRef.current;
+    if (!element) return;
+    element.focus();
+    element.setSelectionRange(request.start, request.end);
+  }, [state.content]);
 
   const startNote = useCallback(async () => {
-    if (!attachment) return;
-    if (stateRef.current.recordId) return;
+    if (!attachment || stateRef.current.recordId) return;
+    if (startPromiseRef.current) return startPromiseRef.current;
 
-    const title = `Notes — ${attachment.file_name}`;
+    const attachmentId = attachment.id;
+    const promise = (async () => {
+      try {
+        const record = await knowledgeApi.createRecord({
+          title: `Notes — ${attachment.file_name}`,
+          content: "",
+          tags: ["reader-note", readerNoteTag(attachmentId)],
+        });
+        window.localStorage.setItem(noteKey(attachmentId), record.id);
+        noteAttachmentRef.current = attachmentId;
+        trackerRef.current.reset();
+        trackerRef.current.markClean();
+        applyState({
+          recordId: record.id,
+          title: record.title,
+          content: record.content,
+          tags: Array.isArray(record.tags) ? [...record.tags] : [],
+          saveStatus: "saved",
+          error: null,
+        });
+      } catch (err) {
+        applyState({
+          ...stateRef.current,
+          saveStatus: "error",
+          error: errorMessage(err),
+        });
+      }
+    })();
+
+    startPromiseRef.current = promise;
     try {
-      const record = await knowledgeApi.createRecord({
-        title,
-        content: "",
-        tags: ["reader-note"],
-      });
-      window.localStorage.setItem(noteKey(attachment.id), record.id);
-      readyRef.current = true;
-      dirtyRef.current = false;
-      setState({
-        recordId: record.id,
-        title: record.title,
-        content: record.content,
-        tags: record.tags,
-        saveStatus: "saved",
-        error: null,
-      });
-    } catch (err: any) {
-      setState((current) => ({
-        ...current,
-        saveStatus: "error",
-        error: err?.message || "Could not create note",
-      }));
+      await promise;
+    } finally {
+      startPromiseRef.current = null;
     }
-  }, [attachment]);
+  }, [applyState, attachment]);
 
-  const setTitle = useCallback((title: string) => {
-    dirtyRef.current = true;
-    setState((current) => ({ ...current, title, saveStatus: "unsaved", error: null }));
-  }, []);
+  const setTitle = useCallback(
+    (title: string) => markDirty({ title }),
+    [markDirty]
+  );
 
-  const setContent = useCallback((content: string) => {
-    dirtyRef.current = true;
-    setState((current) => ({ ...current, content, saveStatus: "unsaved", error: null }));
-  }, []);
+  const setContent = useCallback(
+    (content: string) => markDirty({ content }),
+    [markDirty]
+  );
 
-  const setTags = useCallback((tags: string[]) => {
-    dirtyRef.current = true;
-    setState((current) => ({ ...current, tags, saveStatus: "unsaved", error: null }));
-  }, []);
+  const setTags = useCallback(
+    (tags: string[]) =>
+      markDirty({
+        tags: withReaderNoteTag(tags, noteAttachmentRef.current || attachment?.id || ""),
+      }),
+    [attachment?.id, markDirty]
+  );
 
   const insertExcerpt = useCallback(
-    async (highlight: Highlight, documentTitle: string) => {
+    async (highlight: Highlight, documentTitle: string): Promise<"inserted" | "duplicate"> => {
       if (!attachment) return "duplicate";
-      if (!stateRef.current.recordId) await startNote();
+      await startNote();
       if (!stateRef.current.recordId) return "duplicate";
 
       const excerpt = excerptFromHighlight(highlight, documentTitle);
       const existing = parseNoteExcerpts(stateRef.current.content);
-      const duplicate = existing.some(
-        (item) =>
-          item.id === highlight.id ||
-          (item.page === highlight.page_number && item.text === highlight.selected_text)
-      );
-      if (duplicate) return "duplicate";
+      if (existing.some((item) => excerptMatches(item, excerpt))) return "duplicate";
 
-      const block = formatExcerptBlock(excerpt);
-      dirtyRef.current = true;
-      setState((current) => {
-        const trimmed = current.content.replace(/\s+$/, "");
-        const next = trimmed ? `${trimmed}\n\n${block}\n` : `${block}\n`;
-        return { ...current, content: next, saveStatus: "unsaved", error: null };
+      markDirty({
+        content: appendExcerptToContent(stateRef.current.content, excerpt),
       });
       return "inserted";
     },
-    [attachment, startNote]
+    [attachment, markDirty, startNote]
   );
 
-  const insertMarkdown = useCallback((prefix: string, suffix = "") => {
-    const element = contentRef.current;
-    const current = stateRef.current.content;
-    const start = element?.selectionStart ?? current.length;
-    const end = element?.selectionEnd ?? current.length;
-    const selected = current.slice(start, end);
-    const next = `${current.slice(0, start)}${prefix}${selected}${suffix}${current.slice(end)}`;
-    dirtyRef.current = true;
-    setState((previous) => ({ ...previous, content: next, saveStatus: "unsaved", error: null }));
-    window.setTimeout(() => {
-      element?.focus();
+  const removeExcerpt = useCallback(
+    (excerptId: string) => {
+      const content = stateRef.current.content;
+      const next = stripExcerptMarker(content, excerptId);
+      if (next !== content) markDirty({ content: next });
+    },
+    [markDirty]
+  );
+
+  const insertMarkdown = useCallback(
+    (prefix: string, suffix = "") => {
+      const element = contentRef.current;
+      const current = stateRef.current.content;
+      const start = element?.selectionStart ?? current.length;
+      const end = element?.selectionEnd ?? current.length;
+      const selected = current.slice(start, end);
+      const next = `${current.slice(0, start)}${prefix}${selected}${suffix}${current.slice(end)}`;
       const cursor = start + prefix.length + selected.length;
-      element?.setSelectionRange(cursor, cursor);
-    }, 0);
-  }, []);
+      selectionRequestRef.current = { start: cursor, end: cursor };
+      markDirty({ content: next });
+    },
+    [markDirty]
+  );
 
-  const flushSave = useCallback(async () => {
-    await saveNow();
-  }, [saveNow]);
+  const flushSave = useCallback(() => saveNow(), [saveNow]);
 
-  return {
-    ...state,
-    hasNote: Boolean(state.recordId),
-    setTitle,
-    setContent,
-    setTags,
-    startNote,
-    insertExcerpt,
-    flushSave,
-    insertMarkdown,
-    contentRef,
-  };
+  return useMemo(
+    () => ({
+      ...state,
+      hasNote: Boolean(state.recordId),
+      setTitle,
+      setContent,
+      setTags,
+      startNote,
+      insertExcerpt,
+      removeExcerpt,
+      flushSave,
+      insertMarkdown,
+      contentRef,
+    }),
+    [
+      state,
+      setTitle,
+      setContent,
+      setTags,
+      startNote,
+      insertExcerpt,
+      removeExcerpt,
+      flushSave,
+      insertMarkdown,
+    ]
+  );
 }

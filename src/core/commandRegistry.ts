@@ -116,11 +116,12 @@ export function buildCommandList(ctx: CommandContext): CommandItem[] {
         if (ctx.activeActivity === "knowledge-desk") {
           window.dispatchEvent(new CustomEvent("dace:save-record"));
           window.dispatchEvent(new CustomEvent("novadome:save-record"));
-          ctx.closeOverlay();
+        } else if (ctx.activeActivity === "reader") {
+          window.dispatchEvent(new CustomEvent("dace:save-reader-note"));
         } else {
-          ctx.setNotice("Switch to Knowledge Desk to save active documents.");
-          ctx.closeOverlay();
+          ctx.setNotice("Switch to Knowledge Desk or the Research Reader to save active documents.");
         }
+        ctx.closeOverlay();
       },
     },
     {
