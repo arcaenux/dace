@@ -1,15 +1,17 @@
 import { RefObject, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSettings } from "../settings/SettingsContext";
+import type { AppSettings } from "../settings/types";
 import {
   chromeStateForMode,
   clampSplitRatio,
   isReaderMode,
-  loadReaderLayout,
   NARROW_READER_WIDTH,
   ReaderChromeState,
   ReaderMode,
-  saveReaderLayout,
   splitRatioFromMode,
 } from "./readerLayout";
+
+type WorkspacePatch = Partial<AppSettings["workspace"]>;
 
 interface AdaptiveReaderLayout {
   containerRef: RefObject<HTMLDivElement | null>;
@@ -25,17 +27,23 @@ interface AdaptiveReaderLayout {
   toggleHeader: () => void;
 }
 
+const SAVE_DELAY = 220;
+
 export function useAdaptiveReaderLayout(
   onChromeChange?: (chrome: ReaderChromeState) => void
 ): AdaptiveReaderLayout {
-  const initial = useRef(loadReaderLayout());
-  const [mode, setModeState] = useState<ReaderMode>(initial.current.mode);
-  const [savedRatio, setSavedRatio] = useState<number>(initial.current.splitRatio);
-  const [navCollapsed, setNavCollapsed] = useState<boolean>(initial.current.navCollapsed);
-  const [headerCollapsed, setHeaderCollapsed] = useState<boolean>(initial.current.headerCollapsed);
+  const { settings, update } = useSettings();
   const [width, setWidth] = useState<number>(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const saveTimerRef = useRef<number | null>(null);
+  const pendingPatchRef = useRef<WorkspacePatch>({});
+  const onChromeChangeRef = useRef(onChromeChange);
+  onChromeChangeRef.current = onChromeChange;
+
+  const mode = settings.workspace.readerDefaultMode;
+  const savedRatio = settings.workspace.readerSplitRatio;
+  const navCollapsed = settings.workspace.readerNavCollapsed;
+  const headerCollapsed = settings.workspace.readerHeaderCollapsed;
 
   const ratio = splitRatioFromMode(mode, savedRatio);
   const chrome = useMemo(
@@ -47,46 +55,84 @@ export function useAdaptiveReaderLayout(
   useEffect(() => {
     const element = containerRef.current;
     if (!element || typeof ResizeObserver === "undefined") return;
+    let frame: number | null = null;
     const observer = new ResizeObserver((entries) => {
       const next = entries[0]?.contentRect.width ?? 0;
-      setWidth((current) => (Math.abs(current - next) > 1 ? next : current));
+      if (frame !== null) cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        frame = null;
+        setWidth((current) => (Math.abs(current - next) > 2 ? next : current));
+      });
     });
     observer.observe(element);
     setWidth(element.getBoundingClientRect().width);
-    return () => observer.disconnect();
-  }, []);
-
-  useEffect(() => {
-    onChromeChange?.(chrome);
-  }, [chrome, onChromeChange]);
-
-  useEffect(() => {
-    if (saveTimerRef.current !== null) window.clearTimeout(saveTimerRef.current);
-    saveTimerRef.current = window.setTimeout(() => {
-      saveReaderLayout({ mode, splitRatio: savedRatio, navCollapsed, headerCollapsed });
-    }, 260);
     return () => {
-      if (saveTimerRef.current !== null) window.clearTimeout(saveTimerRef.current);
+      if (frame !== null) cancelAnimationFrame(frame);
+      observer.disconnect();
     };
-  }, [mode, savedRatio, navCollapsed, headerCollapsed]);
-
-  const setMode = useCallback((next: ReaderMode) => {
-    if (!isReaderMode(next)) return;
-    setModeState(next);
   }, []);
 
-  const setRatio = useCallback((next: number) => {
-    setSavedRatio(clampSplitRatio(next));
-  }, []);
+  useEffect(() => {
+    onChromeChangeRef.current?.(chrome);
+  }, [chrome]);
+
+  const flushPending = useCallback(() => {
+    if (saveTimerRef.current !== null) {
+      window.clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
+    }
+    const patch = pendingPatchRef.current;
+    if (Object.keys(patch).length === 0) return;
+    pendingPatchRef.current = {};
+    void update((current) => ({
+      ...current,
+      workspace: { ...current.workspace, ...patch },
+    }));
+  }, [update]);
+
+  const queuePatch = useCallback(
+    (patch: WorkspacePatch) => {
+      pendingPatchRef.current = { ...pendingPatchRef.current, ...patch };
+      if (saveTimerRef.current !== null) window.clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = window.setTimeout(() => {
+        saveTimerRef.current = null;
+        flushPending();
+      }, SAVE_DELAY);
+    },
+    [flushPending]
+  );
+
+  useEffect(() => {
+    return () => {
+      flushPending();
+    };
+  }, [flushPending]);
+
+  const setMode = useCallback(
+    (next: ReaderMode) => {
+      if (!isReaderMode(next)) return;
+      queuePatch({ readerDefaultMode: next });
+    },
+    [queuePatch]
+  );
+
+  const setRatio = useCallback(
+    (next: number) => {
+      queuePatch({ readerSplitRatio: clampSplitRatio(next) });
+    },
+    [queuePatch]
+  );
 
   const restoreNavigation = useCallback(() => {
-    setNavCollapsed(false);
-    setModeState((current) => (current === "reading" ? "research" : current));
-  }, []);
+    queuePatch({
+      readerNavCollapsed: false,
+      ...(mode === "reading" ? { readerDefaultMode: "research" as const } : {}),
+    });
+  }, [mode, queuePatch]);
 
   const toggleHeader = useCallback(() => {
-    setHeaderCollapsed((current) => !current);
-  }, []);
+    queuePatch({ readerHeaderCollapsed: !settings.workspace.readerHeaderCollapsed });
+  }, [queuePatch, settings.workspace.readerHeaderCollapsed]);
 
   useEffect(() => {
     const onModeEvent = (event: Event) => {

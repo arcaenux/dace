@@ -2,6 +2,7 @@ import {
   FC,
   KeyboardEvent as ReactKeyboardEvent,
   RefObject,
+  useEffect,
   useRef,
   useState,
 } from "react";
@@ -89,6 +90,7 @@ export const ReaderToolbar: FC<ReaderToolbarProps> = ({
 }) => {
   const [isAnnotationOpen, setIsAnnotationOpen] = useState(false);
   const [isOverflowOpen, setIsOverflowOpen] = useState(false);
+  const [pageDraft, setPageDraft] = useState(String(currentPage));
   const annotationRef = useRef<HTMLDivElement>(null);
   const annotationTriggerRef = useRef<HTMLButtonElement>(null);
   const overflowRef = useRef<HTMLDivElement>(null);
@@ -109,12 +111,24 @@ export const ReaderToolbar: FC<ReaderToolbarProps> = ({
     group: "reader-popover",
   });
 
-  const handlePageKey = (event: ReactKeyboardEvent<HTMLInputElement>) => {
-    if (event.key !== "Enter") return;
-    const parsed = Number.parseInt(event.currentTarget.value, 10);
+  useEffect(() => {
+    setPageDraft(String(currentPage));
+  }, [currentPage]);
+
+  const commitPageDraft = () => {
+    const parsed = Number.parseInt(pageDraft, 10);
     if (Number.isFinite(parsed)) {
       onPageChange(Math.min(totalPages, Math.max(1, parsed)));
+    } else {
+      setPageDraft(String(currentPage));
     }
+  };
+
+  const handlePageKey = (event: ReactKeyboardEvent<HTMLInputElement>) => {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    commitPageDraft();
+    event.currentTarget.blur();
   };
 
   const clampZoom = (value: number) => Math.min(2.5, Math.max(0.6, +value.toFixed(2)));
@@ -219,12 +233,11 @@ export const ReaderToolbar: FC<ReaderToolbarProps> = ({
             </button>
             <span className="reader-page-field">
               <input
-                value={currentPage}
-                onChange={(event) => {
-                  const value = Number.parseInt(event.target.value, 10);
-                  if (Number.isFinite(value)) onPageChange(Math.min(totalPages, Math.max(1, value)));
-                }}
+                value={pageDraft}
+                onChange={(event) => setPageDraft(event.target.value)}
+                onBlur={commitPageDraft}
                 onKeyDown={handlePageKey}
+                inputMode="numeric"
                 aria-label="Current page"
               />
               <span>/ {totalPages}</span>

@@ -45,18 +45,23 @@ export const ConnectExcerptModal: FC<ConnectExcerptModalProps> = ({
   );
 
   useEffect(() => {
+    let cancelled = false;
     async function fetchRecords() {
       try {
         const records = await listRecords();
+        if (cancelled) return;
         setExistingRecords(records);
         if (records.length > 0) {
-          setSelectedRecordId(records[0].id);
+          setSelectedRecordId((current) => current || records[0].id);
         }
       } catch (err) {
-        console.error("Failed to load records for linking:", err);
+        if (!cancelled) console.error("Failed to load records for linking:", err);
       }
     }
-    fetchRecords();
+    void fetchRecords();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const handleCreateRecord = async () => {
@@ -111,14 +116,16 @@ export const ConnectExcerptModal: FC<ConnectExcerptModalProps> = ({
   const filteredRecords = existingRecords.filter((r) =>
     r.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
+  const canLinkSelectedRecord = filteredRecords.some((record) => record.id === selectedRecordId);
 
   return (
     <div
       className="overlay-backdrop"
       role="dialog"
+      aria-modal="true"
       aria-label="Connect Excerpt to Knowledge"
     >
-      <div ref={modalRef} className="attachment-details-modal" style={{ maxWidth: "580px" }}>
+      <div ref={modalRef} className="attachment-details-modal" style={{ maxWidth: "580px", maxHeight: "min(88vh, 720px)", display: "flex", flexDirection: "column" }}>
         <div className="details-modal-header">
           <div>
             <span className="details-modal-badge">Knowledge Crystallization</span>
@@ -137,7 +144,7 @@ export const ConnectExcerptModal: FC<ConnectExcerptModalProps> = ({
           </button>
         </div>
 
-        <div className="details-modal-body">
+        <div className="details-modal-body" style={{ overflowY: "auto", minHeight: 0 }}>
           {/* Exact Quoted Passage Preview */}
           <div style={{ marginBottom: "16px" }}>
             <span className="detail-meta-label">Selected Passage</span>
@@ -274,7 +281,7 @@ export const ConnectExcerptModal: FC<ConnectExcerptModalProps> = ({
             <button
               className="details-action-btn primary"
               onClick={handleLinkRecord}
-              disabled={isSubmitting || !selectedRecordId}
+              disabled={isSubmitting || !canLinkSelectedRecord}
             >
               {isSubmitting ? "Connecting..." : "Link Excerpt"}
             </button>

@@ -32,13 +32,16 @@ export const FloatingSelectionToolbar: FC<FloatingSelectionToolbarProps> = ({
     outsideClickGraceMs: 180,
   });
 
+  const maxLeft = typeof window !== "undefined" ? Math.max(10, window.innerWidth - 460) : position.left;
+  const clampedLeft = Math.max(10, Math.min(position.left, maxLeft));
+
   return (
     <div
       ref={toolbarRef}
       className="floating-selection-toolbar"
       style={{
         top: `${Math.max(10, position.top - 46)}px`,
-        left: `${Math.max(10, position.left)}px`,
+        left: `${clampedLeft}px`,
       }}
       onMouseDown={(event) => {
         event.preventDefault();

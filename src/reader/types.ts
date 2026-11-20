@@ -1,6 +1,7 @@
 export type HighlightType = "important" | "question" | "insight" | "definition";
 
 export interface HighlightAnchorData {
+  pageNumber?: number;
   startOffset?: number;
   endOffset?: number;
   prefix?: string;

@@ -17,21 +17,12 @@
 /* The shell owns chrome clearance. Retracted chrome returns that space to the
    document instead of merely shrinking type inside the old padded container. */
 .dace-app .research-reader-container {
+  width: 100%;
   height: 100%;
   min-height: 0;
-  padding-top: var(--top-plane);
-  padding-left: var(--rail-plane);
-  background: var(--reader-bg);
-  transition: padding-left 240ms var(--ease-standard, ease), padding-top 240ms var(--ease-standard, ease);
-}
-.dace-app.reader-header-hidden .research-reader-container {
   padding-top: 0;
-}
-.dace-app.reader-nav-hidden .research-reader-container {
   padding-left: 0;
-}
-.dace-app.reader-nav-compact .research-reader-container {
-  padding-left: 58px;
+  background: var(--reader-bg);
 }
 .dace-app.reader-nav-compact .workspace-rail.is-compact {
   width: 58px;
@@ -90,11 +81,11 @@
   overflow: hidden;
   transition: grid-template-columns 260ms var(--ease-standard, ease);
 }
-.dace-app.reader-is-resizing .reader-adaptive-body {
+body.reader-is-resizing .dace-app .reader-adaptive-body {
   transition: none;
 }
-.dace-app.reader-is-resizing,
-.dace-app.reader-is-resizing * {
+body.reader-is-resizing .dace-app,
+body.reader-is-resizing .dace-app * {
   cursor: col-resize !important;
   user-select: none !important;
 }
@@ -581,8 +572,10 @@
   letter-spacing: -0.02em;
   line-height: 1.2;
 }
-.dace-app .reader-note-title:focus {
+.dace-app .reader-note-title:focus,
+.dace-app .reader-note-title:focus-visible {
   outline: none;
+  box-shadow: none;
 }
 .dace-app .reader-note-tags {
   display: flex;
@@ -713,8 +706,10 @@
   resize: vertical;
   user-select: text;
 }
-.dace-app .reader-note-editor:focus {
+.dace-app .reader-note-editor:focus,
+.dace-app .reader-note-editor:focus-visible {
   outline: none;
+  box-shadow: none;
 }
 .dace-app .reader-note-editor::placeholder {
   color: #5f5a55;
