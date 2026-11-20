@@ -1,4 +1,4 @@
-import { FC, useState, useEffect, useCallback } from "react";
+import { FC, useState, useEffect } from "react";
 import { ExcerptCitation } from "./types.ts";
 import * as readerApi from "./readerApi.ts";
 
@@ -15,22 +15,33 @@ export const RecordExcerptsSection: FC<RecordExcerptsSectionProps> = ({
 }) => {
   const [excerpts, setExcerpts] = useState<ExcerptCitation[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-
-  const loadExcerpts = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const list = await readerApi.getRecordExcerpts(recordId);
-      setExcerpts(list);
-    } catch (err) {
-      console.error("Failed to load record excerpts:", err);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [recordId]);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
-    loadExcerpts();
-  }, [loadExcerpts]);
+    let cancelled = false;
+    setIsLoading(true);
+    setLoadError(null);
+    setExcerpts([]);
+
+    readerApi
+      .getRecordExcerpts(recordId)
+      .then((list) => {
+        if (!cancelled) setExcerpts(list);
+      })
+      .catch((err: any) => {
+        if (cancelled) return;
+        console.error("Failed to load record excerpts:", err);
+        setLoadError(err?.message || "Could not load connected excerpts");
+        onShowNotice("Could not load connected research excerpts");
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [onShowNotice, recordId]);
 
   const handleUnlink = async (highlightId: string) => {
     try {
@@ -43,7 +54,7 @@ export const RecordExcerptsSection: FC<RecordExcerptsSectionProps> = ({
     }
   };
 
-  if (!isLoading && excerpts.length === 0) {
+  if (!isLoading && !loadError && excerpts.length === 0) {
     return null; // Keep desk clean when no excerpts linked
   }
 
@@ -54,6 +65,8 @@ export const RecordExcerptsSection: FC<RecordExcerptsSectionProps> = ({
           Connected Research Excerpts & Quotations ({excerpts.length})
         </span>
       </div>
+
+      {loadError && <div className="card-stale-notice">{loadError}</div>}
 
       <div className="record-excerpts-list">
         {excerpts.map((item) => (

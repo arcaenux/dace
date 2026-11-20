@@ -203,7 +203,7 @@ export async function getRecordExcerpts(
       return {
         highlight_id: l.highlight_id,
         attachment_id: hl?.attachment_id || "att-1",
-        document_title: "Sample Document.pdf",
+        document_title: hl ? `Document ${hl.attachment_id}` : "Research document",
         page_number: hl?.page_number || 1,
         selected_text: hl?.selected_text || "Quoted excerpt...",
         highlight_type: hl?.highlight_type || "insight",
@@ -242,10 +242,15 @@ export async function createRecordFromExcerpt(
   }
 
   const now = new Date().toISOString();
+  const sourceHighlight = fallbackHighlights.find((h) => h.id === highlightId);
+  const quote = sourceHighlight?.selected_text || "";
+  const citation = sourceHighlight
+    ? `> ${quote}\n\nSource: ${sourceHighlight.attachment_id}, p. ${sourceHighlight.page_number}`
+    : "";
   const rec: KnowledgeRecord = {
     id: fallbackId("rec-from-ex"),
     title: title || "New Insight Note",
-    content: commentary ? `> Quoted passage\n\n${commentary}` : "> Quoted passage",
+    content: [citation, commentary].filter(Boolean).join("\n\n"),
     created_at: now,
     updated_at: now,
     tags: ["research"],
