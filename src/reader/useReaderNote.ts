@@ -10,6 +10,8 @@ import {
 import { AttachmentSummary } from "../attachments/types.ts";
 import * as knowledgeApi from "../knowledge/knowledgeApi.ts";
 import type { KnowledgeRecord } from "../knowledge/types.ts";
+import { useSettings } from "../settings/SettingsContext";
+import { resolveReaderAutosaveDelayMs } from "./readerAutosave.ts";
 import { Highlight } from "./types.ts";
 import {
   appendExcerptToContent,
@@ -44,6 +46,8 @@ interface ReaderNoteApi extends ReaderNoteState {
   ) => Promise<"inserted" | "duplicate">;
   removeExcerpt: (excerptId: string) => void;
   flushSave: () => Promise<ReaderNoteSaveResult>;
+  isDirty: () => boolean;
+  isSaving: () => boolean;
   insertMarkdown: (prefix: string, suffix?: string) => void;
   contentRef: RefObject<HTMLTextAreaElement | null>;
 }
@@ -53,7 +57,7 @@ interface ReaderNoteOptions {
 }
 
 const noteKey = (attachmentId: string) => `dace:reader-note:${attachmentId}`;
-const AUTOSAVE_DELAY = 700;
+const MAX_FLUSH_ROUNDS = 8;
 
 const emptyState = (): ReaderNoteState => ({
   recordId: null,
@@ -72,6 +76,8 @@ export function useReaderNote(
   options: ReaderNoteOptions = {}
 ): ReaderNoteApi {
   const [state, setState] = useState<ReaderNoteState>(emptyState);
+  const { settings } = useSettings();
+  const autosaveDelayMs = resolveReaderAutosaveDelayMs(settings);
   const stateRef = useRef(state);
   const noteAttachmentRef = useRef<string | null>(null);
   const trackerRef = useRef<NoteSaveTracker>(new NoteSaveTracker());
@@ -167,8 +173,8 @@ export function useReaderNote(
     dirtyTimerRef.current = window.setTimeout(() => {
       dirtyTimerRef.current = null;
       void saveNow();
-    }, AUTOSAVE_DELAY);
-  }, [clearTimer, saveNow]);
+    }, autosaveDelayMs);
+  }, [autosaveDelayMs, clearTimer, saveNow]);
   scheduleSaveRef.current = scheduleSave;
 
   const markDirty = useCallback(
@@ -383,7 +389,29 @@ export function useReaderNote(
     [markDirty]
   );
 
-  const flushSave = useCallback(() => saveNow(), [saveNow]);
+  const flushSave = useCallback(async (): Promise<ReaderNoteSaveResult> => {
+    clearTimer();
+    let lastResult: ReaderNoteSaveResult = "skipped";
+    let rounds = 0;
+
+    // A save may already be in flight, and newer keystrokes may arrive while
+    // it runs. Drain every pending version so the latest content is persisted.
+    while ((trackerRef.current.hasPending || inFlightRef.current) && rounds < MAX_FLUSH_ROUNDS) {
+      lastResult = await saveNow();
+      rounds += 1;
+      if (lastResult === "error") return "error";
+    }
+
+    if (trackerRef.current.hasPending || inFlightRef.current) {
+      const message = "Research note did not finish saving; try again";
+      onSaveErrorRef.current?.(message);
+      return "error";
+    }
+    return lastResult;
+  }, [clearTimer, saveNow]);
+
+  const isDirty = useCallback(() => trackerRef.current.hasPending, []);
+  const isSaving = useCallback(() => inFlightRef.current !== null, []);
 
   return useMemo(
     () => ({
@@ -396,6 +424,8 @@ export function useReaderNote(
       insertExcerpt,
       removeExcerpt,
       flushSave,
+      isDirty,
+      isSaving,
       insertMarkdown,
       contentRef,
     }),
@@ -408,6 +438,8 @@ export function useReaderNote(
       insertExcerpt,
       removeExcerpt,
       flushSave,
+      isDirty,
+      isSaving,
       insertMarkdown,
     ]
   );

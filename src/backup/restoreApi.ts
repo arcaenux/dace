@@ -9,6 +9,8 @@ export interface RestoreProgressEvent {
   message: string;
 }
 
+export type RestoreInspectProgressEvent = RestoreProgressEvent;
+
 export interface RestorePreview {
   archive_path: string;
   archive_size: number;
@@ -50,11 +52,24 @@ function ensureDesktop(): void {
 
 /**
  * Validates an archive and returns a preview without touching live data.
- * When no path is supplied, the native file picker is shown.
+ * When no path is supplied, the native file picker is shown. Progress reports
+ * fingerprinting, extraction and integrity verification stages.
  */
-export async function inspectBackupArchive(): Promise<RestorePreview> {
+export async function inspectBackupArchive(
+  onProgress?: (progress: RestoreInspectProgressEvent) => void
+): Promise<RestorePreview> {
   ensureDesktop();
-  return invoke<RestorePreview>("inspect_backup_archive", { archivePath: null });
+  let unlisten: UnlistenFn | null = null;
+  try {
+    unlisten = await listen<RestoreInspectProgressEvent>("dace://restore-inspect-progress", (event) => {
+      onProgress?.(event.payload);
+    });
+    return await invoke<RestorePreview>("inspect_backup_archive", { archivePath: null });
+  } finally {
+    if (unlisten) {
+      unlisten();
+    }
+  }
 }
 
 /**

@@ -134,42 +134,6 @@ export function useAdaptiveReaderLayout(
     queuePatch({ readerHeaderCollapsed: !settings.workspace.readerHeaderCollapsed });
   }, [queuePatch, settings.workspace.readerHeaderCollapsed]);
 
-  useEffect(() => {
-    const onModeEvent = (event: Event) => {
-      const detail = (event as CustomEvent<unknown>).detail;
-      if (isReaderMode(detail)) setMode(detail);
-    };
-    window.addEventListener("dace:reader-mode", onModeEvent);
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (!event.altKey || !event.shiftKey || event.ctrlKey || event.metaKey) return;
-      const target = event.target;
-      if (
-        target instanceof HTMLInputElement ||
-        target instanceof HTMLTextAreaElement ||
-        (target instanceof HTMLElement && target.isContentEditable)
-      ) {
-        return;
-      }
-      if (event.key === "1") {
-        event.preventDefault();
-        setMode("reading");
-      } else if (event.key === "2") {
-        event.preventDefault();
-        setMode("research");
-      } else if (event.key === "3") {
-        event.preventDefault();
-        setMode("writing");
-      }
-    };
-    window.addEventListener("keydown", onKeyDown);
-
-    return () => {
-      window.removeEventListener("dace:reader-mode", onModeEvent);
-      window.removeEventListener("keydown", onKeyDown);
-    };
-  }, [setMode]);
-
   return {
     containerRef,
     mode,

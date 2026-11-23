@@ -65,6 +65,7 @@ pub async fn export_backup(
 /// When no path is supplied, a native file picker is shown.
 #[tauri::command]
 pub async fn inspect_backup_archive(
+    app: AppHandle,
     archive_path: Option<String>,
 ) -> Result<RestorePreview, String> {
     let path = match archive_path {
@@ -78,9 +79,24 @@ pub async fn inspect_backup_archive(
         }
     };
 
-    tauri::async_runtime::spawn_blocking(move || restore::inspect_archive(&path))
-        .await
-        .map_err(|e| format!("Restore inspection task failed: {}", e))?
+    let app_emit = app.clone();
+    let progress = move |stage: &str, current: usize, total: usize, message: &str| {
+        let _ = app_emit.emit(
+            "dace://restore-inspect-progress",
+            serde_json::json!({
+                "stage": stage,
+                "current": current,
+                "total": total,
+                "message": message,
+            }),
+        );
+    };
+
+    tauri::async_runtime::spawn_blocking(move || {
+        restore::inspect_archive_with_progress(&path, Some(&progress))
+    })
+    .await
+    .map_err(|e| format!("Restore inspection task failed: {}", e))?
 }
 
 /// Fully validates and stages a restore, snapshots the current data, writes the

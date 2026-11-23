@@ -120,6 +120,36 @@ fn report(progress: Option<&ProgressCallback>, stage: &str, message: &str) {
     }
 }
 
+fn archive_display_name(path: &Path) -> String {
+    path.file_name()
+        .map(|name| name.to_string_lossy().to_string())
+        .unwrap_or_else(|| path.to_string_lossy().to_string())
+}
+
+/// Copies the selected archive into an isolated directory and fingerprints that
+/// copy. Extraction then reads the copy, so a later change to the user's original
+/// file cannot make the staged data diverge from the fingerprint shown in the
+/// preview.
+pub(crate) fn snapshot_archive(
+    archive_path: &Path,
+    dest_dir: &Path,
+    progress: Option<&ProgressCallback>,
+) -> Result<(PathBuf, u64, String), String> {
+    fs::create_dir_all(dest_dir)
+        .map_err(|e| format!("Failed to create archive snapshot directory {:?}: {}", dest_dir, e))?;
+    let snapshot = dest_dir.join("archive.ndarchive");
+    report(
+        progress,
+        "fingerprint",
+        &format!("Copying and fingerprinting {}…", archive_display_name(archive_path)),
+    );
+    fs::copy(archive_path, &snapshot)
+        .map_err(|e| format!("Failed to snapshot archive {:?}: {}", archive_path, e))?;
+    let (archive_sha256, archive_size) = sha256_file(&snapshot)
+        .map_err(|e| format!("Failed to fingerprint archive snapshot {:?}: {}", snapshot, e))?;
+    Ok((snapshot, archive_size, archive_sha256))
+}
+
 fn read_json<T: for<'de> Deserialize<'de>>(path: &Path) -> Result<T, String> {
     let bytes = fs::read(path).map_err(|e| format!("Failed to read {:?}: {}", path, e))?;
     serde_json::from_slice(&bytes).map_err(|e| format!("Failed to parse {:?}: {}", path, e))
@@ -489,22 +519,34 @@ fn inspect_extracted(
 /// Read-only archive inspection used by the preview UI. Nothing is written into
 /// the live application data directory.
 pub fn inspect_archive(archive_path: &Path) -> Result<RestorePreview, String> {
-    let (archive_sha256, archive_size) = sha256_file(archive_path)
-        .map_err(|e| format!("Failed to fingerprint archive {:?}: {}", archive_path, e))?;
+    inspect_archive_with_progress(archive_path, None)
+}
+
+/// Same as [`inspect_archive`], with progress for fingerprinting, extraction and
+/// integrity verification. The archive is copied and verified from an isolated
+/// snapshot so the preview describes exactly the bytes that were inspected.
+pub fn inspect_archive_with_progress(
+    archive_path: &Path,
+    progress: Option<&ProgressCallback>,
+) -> Result<RestorePreview, String> {
     let inspect_dir =
         std::env::temp_dir().join(format!("dace-restore-inspect-{}", uuid::Uuid::new_v4()));
     fs::create_dir_all(&inspect_dir)
         .map_err(|e| format!("Failed to create inspection directory: {}", e))?;
 
     let result = (|| {
-        let manifest = extract_ndarchive(archive_path, &inspect_dir)?;
+        let (stable_archive, archive_size, archive_sha256) =
+            snapshot_archive(archive_path, &inspect_dir, progress)?;
+        report(progress, "extract", "Extracting archive into isolated inspection area…");
+        let manifest = extract_ndarchive(&stable_archive, &inspect_dir)?;
+        report(progress, "verify", "Verifying database and attachment integrity…");
         inspect_extracted(
             &inspect_dir,
             &manifest,
             archive_path,
             archive_size,
             &archive_sha256,
-            None,
+            progress.map(|p| p as &dyn Fn(&str, usize, usize, &str)),
         )
     })();
 
@@ -570,19 +612,11 @@ pub fn prepare_restore_checked(
                 .to_string(),
         );
     }
-
-    let (archive_sha256, archive_size) = sha256_file(archive_path)
-        .map_err(|e| format!("Failed to fingerprint archive {:?}: {}", archive_path, e))?;
     if let Some(expected) = expected_archive_size {
-        if archive_size != expected {
-            return Err(
-                "The backup archive changed since it was reviewed. Please inspect it again."
-                    .to_string(),
-            );
-        }
-    }
-    if let Some(expected) = expected_archive_sha256 {
-        if !archive_sha256.eq_ignore_ascii_case(expected) {
+        let actual = fs::metadata(archive_path)
+            .map_err(|e| format!("Failed to read archive {:?}: {}", archive_path, e))?
+            .len();
+        if actual != expected {
             return Err(
                 "The backup archive changed since it was reviewed. Please inspect it again."
                     .to_string(),
@@ -590,15 +624,44 @@ pub fn prepare_restore_checked(
         }
     }
 
-    prepare_restore_inner(
+    // Snapshot first, then verify and extract from that snapshot. The original
+    // path is kept only for display and marker metadata.
+    let snapshot_dir = safe_join(
         app_data_dir,
-        archive_path,
-        archive_path,
-        current_db_path,
-        progress,
-        archive_size,
-        archive_sha256,
-    )
+        &format!("{}/.preview-{}", RESTORE_STAGING_DIR, uuid::Uuid::new_v4().simple()),
+    )?;
+    let result = (|| {
+        let (stable_archive, archive_size, archive_sha256) =
+            snapshot_archive(archive_path, &snapshot_dir, progress)?;
+        if let Some(expected) = expected_archive_size {
+            if archive_size != expected {
+                return Err(
+                    "The backup archive changed since it was reviewed. Please inspect it again."
+                        .to_string(),
+                );
+            }
+        }
+        if let Some(expected) = expected_archive_sha256 {
+            if !archive_sha256.eq_ignore_ascii_case(expected) {
+                return Err(
+                    "The backup archive changed since it was reviewed. Please inspect it again."
+                        .to_string(),
+                );
+            }
+        }
+
+        prepare_restore_inner(
+            app_data_dir,
+            &stable_archive,
+            archive_path,
+            current_db_path,
+            progress,
+            archive_size,
+            archive_sha256,
+        )
+    })();
+    let _ = fs::remove_dir_all(&snapshot_dir);
+    result
 }
 
 fn prepare_restore_inner(
@@ -611,7 +674,6 @@ fn prepare_restore_inner(
     archive_sha256: String,
 ) -> Result<RestoreStartResult, String> {
     let marker_path = app_data_dir.join(RESTORE_MARKER_FILE);
-
     let staging_rel = format!("{}/{}", RESTORE_STAGING_DIR, now_stamp());
     let staging_dir = safe_join(app_data_dir, &staging_rel)?;
     let recovery_rel = format!("{}/{}", RESTORE_RECOVERY_DIR, now_stamp());
@@ -644,9 +706,11 @@ fn prepare_restore_inner(
         let mut previous_counts: Option<(i64, i64)> = None;
         let database_snapshot_rel = "database-snapshot/dace.db".to_string();
         if let Some(current_db) = current_db_path.filter(|path| path.exists()) {
-            previous_counts = current_counts(current_db);
             let snapshot_path = recovery_dir.join("database-snapshot").join("dace.db");
             snapshot_current_database(current_db, &snapshot_path)?;
+            // Derive rollback expectations from the snapshot itself so a concurrent
+            // write cannot make later rollback verification report a false mismatch.
+            previous_counts = current_counts(&snapshot_path);
         }
 
         let attachments_dir = app_data_dir.join("attachments");
@@ -994,7 +1058,7 @@ fn cleanup_stale_staging(app_data_dir: &Path) {
     let staging_root = app_data_dir.join(RESTORE_STAGING_DIR);
     if let Ok(entries) = fs::read_dir(&staging_root) {
         for entry in entries.flatten() {
-            let _ = fs::remove_dir_all(entry.path());
+            let _ = remove_any(&entry.path());
         }
     }
 }
