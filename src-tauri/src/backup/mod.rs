@@ -90,6 +90,8 @@ pub async fn inspect_backup_archive(
 pub async fn restore_backup_archive(
     app: AppHandle,
     archive_path: String,
+    expected_archive_size: Option<u64>,
+    expected_archive_sha256: Option<String>,
 ) -> Result<RestoreStartResult, String> {
     let path = std::path::PathBuf::from(archive_path);
     let app_for_task = app.clone();
@@ -118,11 +120,13 @@ pub async fn restore_backup_archive(
                 }),
             );
         };
-        let result = restore::prepare_restore(
+        let result = restore::prepare_restore_checked(
             &app_data_dir,
             &path,
             current_db.as_deref(),
             Some(&progress),
+            expected_archive_size,
+            expected_archive_sha256.as_deref(),
         );
         drop(guard);
         result

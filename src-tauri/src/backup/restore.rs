@@ -51,6 +51,7 @@ const ACTIVE_DB_FILE_NAMES: [&str; 6] = [
 pub struct RestorePreview {
     pub archive_path: String,
     pub archive_size: u64,
+    pub archive_sha256: String,
     pub created_at: String,
     pub app_version: String,
     pub schema_version: i64,
@@ -346,6 +347,7 @@ fn inspect_extracted(
     manifest: &BackupManifest,
     archive_path: &Path,
     archive_size: u64,
+    archive_sha256: &str,
     on_progress: Option<&dyn Fn(&str, usize, usize, &str)>,
 ) -> Result<RestorePreview, String> {
     let db_path = safe_join(extract_dir, NDARCHIVE_DATABASE_PATH)?;
@@ -469,6 +471,7 @@ fn inspect_extracted(
     Ok(RestorePreview {
         archive_path: archive_path.to_string_lossy().to_string(),
         archive_size,
+        archive_sha256: archive_sha256.to_string(),
         created_at: manifest.created_at.clone(),
         app_version: manifest.app_version.clone(),
         schema_version,
@@ -486,9 +489,8 @@ fn inspect_extracted(
 /// Read-only archive inspection used by the preview UI. Nothing is written into
 /// the live application data directory.
 pub fn inspect_archive(archive_path: &Path) -> Result<RestorePreview, String> {
-    let archive_size = fs::metadata(archive_path)
-        .map_err(|e| format!("Failed to read archive {:?}: {}", archive_path, e))?
-        .len();
+    let (archive_sha256, archive_size) = sha256_file(archive_path)
+        .map_err(|e| format!("Failed to fingerprint archive {:?}: {}", archive_path, e))?;
     let inspect_dir =
         std::env::temp_dir().join(format!("dace-restore-inspect-{}", uuid::Uuid::new_v4()));
     fs::create_dir_all(&inspect_dir)
@@ -496,7 +498,14 @@ pub fn inspect_archive(archive_path: &Path) -> Result<RestorePreview, String> {
 
     let result = (|| {
         let manifest = extract_ndarchive(archive_path, &inspect_dir)?;
-        inspect_extracted(&inspect_dir, &manifest, archive_path, archive_size, None)
+        inspect_extracted(
+            &inspect_dir,
+            &manifest,
+            archive_path,
+            archive_size,
+            &archive_sha256,
+            None,
+        )
     })();
 
     let _ = fs::remove_dir_all(&inspect_dir);
@@ -540,6 +549,20 @@ pub fn prepare_restore(
     current_db_path: Option<&Path>,
     progress: Option<&ProgressCallback>,
 ) -> Result<RestoreStartResult, String> {
+    prepare_restore_checked(app_data_dir, archive_path, current_db_path, progress, None, None)
+}
+
+/// Same as [`prepare_restore`], but refuses to stage an archive that changed after
+/// the user reviewed its preview. The size and SHA-256 come from that preview.
+#[allow(clippy::too_many_arguments)]
+pub fn prepare_restore_checked(
+    app_data_dir: &Path,
+    archive_path: &Path,
+    current_db_path: Option<&Path>,
+    progress: Option<&ProgressCallback>,
+    expected_archive_size: Option<u64>,
+    expected_archive_sha256: Option<&str>,
+) -> Result<RestoreStartResult, String> {
     let marker_path = app_data_dir.join(RESTORE_MARKER_FILE);
     if marker_path.exists() {
         return Err(
@@ -548,9 +571,46 @@ pub fn prepare_restore(
         );
     }
 
-    let archive_size = fs::metadata(archive_path)
-        .map_err(|e| format!("Failed to read archive {:?}: {}", archive_path, e))?
-        .len();
+    let (archive_sha256, archive_size) = sha256_file(archive_path)
+        .map_err(|e| format!("Failed to fingerprint archive {:?}: {}", archive_path, e))?;
+    if let Some(expected) = expected_archive_size {
+        if archive_size != expected {
+            return Err(
+                "The backup archive changed since it was reviewed. Please inspect it again."
+                    .to_string(),
+            );
+        }
+    }
+    if let Some(expected) = expected_archive_sha256 {
+        if !archive_sha256.eq_ignore_ascii_case(expected) {
+            return Err(
+                "The backup archive changed since it was reviewed. Please inspect it again."
+                    .to_string(),
+            );
+        }
+    }
+
+    prepare_restore_inner(
+        app_data_dir,
+        archive_path,
+        archive_path,
+        current_db_path,
+        progress,
+        archive_size,
+        archive_sha256,
+    )
+}
+
+fn prepare_restore_inner(
+    app_data_dir: &Path,
+    archive_path: &Path,
+    reported_archive_path: &Path,
+    current_db_path: Option<&Path>,
+    progress: Option<&ProgressCallback>,
+    archive_size: u64,
+    archive_sha256: String,
+) -> Result<RestoreStartResult, String> {
+    let marker_path = app_data_dir.join(RESTORE_MARKER_FILE);
 
     let staging_rel = format!("{}/{}", RESTORE_STAGING_DIR, now_stamp());
     let staging_dir = safe_join(app_data_dir, &staging_rel)?;
@@ -565,8 +625,9 @@ pub fn prepare_restore(
         let preview = inspect_extracted(
             &staging_dir,
             &manifest,
-            archive_path,
+            reported_archive_path,
             archive_size,
+            &archive_sha256,
             progress.map(|p| p as &dyn Fn(&str, usize, usize, &str)),
         )?;
 
@@ -593,7 +654,7 @@ pub fn prepare_restore(
 
         let recovery_meta = serde_json::json!({
             "created_at": now_rfc3339(),
-            "archive_path": archive_path.to_string_lossy(),
+            "archive_path": reported_archive_path.to_string_lossy(),
             "app_version": manifest.app_version,
             "schema_version": manifest.schema_version,
             "record_count": preview.record_count,
@@ -606,7 +667,7 @@ pub fn prepare_restore(
         let pending = PendingRestore {
             marker_version: MARKER_VERSION,
             phase: PHASE_PREPARED.to_string(),
-            archive_path: archive_path.to_string_lossy().to_string(),
+            archive_path: reported_archive_path.to_string_lossy().to_string(),
             staging_dir: staging_rel,
             recovery_dir: recovery_rel,
             database_snapshot: database_snapshot_rel,
