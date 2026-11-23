@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import type { WorkspaceIntentRequest } from "./appIntents.ts";
 import { OverlayType, WorkspaceActivityId } from "./types";
 
 interface KeyboardShortcutsProps {
@@ -11,6 +12,7 @@ interface KeyboardShortcutsProps {
   setNotice: (message: string) => void;
   activeActivity: WorkspaceActivityId;
   setActiveActivity: (act: WorkspaceActivityId) => void;
+  requestIntent: (request: WorkspaceIntentRequest) => void;
 }
 
 export function useKeyboardShortcuts({
@@ -23,6 +25,7 @@ export function useKeyboardShortcuts({
   setNotice,
   activeActivity,
   setActiveActivity,
+  requestIntent,
 }: KeyboardShortcutsProps) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -85,11 +88,8 @@ export function useKeyboardShortcuts({
       // 5. Ctrl+S: Save Active Document
       if (modifier && (e.key === "s" || e.key === "S") && !e.shiftKey && !e.altKey) {
         e.preventDefault();
-        if (activeActivity === "knowledge-desk") {
-          window.dispatchEvent(new CustomEvent("dace:save-record"));
-          window.dispatchEvent(new CustomEvent("novadome:save-record"));
-        } else if (activeActivity === "reader") {
-          window.dispatchEvent(new CustomEvent("dace:save-reader-note"));
+        if (activeActivity === "knowledge-desk" || activeActivity === "reader") {
+          requestIntent({ type: "save-active" });
         } else {
           setNotice("No active document to save. (Switch to Knowledge Desk)");
         }
@@ -99,28 +99,39 @@ export function useKeyboardShortcuts({
       // 6. Ctrl+N: Create Knowledge Record (prevent browser new window)
       if (modifier && (e.key === "n" || e.key === "N") && !e.shiftKey && !e.altKey) {
         e.preventDefault();
-        setActiveActivity("knowledge-desk");
-        window.dispatchEvent(new CustomEvent("dace:new-record"));
-        window.dispatchEvent(new CustomEvent("novadome:new-record"));
+        requestIntent({ type: "new-record" });
         return;
       }
 
       // 6.1. Ctrl+O: Import Research Document (prevent browser open file)
       if (modifier && (e.key === "o" || e.key === "O") && !e.shiftKey && !e.altKey) {
         e.preventDefault();
-        setActiveActivity("knowledge-desk");
-        window.dispatchEvent(new CustomEvent("dace:import-attachment"));
-        window.dispatchEvent(new CustomEvent("novadome:import-attachment"));
+        requestIntent({ type: "import-attachment" });
         return;
       }
 
       // 7. Ctrl+Shift+F: Search Knowledge Records
       if (modifier && e.shiftKey && (e.key === "f" || e.key === "F") && !e.altKey) {
         e.preventDefault();
-        setActiveActivity("knowledge-desk");
-        window.dispatchEvent(new CustomEvent("dace:search-records"));
-        window.dispatchEvent(new CustomEvent("novadome:search-records"));
+        requestIntent({ type: "search-records" });
         return;
+      }
+
+      // 7.1. Alt+Shift+1 / 2 / 3: Reader layouts (globally advertised shortcuts)
+      if (e.altKey && e.shiftKey && !modifier && !isInput) {
+        if (e.key === "1") {
+          e.preventDefault();
+          requestIntent({ type: "reader-mode", mode: "reading" });
+          return;
+        } else if (e.key === "2") {
+          e.preventDefault();
+          requestIntent({ type: "reader-mode", mode: "research" });
+          return;
+        } else if (e.key === "3") {
+          e.preventDefault();
+          requestIntent({ type: "reader-mode", mode: "writing" });
+          return;
+        }
       }
 
       // 8. Alt+1 / Alt+2 / Alt+3 / Alt+4 / Alt+6 Navigation Shortcuts
@@ -174,5 +185,6 @@ export function useKeyboardShortcuts({
     setNotice,
     activeActivity,
     setActiveActivity,
+    requestIntent,
   ]);
 }

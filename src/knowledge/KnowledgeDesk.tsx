@@ -1,6 +1,4 @@
 import { FC, useState, useEffect, useCallback, useRef } from "react";
-import { getCurrentWindow } from "@tauri-apps/api/window";
-import { isTauriEnvironment, closeNativeWindow } from "../focus/tauriWindow";
 import { KnowledgeRecord, KnowledgeRecordSummary, TagItem } from "./types";
 import * as api from "./knowledgeApi";
 import { pickAndImportAttachment } from "../attachments/attachmentsApi";
@@ -9,10 +7,15 @@ import { RecordListPanel } from "./RecordListPanel";
 import { KnowledgeContextPanel, extractDeskOutline, DeskOutlineItem } from "./KnowledgeContextPanel";
 import { useFocusSpace } from "../focus/FocusSpaceContext";
 import { useDismissable } from "../core/useDismissable";
+import type { KnowledgeDeskIntent } from "../core/appIntents.ts";
+import type { SaveParticipantRegistry } from "../core/saveRegistry.ts";
 
 interface KnowledgeDeskProps {
   onShowNotice: (msg: string) => void;
   initialRecordId?: string | null;
+  intent?: KnowledgeDeskIntent | null;
+  onConsumeIntent?: (intentId: string) => void;
+  saveRegistry: SaveParticipantRegistry;
   onOpenInReader?: (attachmentId: string, pageNumber: number) => void;
   onOpenGraphView?: () => void;
 }
@@ -20,6 +23,9 @@ interface KnowledgeDeskProps {
 export const KnowledgeDesk: FC<KnowledgeDeskProps> = ({
   onShowNotice,
   initialRecordId,
+  intent,
+  onConsumeIntent,
+  saveRegistry,
   onOpenInReader,
   onOpenGraphView,
 }) => {
@@ -31,10 +37,6 @@ export const KnowledgeDesk: FC<KnowledgeDeskProps> = ({
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  // Close Coordination Modal State
-  const [closeErrorModalOpen, setCloseErrorModalOpen] = useState<boolean>(false);
-  const [closeErrorMessage, setCloseErrorMessage] = useState<string | null>(null);
-
   // Navigation History Stack for Relationship Back-Tracking
   const [navigationHistory, setNavigationHistory] = useState<string[]>([]);
   const [outline, setOutline] = useState<DeskOutlineItem[]>([]);
@@ -44,7 +46,17 @@ export const KnowledgeDesk: FC<KnowledgeDeskProps> = ({
   const isSwitchingRef = useRef<boolean>(false);
   const pendingSwitchTargetRef = useRef<string | null>(null);
   const deleteDialogRef = useRef<HTMLDivElement>(null);
-  const closeErrorDialogRef = useRef<HTMLDivElement>(null);
+  const handledIntentIdsRef = useRef<Set<string>>(new Set());
+
+  // The shell owns app close; this surface only reports its save state.
+  useEffect(() => {
+    const unregister = saveRegistry.register({
+      isDirty: () => editorRef.current?.isDirty() ?? false,
+      isSaving: () => editorRef.current?.isSaving() ?? false,
+      flush: async () => (await editorRef.current?.flushSave()) ?? true,
+    });
+    return unregister;
+  }, [saveRegistry]);
 
   useDismissable(
     deleteConfirmId !== null,
@@ -52,13 +64,6 @@ export const KnowledgeDesk: FC<KnowledgeDeskProps> = ({
     deleteDialogRef,
     { group: "desk-dialog", autoFocus: true }
   );
-  useDismissable(
-    closeErrorModalOpen,
-    () => setCloseErrorModalOpen(false),
-    closeErrorDialogRef,
-    { group: "desk-dialog", autoFocus: true }
-  );
-
   const { isFocusSpace } = useFocusSpace();
 
   // The Outline view is derived only from headings that actually exist in the
@@ -134,65 +139,6 @@ export const KnowledgeDesk: FC<KnowledgeDeskProps> = ({
       isMounted = false;
     };
   }, [loadRecords, refreshTags, initialRecordId]);
-
-  // Window Close Coordination: prevents application close while persistence is pending or dirty
-  useEffect(() => {
-    if (!isTauriEnvironment()) return;
-
-    let isClosing = false;
-    let unlistenFn: (() => void) | null = null;
-
-    async function initCloseHandler() {
-      try {
-        const appWin = getCurrentWindow();
-        unlistenFn = await appWin.onCloseRequested(async (event) => {
-          if (isClosing) {
-            // Authorized close already in progress
-            return;
-          }
-
-          const hasDirty = editorRef.current?.isDirty() ?? false;
-          const hasInFlight = editorRef.current?.isSaving() ?? false;
-
-          if (hasDirty || hasInFlight) {
-            // Prevent immediate exit
-            event.preventDefault();
-
-            try {
-              const saved = await editorRef.current?.flushSave();
-              if (saved) {
-                isClosing = true;
-                if (unlistenFn) {
-                  unlistenFn();
-                  unlistenFn = null;
-                }
-                await closeNativeWindow();
-              } else {
-                setCloseErrorMessage("Database write error while saving active record.");
-                setCloseErrorModalOpen(true);
-              }
-            } catch (err) {
-              setCloseErrorMessage(
-                err instanceof Error ? err.message : "Unexpected error while saving"
-              );
-              setCloseErrorModalOpen(true);
-            }
-          }
-        });
-      } catch (err) {
-        console.error("[KnowledgeDesk] Failed to register onCloseRequested handler:", err);
-      }
-    }
-
-    initCloseHandler();
-
-    return () => {
-      if (unlistenFn) {
-        unlistenFn();
-        unlistenFn = null;
-      }
-    };
-  }, []);
 
   // Save active record with explicit recordId decoupling
   const handleSaveRecord = useCallback(
@@ -378,17 +324,31 @@ export const KnowledgeDesk: FC<KnowledgeDeskProps> = ({
     loadRecords(tag);
   };
 
-  // Global events from Command Palette or shortcuts
+  // Shell-owned intents from the command palette, shortcuts, and top bar.
   useEffect(() => {
-    const handleNewRecordEvent = () => {
+    if (!intent || handledIntentIdsRef.current.has(intent.id)) return;
+    handledIntentIdsRef.current.add(intent.id);
+    onConsumeIntent?.(intent.id);
+
+    if (intent.type === "new-record") {
       handleCreateNewRecord();
-    };
+      return;
+    }
 
-    const handleSearchEvent = () => {
+    if (intent.type === "search-records") {
       setIsListOpen(true);
-    };
+      return;
+    }
 
-    const handleImportAttachmentEvent = async () => {
+    if (intent.type === "save-active") {
+      void (async () => {
+        const saved = await editorRef.current?.flushSave();
+        if (saved === false) onShowNotice("Save failed — see the save status in the editor");
+      })();
+      return;
+    }
+
+    void (async () => {
       try {
         const res = await pickAndImportAttachment(activeRecord?.id);
         if (res) {
@@ -397,24 +357,14 @@ export const KnowledgeDesk: FC<KnowledgeDeskProps> = ({
       } catch (err: any) {
         onShowNotice(`Import failed: ${err?.message || err}`);
       }
-    };
-
-    window.addEventListener("dace:new-record", handleNewRecordEvent);
-    window.addEventListener("novadome:new-record", handleNewRecordEvent);
-    window.addEventListener("dace:search-records", handleSearchEvent);
-    window.addEventListener("novadome:search-records", handleSearchEvent);
-    window.addEventListener("dace:import-attachment", handleImportAttachmentEvent);
-    window.addEventListener("novadome:import-attachment", handleImportAttachmentEvent);
-
-    return () => {
-      window.removeEventListener("dace:new-record", handleNewRecordEvent);
-      window.removeEventListener("novadome:new-record", handleNewRecordEvent);
-      window.removeEventListener("dace:search-records", handleSearchEvent);
-      window.removeEventListener("novadome:search-records", handleSearchEvent);
-      window.removeEventListener("dace:import-attachment", handleImportAttachmentEvent);
-      window.removeEventListener("novadome:import-attachment", handleImportAttachmentEvent);
-    };
-  }, [handleCreateNewRecord, activeRecord?.id, onShowNotice]);
+    })();
+  }, [
+    intent,
+    onConsumeIntent,
+    handleCreateNewRecord,
+    activeRecord?.id,
+    onShowNotice,
+  ]);
 
   return (
     <div className="knowledge-desk-root">
@@ -515,58 +465,6 @@ export const KnowledgeDesk: FC<KnowledgeDeskProps> = ({
         </div>
       )}
 
-      {/* 4. Shutdown Save Error Modal with Clear Retry Options */}
-      {closeErrorModalOpen && (
-        <div
-          className="overlay-backdrop"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Unsaved Changes on Close"
-        >
-          <div ref={closeErrorDialogRef} className="delete-confirm-dialog">
-            <h3 className="confirm-title">Unsaved Changes</h3>
-            <p className="confirm-message">
-              {closeErrorMessage || "An error occurred while saving your record to SQLite."}
-              <br />
-              Closing now will cause recent changes to be lost. What would you like to do?
-            </p>
-            <div className="confirm-actions">
-              <button
-                type="button"
-                className="desk-btn"
-                onClick={() => setCloseErrorModalOpen(false)}
-              >
-                Keep Editing
-              </button>
-              <button
-                type="button"
-                className="desk-btn danger"
-                onClick={async () => {
-                  setCloseErrorModalOpen(false);
-                  await closeNativeWindow();
-                }}
-              >
-                Discard & Close
-              </button>
-              <button
-                type="button"
-                className="desk-btn primary"
-                onClick={async () => {
-                  const ok = await editorRef.current?.flushSave();
-                  if (ok) {
-                    setCloseErrorModalOpen(false);
-                    await closeNativeWindow();
-                  } else {
-                    onShowNotice("Retry failed. Please check database connectivity.");
-                  }
-                }}
-              >
-                Retry Save & Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
