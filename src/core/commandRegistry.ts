@@ -215,12 +215,12 @@ export function buildCommandList(ctx: CommandContext): CommandItem[] {
     {
       id: "nav:terminal",
       name: "Open Terminal",
-      description: "Embedded pseudo-terminal for workspace CLI automation",
+      description: "Open a real local shell in an integrated PTY workspace",
       category: "Navigation",
-      available: false,
-      unavailabilityReason: "Planned for Milestone 5 (PTY & Native Subsystems)",
+      shortcut: "Alt+6",
+      available: true,
       execute: () => {
-        ctx.setNotice("Terminal integration is planned for Milestone 5.");
+        ctx.setActiveActivity("terminal");
         ctx.closeOverlay();
       },
     },

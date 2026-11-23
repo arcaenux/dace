@@ -285,7 +285,7 @@ fn test_restore_round_trip_preserves_all_records_relationships_attachments_highl
     assert_eq!(preview.attachment_count, 1);
     assert_eq!(preview.highlight_count, 1);
     assert_eq!(preview.annotation_count, 1);
-    assert_eq!(preview.schema_version, 4);
+    assert_eq!(preview.schema_version, crate::db::SCHEMA_VERSION);
     assert!(preview.archive_size > 0);
     assert!(!app.path().join(RESTORE_MARKER_FILE).exists(), "inspection must not write live state");
 

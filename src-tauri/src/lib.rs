@@ -4,6 +4,7 @@ pub mod db;
 pub mod knowledge;
 pub mod migration;
 pub mod reader;
+pub mod settings;
 
 use tauri::Manager;
 
@@ -148,6 +149,12 @@ pub fn run() {
             is_fullscreen,
             close_window,
             destroy_window,
+            settings::get_app_settings,
+            settings::update_app_settings,
+            settings::reset_app_settings,
+            settings::get_storage_info,
+            settings::get_app_info,
+            settings::pick_backup_directory,
             backup::export_backup,
             backup::inspect_backup_archive,
             backup::restore_backup_archive,

@@ -52,8 +52,9 @@ test("2. Command descriptions are current and planned commands remain unavailabl
 
   const terminal = commands.find((c) => c.id === "nav:terminal");
   assert.ok(terminal, "Terminal command should remain listed");
-  assert.strictEqual(terminal?.available, false, "Terminal must not be presented as implemented");
-  assert.ok(terminal?.unavailabilityReason, "Planned Terminal command should explain unavailability");
+  assert.strictEqual(terminal?.available, true, "Terminal must be presented as implemented");
+  assert.equal(terminal?.shortcut, "Alt+6");
+  assert.match(terminal?.description || "", /shell|pty/i);
 
   const settings = commands.find((c) => c.id === "system:settings");
   assert.ok(settings, "Settings command should remain listed");
