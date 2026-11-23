@@ -1,12 +1,15 @@
 import { FocusSpaceProvider } from "./focus/FocusSpaceContext";
+import { SettingsProvider } from "./settings/SettingsContext";
 import { WorkspaceShell } from "./workspace/WorkspaceShell";
 import "./styles/dace-cinematic.css";
 
 function App() {
   return (
-    <FocusSpaceProvider>
-      <WorkspaceShell />
-    </FocusSpaceProvider>
+    <SettingsProvider>
+      <FocusSpaceProvider>
+        <WorkspaceShell />
+      </FocusSpaceProvider>
+    </SettingsProvider>
   );
 }
 

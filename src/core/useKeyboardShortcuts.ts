@@ -123,7 +123,7 @@ export function useKeyboardShortcuts({
         return;
       }
 
-      // 8. Alt+1 / Alt+2 / Alt+3 / Alt+4 Navigation Shortcuts
+      // 8. Alt+1 / Alt+2 / Alt+3 / Alt+4 / Alt+6 Navigation Shortcuts
       if (e.altKey && !modifier && !e.shiftKey) {
         if (e.key === "1") {
           e.preventDefault();
@@ -140,6 +140,10 @@ export function useKeyboardShortcuts({
         } else if (e.key === "4") {
           e.preventDefault();
           setActiveActivity("reader");
+          return;
+        } else if (e.key === "6") {
+          e.preventDefault();
+          setActiveActivity("terminal");
           return;
         }
       }
