@@ -12,6 +12,7 @@ export interface RestoreProgressEvent {
 export interface RestorePreview {
   archive_path: string;
   archive_size: number;
+  archive_sha256: string;
   created_at: string;
   app_version: string;
   schema_version: number;
@@ -62,6 +63,8 @@ export async function inspectBackupArchive(): Promise<RestorePreview> {
  */
 export async function restoreBackupArchive(
   archivePath: string,
+  expectedArchiveSize: number,
+  expectedArchiveSha256: string,
   onProgress?: (progress: RestoreProgressEvent) => void
 ): Promise<RestoreStartResult> {
   ensureDesktop();
@@ -71,7 +74,11 @@ export async function restoreBackupArchive(
     unlisten = await listen<RestoreProgressEvent>("dace://restore-progress", (event) => {
       onProgress?.(event.payload);
     });
-    return await invoke<RestoreStartResult>("restore_backup_archive", { archivePath });
+    return await invoke<RestoreStartResult>("restore_backup_archive", {
+      archivePath,
+      expectedArchiveSize,
+      expectedArchiveSha256,
+    });
   } finally {
     if (unlisten) {
       unlisten();

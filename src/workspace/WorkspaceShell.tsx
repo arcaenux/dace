@@ -144,11 +144,16 @@ export const WorkspaceShell: FC = () => {
     setRestoreProgress("Preparing restore…");
     showNotice("Preparing restore…", 0);
     try {
-      await restoreBackupArchive(restorePreview.archive_path, (progress) => {
-        const message = progress.message || "Preparing restore…";
-        setRestoreProgress(message);
-        showNotice(message, 0);
-      });
+      await restoreBackupArchive(
+        restorePreview.archive_path,
+        restorePreview.archive_size,
+        restorePreview.archive_sha256,
+        (progress) => {
+          const message = progress.message || "Preparing restore…";
+          setRestoreProgress(message);
+          showNotice(message, 0);
+        }
+      );
       setRestoreProgress("Restore staged. Dace will restart and verify the restored library…");
       showNotice("Restore staged. Dace will restart and verify the restored library…", 0);
       // Unmount the busy dialog once staging succeeds; the restart is detached and
