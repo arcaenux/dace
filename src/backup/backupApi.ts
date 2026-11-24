@@ -17,7 +17,8 @@ export interface BackupResult {
 }
 
 export async function exportBackup(
-  onProgress?: (progress: BackupProgressEvent) => void
+  onProgress?: (progress: BackupProgressEvent) => void,
+  destinationPath: string | null = null
 ): Promise<BackupResult> {
   if (!isTauriEnvironment()) {
     throw new Error("Backup export is only available in the desktop application.");
@@ -28,7 +29,7 @@ export async function exportBackup(
     unlisten = await listen<BackupProgressEvent>("dace://backup-progress", (event) => {
       onProgress?.(event.payload);
     });
-    return await invoke<BackupResult>("export_backup", { destinationPath: null });
+    return await invoke<BackupResult>("export_backup", { destinationPath });
   } finally {
     if (unlisten) {
       unlisten();

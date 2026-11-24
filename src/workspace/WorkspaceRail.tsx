@@ -1,5 +1,5 @@
 import { CSSProperties, FC, RefObject, useMemo } from "react";
-import { BookOpen, FileText, Home, Network, PanelRight, Settings2 } from "lucide-react";
+import { BookOpen, ChevronLeft, FileText, Home, Network, PanelRight, Settings2, SquareTerminal } from "lucide-react";
 import { WorkspaceActivityId } from "../core/types";
 
 interface WorkspaceRailProps {
@@ -11,6 +11,8 @@ interface WorkspaceRailProps {
   panelTriggerRef?: RefObject<HTMLButtonElement | null>;
   hidden?: boolean;
   compact?: boolean;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 interface OrbitNode {
@@ -18,19 +20,23 @@ interface OrbitNode {
   label: string;
   code: string;
   icon: typeof Home;
-  /** Percentage of viewport width/height; sampled from the reference arc. */
   x: number;
   y: number;
 }
 
+/**
+ * Geometric orbital navigation along a cubic Bezier curve:
+ * P0 = (24, 80), P1 = (118, 200), P2 = (118, 440), P3 = (24, 560)
+ * Peak at x = 94.5px, y = 320px.
+ */
 const navItems: OrbitNode[] = [
-  { id: "workspace", label: "Workspace", code: "01", icon: Home, x: 5.4, y: 23 },
-  { id: "knowledge-desk", label: "Knowledge Desk", code: "02", icon: BookOpen, x: 7.5, y: 31.6 },
-  { id: "reader", label: "Research Reader", code: "03", icon: FileText, x: 8.8, y: 39.8 },
-  { id: "knowledge-graph", label: "Knowledge Graph", code: "04", icon: Network, x: 9, y: 48.9 },
+  { id: "workspace", label: "Workspace", code: "01", icon: Home, x: 45, y: 112 },
+  { id: "knowledge-desk", label: "Knowledge Desk", code: "02", icon: BookOpen, x: 77, y: 190 },
+  { id: "reader", label: "Research Reader", code: "03", icon: FileText, x: 93, y: 272 },
+  { id: "knowledge-graph", label: "Knowledge Graph", code: "04", icon: Network, x: 93, y: 368 },
+  { id: "terminal", label: "Terminal", code: "05", icon: SquareTerminal, x: 77, y: 450 },
+  { id: "settings", label: "Settings", code: "06", icon: Settings2, x: 45, y: 528 },
 ];
-
-const DETAILS_NODE = { x: 8.5, y: 57.5 };
 
 export const WorkspaceRail: FC<WorkspaceRailProps> = ({
   activeActivity,
@@ -41,6 +47,8 @@ export const WorkspaceRail: FC<WorkspaceRailProps> = ({
   panelTriggerRef,
   hidden = false,
   compact = false,
+  isCollapsed = false,
+  onToggleCollapse,
 }) => {
   const activeNode = useMemo(
     () => navItems.find((item) => item.id === activeActivity) ?? navItems[0],
@@ -50,31 +58,54 @@ export const WorkspaceRail: FC<WorkspaceRailProps> = ({
   if (isFocusSpace || hidden) return null;
 
   const haloStyle = {
-    "--active-x": `${activeNode.x}vw`,
-    "--active-y": `${activeNode.y}vh`,
+    "--active-x": `${activeNode.x}px`,
+    "--active-y": `${activeNode.y}px`,
   } as CSSProperties;
 
   return (
-    <aside className={`workspace-rail ${compact ? "is-compact" : ""}`} aria-label="Primary navigation">
+    <aside
+      className={`workspace-rail ${isCollapsed ? "is-collapsed" : ""} ${compact ? "is-compact" : ""}`}
+      aria-label="Primary navigation"
+      aria-hidden={isCollapsed}
+    >
       <div className="rail-brand" aria-label="DACE">
         <span className="rail-brand-mark" aria-hidden="true" />
         <span className="rail-brand-name sr-only">DACE</span>
       </div>
 
-      <div className="rail-active-halo" style={haloStyle} aria-hidden="true" />
+      {/* Curved sidebar silhouette and orbital track */}
+      <svg className="rail-orbit" width="140" height="100%" aria-hidden="true">
+        {/* 1. Curved sidebar surface fill matching the icon arrangement */}
+        <path
+          className="rail-curved-fill"
+          d="M 0 0 L 48 0 C 52 70, 134 170, 134 320 C 134 470, 52 570, 48 640 L 48 3000 L 0 3000 Z"
+        />
 
-      <svg className="rail-orbit" viewBox="0 0 190 941" preserveAspectRatio="none" aria-hidden="true">
-        <path d="M 14 92 C 88 122 132 170 132 216 C 130 262 134 284 144 297 C 156 324 160 352 160 375 C 164 414 166 442 164 460 C 162 500 154 524 152 541 C 150 578 158 612 172 646" />
+        {/* 2. Curved right boundary border */}
+        <path
+          className="rail-curved-border"
+          d="M 48 0 C 52 70, 134 170, 134 320 C 134 470, 52 570, 48 640 L 48 3000"
+        />
+
+        {/* 3. Orbit dock track along the icon centers */}
+        <path
+          className="rail-orbit-arc"
+          d="M 24 80 C 118 200, 118 440, 24 560"
+        />
+
+        {/* 4. Subtle inner guide line */}
         <path
           className="rail-orbit-guide"
-          d="M 8 110 C 78 142 118 188 118 232 C 118 276 124 298 134 313 C 146 340 150 368 150 391 C 154 430 156 458 154 476 C 152 516 144 540 142 557"
+          d="M 16 92 C 104 206, 104 434, 16 548"
         />
-        <circle cx="132" cy="216" r="2" />
-        <circle cx="144" cy="297" r="2" />
-        <circle cx="160" cy="375" r="2" />
-        <circle cx="164" cy="460" r="2" />
-        <circle cx="152" cy="541" r="2" />
+
+        {/* 5. Dock station indicators along the curve */}
+        {navItems.map((item) => (
+          <circle key={item.id} cx={item.x} cy={item.y} r="2.5" className="rail-orbit-dock" />
+        ))}
       </svg>
+
+      <div className="rail-active-halo" style={haloStyle} aria-hidden="true" />
 
       <nav className="rail-nav" aria-label="Workspaces">
         {navItems.map((item) => {
@@ -89,10 +120,11 @@ export const WorkspaceRail: FC<WorkspaceRailProps> = ({
               aria-current={isActive ? "page" : undefined}
               aria-label={item.label}
               data-tooltip={item.label}
+              tabIndex={isCollapsed ? -1 : 0}
               style={
                 {
-                  "--node-x": item.x,
-                  "--node-y": item.y,
+                  "--node-x": `${item.x}px`,
+                  "--node-y": `${item.y}px`,
                 } as CSSProperties
               }
             >
@@ -105,29 +137,38 @@ export const WorkspaceRail: FC<WorkspaceRailProps> = ({
         })}
       </nav>
 
-      <button
-        ref={panelTriggerRef}
-        type="button"
-        className={`rail-details-btn ${isPanelOpen ? "active" : ""}`}
-        onClick={onTogglePanel}
-        aria-label="Toggle context panel"
-        aria-pressed={isPanelOpen}
-        data-tooltip="Workspace details"
-        data-dismiss-ignore
-        style={
-          {
-            "--node-x": DETAILS_NODE.x,
-            "--node-y": DETAILS_NODE.y,
-          } as CSSProperties
-        }
-      >
-        <span className="rail-nav-icon">
-          <PanelRight size={16} strokeWidth={1.55} aria-hidden="true" />
-        </span>
-      </button>
+      {/* Footer controls: Workspace details and Collapse rail */}
+      <div className="rail-footer">
+        <button
+          ref={panelTriggerRef}
+          type="button"
+          className={`rail-details-btn ${isPanelOpen ? "active" : ""}`}
+          onClick={onTogglePanel}
+          aria-label="Toggle workspace details"
+          aria-pressed={isPanelOpen}
+          data-tooltip="Workspace details"
+          data-dismiss-ignore
+          tabIndex={isCollapsed ? -1 : 0}
+        >
+          <span className="rail-nav-icon">
+            <PanelRight size={15} strokeWidth={1.55} aria-hidden="true" />
+          </span>
+        </button>
 
-      <div className="rail-tail" aria-hidden="true">
-        <Settings2 size={13} strokeWidth={1.5} />
+        {onToggleCollapse && (
+          <button
+            type="button"
+            className="rail-collapse-btn"
+            onClick={onToggleCollapse}
+            aria-label="Collapse navigation"
+            title="Collapse navigation (Ctrl+B)"
+            tabIndex={isCollapsed ? -1 : 0}
+          >
+            <span className="rail-nav-icon">
+              <ChevronLeft size={15} strokeWidth={1.55} aria-hidden="true" />
+            </span>
+          </button>
+        )}
       </div>
     </aside>
   );

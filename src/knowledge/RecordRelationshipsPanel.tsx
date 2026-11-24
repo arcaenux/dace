@@ -51,8 +51,12 @@ export const RecordRelationshipsPanel: FC<RecordRelationshipsPanelProps> = ({
     loadRelationships();
   }, [loadRelationships]);
 
-  // Open modal and load candidate records
-  const handleOpenAddModal = async () => {
+  // Open inline form and load candidate records
+  const handleOpenAddForm = async () => {
+    if (isAddModalOpen) {
+      setIsAddModalOpen(false);
+      return;
+    }
     setSelectedTargetId(null);
     setSelectedRelationType("builds_on");
     setRelationshipDescription("");
@@ -74,7 +78,7 @@ export const RecordRelationshipsPanel: FC<RecordRelationshipsPanelProps> = ({
     }
   };
 
-  const handleCloseAddModal = () => {
+  const handleCloseAddForm = () => {
     setIsAddModalOpen(false);
     setFormError(null);
   };
@@ -139,7 +143,7 @@ export const RecordRelationshipsPanel: FC<RecordRelationshipsPanelProps> = ({
   const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.key === "Escape" && isAddModalOpen) {
       e.stopPropagation();
-      handleCloseAddModal();
+      handleCloseAddForm();
     }
   };
 
@@ -167,11 +171,11 @@ export const RecordRelationshipsPanel: FC<RecordRelationshipsPanelProps> = ({
         <div className="relationships-header-actions">
           <button
             type="button"
-            className="desk-btn"
-            onClick={handleOpenAddModal}
-            title="Connect this concept to another record"
+            className={`desk-btn ${isAddModalOpen ? "active" : ""}`}
+            onClick={handleOpenAddForm}
+            title={isAddModalOpen ? "Cancel connecting concept" : "Connect this concept to another record"}
           >
-            + Connect Concept
+            {isAddModalOpen ? "✕ Cancel" : "+ Connect Concept"}
           </button>
         </div>
       </div>
@@ -179,7 +183,103 @@ export const RecordRelationshipsPanel: FC<RecordRelationshipsPanelProps> = ({
       {/* Expanded content */}
       {isExpanded && (
         <div className="relationships-body">
-          {totalCount === 0 ? (
+          {/* Inline Add Connection Form */}
+          {isAddModalOpen && (
+            <div className="relationship-inline-card" role="region" aria-label="Add Connection">
+              <div className="relationship-inline-title">
+                Connect “{recordTitle || "Active Concept"}”
+              </div>
+
+              {formError && <div className="relationship-form-error">{formError}</div>}
+
+              <div className="relationship-form-field">
+                <label htmlFor="target-record-search" className="form-label">
+                  Target Concept
+                </label>
+                <input
+                  id="target-record-search"
+                  type="text"
+                  className="relationship-search-input"
+                  placeholder="Search concepts to connect…"
+                  value={candidateSearchQuery}
+                  onChange={(e) => setCandidateSearchQuery(e.target.value)}
+                  autoFocus
+                />
+
+                <div className="candidate-records-select-container">
+                  {filteredCandidates.length === 0 ? (
+                    <div className="candidate-empty">No matching concepts found.</div>
+                  ) : (
+                    filteredCandidates.map((r) => (
+                      <div
+                        key={r.id}
+                        className={`candidate-record-item ${
+                          selectedTargetId === r.id ? "selected" : ""
+                        }`}
+                        onClick={() => setSelectedTargetId(r.id)}
+                      >
+                        <div className="candidate-title">{r.title || "Untitled Record"}</div>
+                        {r.preview && <div className="candidate-preview">{r.preview}</div>}
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              <div className="relationship-form-field">
+                <label htmlFor="relation-type-select" className="form-label">
+                  Relationship Type
+                </label>
+                <select
+                  id="relation-type-select"
+                  className="relationship-type-dropdown"
+                  value={selectedRelationType}
+                  onChange={(e) => setSelectedRelationType(e.target.value as RelationType)}
+                >
+                  {RELATION_TYPES.map((t) => (
+                    <option key={t.value} value={t.value}>
+                      {t.label} ({t.description})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="relationship-form-field">
+                <label htmlFor="relation-desc-input" className="form-label">
+                  Explanation (optional)
+                </label>
+                <input
+                  id="relation-desc-input"
+                  type="text"
+                  className="relationship-desc-input"
+                  placeholder="Why or how do these connect?…"
+                  value={relationshipDescription}
+                  onChange={(e) => setRelationshipDescription(e.target.value)}
+                />
+              </div>
+
+              <div className="confirm-actions" style={{ marginTop: "12px" }}>
+                <button
+                  type="button"
+                  className="desk-btn"
+                  onClick={handleCloseAddForm}
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="desk-btn primary"
+                  onClick={handleCreateRelationship}
+                  disabled={isSubmitting || !selectedTargetId}
+                >
+                  {isSubmitting ? "Connecting…" : "Create Connection"}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {totalCount === 0 && !isAddModalOpen ? (
             <div className="relationships-empty-state">
               <span className="empty-hint">
                 Link related ideas to build a network of knowledge.
@@ -278,109 +378,6 @@ export const RecordRelationshipsPanel: FC<RecordRelationshipsPanelProps> = ({
               )}
             </div>
           )}
-        </div>
-      )}
-
-      {/* Add Connection Modal */}
-      {isAddModalOpen && (
-        <div
-          className="overlay-backdrop"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="add-connection-title"
-        >
-          <div className="add-relationship-dialog">
-            <h3 id="add-connection-title" className="confirm-title">
-              Connect “{recordTitle || "Untitled Record"}”
-            </h3>
-
-            {formError && <div className="relationship-form-error">{formError}</div>}
-
-            <div className="relationship-form-field">
-              <label htmlFor="target-record-search" className="form-label">
-                Target Concept:
-              </label>
-              <input
-                id="target-record-search"
-                type="text"
-                className="relationship-search-input"
-                placeholder="Search concepts..."
-                value={candidateSearchQuery}
-                onChange={(e) => setCandidateSearchQuery(e.target.value)}
-                autoFocus
-              />
-
-              <div className="candidate-records-select-container">
-                {filteredCandidates.length === 0 ? (
-                  <div className="candidate-empty">No other concepts match your search.</div>
-                ) : (
-                  filteredCandidates.map((r) => (
-                    <div
-                      key={r.id}
-                      className={`candidate-record-item ${
-                        selectedTargetId === r.id ? "selected" : ""
-                      }`}
-                      onClick={() => setSelectedTargetId(r.id)}
-                    >
-                      <div className="candidate-title">{r.title || "Untitled Record"}</div>
-                      {r.preview && <div className="candidate-preview">{r.preview}</div>}
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-
-            <div className="relationship-form-field">
-              <label htmlFor="relation-type-select" className="form-label">
-                Relationship Type:
-              </label>
-              <select
-                id="relation-type-select"
-                className="relationship-type-dropdown"
-                value={selectedRelationType}
-                onChange={(e) => setSelectedRelationType(e.target.value as RelationType)}
-              >
-                {RELATION_TYPES.map((t) => (
-                  <option key={t.value} value={t.value}>
-                    {t.label} ({t.description})
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="relationship-form-field">
-              <label htmlFor="relation-desc-input" className="form-label">
-                Explanation (optional):
-              </label>
-              <input
-                id="relation-desc-input"
-                type="text"
-                className="relationship-desc-input"
-                placeholder="Explain how or why these concepts connect..."
-                value={relationshipDescription}
-                onChange={(e) => setRelationshipDescription(e.target.value)}
-              />
-            </div>
-
-            <div className="confirm-actions">
-              <button
-                type="button"
-                className="desk-btn"
-                onClick={handleCloseAddModal}
-                disabled={isSubmitting}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="desk-btn primary"
-                onClick={handleCreateRelationship}
-                disabled={isSubmitting || !selectedTargetId}
-              >
-                {isSubmitting ? "Connecting..." : "Create Connection"}
-              </button>
-            </div>
-          </div>
         </div>
       )}
     </div>

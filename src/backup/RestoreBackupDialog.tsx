@@ -52,7 +52,8 @@ export const RestoreBackupDialog: FC<RestoreBackupDialogProps> = ({
     ["Attachments", String(preview.attachment_count)],
     ["Highlights", String(preview.highlight_count)],
     ["Annotations", String(preview.annotation_count)],
-    ["Validation", preview.validation_status === "valid" ? "Valid — ready to restore" : preview.validation_status],
+    ["Validation", preview.validation_status === "valid" ? "Integrity checks passed" : preview.validation_status],
+    ["Apply", "Requires a restart"],
   ];
 
   return (
@@ -89,8 +90,9 @@ export const RestoreBackupDialog: FC<RestoreBackupDialogProps> = ({
         <div className="shortcut-modal-body restore-body">
           <div className="restore-warning" id="restore-dialog-warning" role="alert">
             <strong>This replaces your current library.</strong> Dace validates the archive, creates a
-            recovery snapshot, then reopens with the restored data. Changes made after this point are
-            not part of the restore.
+            recovery snapshot, then requests a restart to apply the restored data. If Dace does not
+            reopen automatically, launch it again. Changes made after this point are not part of the
+            restore.
           </div>
 
           <dl className="restore-summary">
@@ -119,7 +121,7 @@ export const RestoreBackupDialog: FC<RestoreBackupDialogProps> = ({
             Cancel
           </button>
           <button type="button" className="restore-confirm-btn" onClick={onConfirm} disabled={busy}>
-            {busy ? "Preparing…" : "Replace Data & Restart"}
+            {busy ? "Staging restore…" : "Replace Data & Request Restart"}
           </button>
         </div>
       </div>

@@ -1,6 +1,7 @@
-import { FC, useState, useEffect } from "react";
+import { FC, useState, useEffect, useRef } from "react";
 import { AttachmentSummary, getViewerType, formatFileSize } from "./types";
 import * as api from "./attachmentsApi";
+import { useDismissable } from "../core/useDismissable";
 
 interface DocumentPreviewModalProps {
   attachment: AttachmentSummary;
@@ -17,6 +18,13 @@ export const DocumentPreviewModal: FC<DocumentPreviewModalProps> = ({
   const [dataUrl, setDataUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  useDismissable(true, onClose, modalRef, {
+    group: "attachment-dialog",
+    autoFocus: true,
+    restoreFocus: true,
+  });
 
   const viewerType = getViewerType(attachment.mime_type, attachment.file_name);
 
@@ -24,6 +32,8 @@ export const DocumentPreviewModal: FC<DocumentPreviewModalProps> = ({
     let isMounted = true;
     setIsLoading(true);
     setLoadError(null);
+    setTextContent(null);
+    setDataUrl(null);
 
     async function loadData() {
       try {
@@ -64,14 +74,11 @@ export const DocumentPreviewModal: FC<DocumentPreviewModalProps> = ({
   return (
     <div
       className="overlay-backdrop"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
       role="dialog"
       aria-modal="true"
       aria-label={`Preview: ${attachment.file_name}`}
     >
-      <div className="preview-modal-container">
+      <div ref={modalRef} className="preview-modal-container">
         {/* Modal Header */}
         <div className="preview-header">
           <div className="preview-title-block">

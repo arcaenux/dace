@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
 /// Highest schema migration version this build knows how to open.
-pub const SCHEMA_VERSION: i64 = 4;
+pub const SCHEMA_VERSION: i64 = 5;
 
 pub struct Database {
     pub conn: Mutex<Connection>,
@@ -26,7 +26,27 @@ impl Database {
              PRAGMA busy_timeout = 5000;"
         ).map_err(|e| format!("Failed to set SQLite PRAGMAs: {}", e))?;
 
-        // 2. Run schema migrations
+        // 2. Refuse databases created by a newer Dace build before attempting
+        //    any migration that could damage them.
+        let migrations_table_exists: i64 = conn
+            .query_row(
+                "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'schema_migrations'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap_or(0);
+        if migrations_table_exists > 0 {
+            let existing_version = Self::schema_version(&conn)
+                .map_err(|e| format!("Could not read database schema version: {}", e))?;
+            if existing_version > SCHEMA_VERSION {
+                return Err(format!(
+                    "Database schema version {} is newer than this build supports ({}). Update Dace before opening this library.",
+                    existing_version, SCHEMA_VERSION
+                ));
+            }
+        }
+
+        // 3. Run schema migrations
         let has_fts5 = Self::run_migrations(&conn).map_err(|e| format!("Migration error: {}", e))?;
 
         Ok(Self {
@@ -273,6 +293,27 @@ impl Database {
             tx.execute(
                 "INSERT INTO schema_migrations (version, applied_at) VALUES (?1, ?2)",
                 params![4, now],
+            )?;
+
+            tx.commit()?;
+        }
+
+        // Migration 5: Typed application settings inside the backed-up database
+        if current_version < 5 {
+            let tx = conn.unchecked_transaction()?;
+
+            tx.execute_batch(
+                "CREATE TABLE IF NOT EXISTS app_settings (
+                    key TEXT PRIMARY KEY,
+                    value TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                 );"
+            )?;
+
+            let now = chrono::Utc::now().to_rfc3339();
+            tx.execute(
+                "INSERT INTO schema_migrations (version, applied_at) VALUES (?1, ?2)",
+                params![5, now],
             )?;
 
             tx.commit()?;

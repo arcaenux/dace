@@ -6,12 +6,13 @@
    ========================================================================== */
 
 .dace-app {
-  --reader-accent: #ff9900;
-  --reader-accent-deep: #8a4a0a;
-  --reader-bg: #0b0b0b;
-  --reader-surface: #101010;
-  --reader-elevated: #171717;
-  --reader-border: #292929;
+  --reader-accent: var(--accent-primary);
+  --reader-accent-text: var(--accent-text);
+  --reader-accent-deep: var(--accent-secondary);
+  --reader-bg: var(--bg-app);
+  --reader-surface: var(--bg-surface);
+  --reader-elevated: var(--bg-surface-elevated);
+  --reader-border: var(--border-subtle);
 }
 
 /* The shell owns chrome clearance. Retracted chrome returns that space to the
@@ -51,22 +52,32 @@
 .dace-app .reader-toolbar-wrap {
   flex: 0 0 auto;
 }
+/* When the global top bar is hidden, the reader toolbar becomes the top bar.
+   Lift it above the window drag strip and reserve the window-control gutter. */
+.dace-app.reader-header-hidden .reader-toolbar-wrap {
+  position: relative;
+  z-index: var(--z-topbar);
+  pointer-events: auto;
+}
+.dace-app.reader-header-hidden .reader-toolbar-wrap .reader-toolbar {
+  padding-right: calc(var(--window-control-space) + 16px);
+}
 .dace-app .reader-toolbar-focus-wrap {
   position: absolute;
   z-index: 60;
-  top: 14px;
+  top: 50px;
   left: 50%;
-  width: min(880px, calc(100vw - 32px));
+  width: min(860px, calc(100vw - 32px));
   transform: translateX(-50%);
   pointer-events: none;
 }
 .dace-app .reader-toolbar-focus-wrap .reader-toolbar {
   pointer-events: auto;
-  border: 1px solid rgba(255, 153, 0, 0.2);
-  border-radius: 999px;
-  background: rgba(11, 11, 11, 0.86);
-  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(14px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-elevated);
+  backdrop-filter: none;
 }
 .dace-app .reader-shell.is-focus .reader-adaptive-body {
   height: 100%;
@@ -99,8 +110,8 @@ body.reader-is-resizing .dace-app * {
   height: 46px;
   padding: 0 16px;
   border-bottom: 1px solid var(--reader-border);
-  background: rgba(11, 11, 11, 0.88);
-  color: #f4e9dd;
+  background: var(--reader-surface);
+  color: var(--text-primary);
 }
 .dace-app .reader-toolbar-group {
   display: flex;
@@ -117,7 +128,7 @@ body.reader-is-resizing .dace-app * {
 }
 .dace-app .reader-toolbar-brand {
   flex: 0 0 auto;
-  color: var(--reader-accent);
+  color: var(--reader-accent-text);
   font-family: var(--font-mono);
   font-size: var(--type-micro);
   letter-spacing: 0.24em;
@@ -137,16 +148,20 @@ body.reader-is-resizing .dace-app * {
   border: 1px solid var(--reader-border);
   border-radius: 6px;
   background: var(--reader-surface);
-  color: #b5a697;
+  color: var(--text-secondary);
   cursor: pointer;
   transition: color 140ms ease, border-color 140ms ease, background-color 140ms ease;
+}
+.dace-app .reader-icon-btn {
+  border-color: transparent;
+  background: transparent;
 }
 .dace-app .reader-compact-btn:hover,
 .dace-app .reader-icon-btn:hover:not(:disabled),
 .dace-app .reader-icon-btn.active {
-  border-color: rgba(255, 153, 0, 0.48);
-  background: rgba(255, 153, 0, 0.08);
-  color: var(--reader-accent);
+  border-color: rgba(var(--brand-blue-rgb), 0.48);
+  background: rgba(var(--brand-blue-rgb), 0.08);
+  color: var(--reader-accent-text);
 }
 .dace-app .reader-icon-btn {
   width: 28px;
@@ -159,7 +174,7 @@ body.reader-is-resizing .dace-app * {
 .dace-app .reader-doc-trigger {
   max-width: 280px;
   padding: 0 8px;
-  color: #f4e9dd;
+  color: var(--text-primary);
 }
 .dace-app .reader-doc-trigger span {
   overflow: hidden;
@@ -186,7 +201,7 @@ body.reader-is-resizing .dace-app * {
   border: 0;
   border-radius: 999px;
   background: transparent;
-  color: #77716b;
+  color: var(--text-muted);
   font-family: var(--font-mono);
   font-size: var(--type-micro);
   letter-spacing: 0.1em;
@@ -195,11 +210,11 @@ body.reader-is-resizing .dace-app * {
   transition: color 150ms ease, background-color 150ms ease;
 }
 .dace-app .reader-mode-btn:hover {
-  color: #f4e9dd;
+  color: var(--text-primary);
 }
 .dace-app .reader-mode-btn.active {
-  background: rgba(255, 153, 0, 0.14);
-  color: var(--reader-accent);
+  background: rgba(var(--brand-blue-rgb), 0.14);
+  color: var(--reader-accent-text);
 }
 
 .dace-app .reader-page-nav,
@@ -216,7 +231,7 @@ body.reader-is-resizing .dace-app * {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  color: #77716b;
+  color: var(--text-muted);
   font-family: var(--font-mono);
   font-size: var(--type-mono);
   letter-spacing: 0.06em;
@@ -226,13 +241,13 @@ body.reader-is-resizing .dace-app * {
   width: 30px;
   border: 0;
   background: transparent;
-  color: #f4e9dd;
+  color: var(--text-primary);
   font-family: var(--font-mono);
   font-size: var(--type-mono);
   text-align: center;
 }
 .dace-app .reader-page-field input:focus {
-  outline: 1px solid rgba(255, 153, 0, 0.45);
+  outline: 1px solid rgba(var(--brand-blue-rgb), 0.45);
   outline-offset: 1px;
 }
 
@@ -258,7 +273,7 @@ body.reader-is-resizing .dace-app * {
 }
 .dace-app .reader-popover-title {
   padding: 6px 8px;
-  color: #77716b;
+  color: var(--text-muted);
   font-family: var(--font-mono);
   font-size: var(--type-micro);
   letter-spacing: 0.14em;
@@ -275,7 +290,7 @@ body.reader-is-resizing .dace-app * {
   border: 0;
   border-radius: 5px;
   background: transparent;
-  color: #b5a697;
+  color: var(--text-secondary);
   font-family: var(--font-interface);
   font-size: var(--type-small);
   text-align: left;
@@ -284,12 +299,12 @@ body.reader-is-resizing .dace-app * {
 .dace-app .reader-popover-item:hover,
 .dace-app .reader-popover-action:hover,
 .dace-app .reader-popover-item.active {
-  background: rgba(255, 153, 0, 0.1);
-  color: var(--reader-accent);
+  background: rgba(var(--brand-blue-rgb), 0.1);
+  color: var(--reader-accent-text);
 }
 .dace-app .reader-popover-empty {
   padding: 10px 8px;
-  color: #77716b;
+  color: var(--text-muted);
   font-size: var(--type-small);
 }
 
@@ -300,7 +315,7 @@ body.reader-is-resizing .dace-app * {
   min-width: 0;
   min-height: 0;
   overflow: hidden;
-  background: #080808;
+  background: var(--reader-bg);
 }
 .dace-app .reader-shell .reader-viewport {
   flex: 1 1 auto;
@@ -311,21 +326,24 @@ body.reader-is-resizing .dace-app * {
   overflow: auto;
   border: 0;
   border-radius: 0;
-  background: #080808;
+  background: var(--reader-bg);
   box-shadow: none;
 }
 .dace-app .reader-shell.mode-reading .reader-viewport {
   padding: 18px clamp(20px, 7vw, 120px) 72px;
 }
 .dace-app .reader-shell.is-focus .reader-viewport {
-  padding-top: 64px;
+  padding-top: 112px;
+}
+.dace-app .reader-shell.is-focus .reader-writing-pane {
+  padding-top: 98px;
 }
 .dace-app .pdf-page-container {
   width: max-content;
   max-width: none;
   margin: 0 auto;
   border-radius: 2px;
-  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.72), 0 0 0 1px rgba(244, 233, 221, 0.06);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.72), 0 0 0 1px rgba(var(--neutral-300-rgb), 0.06);
 }
 .dace-app .pdf-canvas {
   display: block;
@@ -339,42 +357,45 @@ body.reader-is-resizing .dace-app * {
   gap: 10px;
   height: 100%;
   padding: 32px;
-  color: #77716b;
+  color: var(--text-muted);
   font-family: var(--font-display);
   font-size: var(--type-body);
   text-align: center;
 }
 .dace-app .reader-surface-state h2 {
-  color: #f4e9dd;
+  color: var(--text-primary);
   font-size: var(--type-lg);
   font-weight: 500;
 }
 .dace-app .reader-surface-state p {
   max-width: 420px;
-  color: #b5a697;
+  color: var(--text-secondary);
   line-height: 1.6;
 }
 .dace-app .reader-surface-state.error strong {
-  color: #ff6b6b;
+  color: var(--status-danger);
 }
 .dace-app .reader-primary-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 32px;
-  padding: 0 14px;
-  border: 1px solid rgba(255, 153, 0, 0.5);
-  border-radius: 6px;
-  background: rgba(255, 153, 0, 0.1);
-  color: var(--reader-accent);
-  font-family: var(--font-mono);
-  font-size: var(--type-micro);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  min-height: 34px;
+  padding: 0 16px;
+  border: 1px solid var(--accent-primary);
+  border-radius: var(--radius-sm);
+  background: var(--accent-primary);
+  color: var(--accent-contrast);
+  font-family: var(--font-interface);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
   cursor: pointer;
+  transition: background-color 140ms ease, border-color 140ms ease;
 }
 .dace-app .reader-primary-btn:hover {
-  background: rgba(255, 153, 0, 0.18);
+  border-color: var(--accent-hover);
+  background: var(--accent-hover);
 }
 
 /* Divider ---------------------------------------------------------------- */
@@ -385,17 +406,34 @@ body.reader-is-resizing .dace-app * {
   place-items: center;
   min-width: 10px;
   height: 100%;
-  border-left: 1px solid var(--reader-border);
-  border-right: 1px solid var(--reader-border);
-  background: #0b0b0b;
+  border: 0;
+  background: transparent;
   cursor: col-resize;
   touch-action: none;
 }
-.dace-app .reader-divider-handle {
+.dace-app .reader-divider::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  background: var(--reader-border);
+  transform: translateX(-50%);
+  transition: width 140ms ease, background-color 140ms ease;
+}
+.dace-app .reader-divider:hover::before,
+.dace-app .reader-divider.is-dragging::before {
   width: 2px;
-  height: 38px;
+  background: var(--reader-accent);
+}
+.dace-app .reader-divider-handle {
+  position: relative;
+  z-index: 1;
+  width: 3px;
+  height: 36px;
   border-radius: 2px;
-  background: rgba(181, 166, 151, 0.28);
+  background: rgba(var(--neutral-300-rgb), 0.24);
   transition: height 150ms ease, background-color 150ms ease;
 }
 .dace-app .reader-divider:hover .reader-divider-handle,
@@ -405,7 +443,7 @@ body.reader-is-resizing .dace-app * {
   background: var(--reader-accent);
 }
 .dace-app .reader-divider:focus-visible {
-  outline: 1px solid rgba(255, 153, 0, 0.6);
+  outline: 1px solid rgba(var(--brand-blue-rgb), 0.6);
   outline-offset: -2px;
 }
 
@@ -422,7 +460,7 @@ body.reader-is-resizing .dace-app * {
   flex: 0 0 auto;
   padding: 8px 14px;
   border-bottom: 1px solid var(--reader-border);
-  background: #0b0b0b;
+  background: var(--reader-bg);
 }
 .dace-app .reader-writing-source button {
   display: flex;
@@ -434,18 +472,18 @@ body.reader-is-resizing .dace-app * {
   padding: 0;
   border: 0;
   background: transparent;
-  color: #f4e9dd;
+  color: var(--text-primary);
   font-family: var(--font-display);
   font-size: var(--type-small);
   cursor: pointer;
 }
 .dace-app .reader-writing-source button span:last-child {
-  color: var(--reader-accent);
+  color: var(--reader-accent-text);
   font-family: var(--font-mono);
   font-size: var(--type-micro);
 }
 .dace-app .reader-writing-source button:hover {
-  color: var(--reader-accent);
+  color: var(--reader-accent-text);
 }
 .dace-app .reader-shell .reader-drawer {
   position: relative;
@@ -470,7 +508,7 @@ body.reader-is-resizing .dace-app * {
   height: 40px;
   padding: 0 8px;
   border-bottom: 1px solid var(--reader-border);
-  background: #0b0b0b;
+  background: var(--reader-bg);
 }
 .dace-app .reader-shell .drawer-tab {
   display: inline-flex;
@@ -480,7 +518,7 @@ body.reader-is-resizing .dace-app * {
   border: 0;
   border-bottom: 2px solid transparent;
   background: transparent;
-  color: #77716b;
+  color: var(--text-muted);
   font-family: var(--font-mono);
   font-size: var(--type-micro);
   letter-spacing: 0.1em;
@@ -488,11 +526,11 @@ body.reader-is-resizing .dace-app * {
   cursor: pointer;
 }
 .dace-app .reader-shell .drawer-tab:hover {
-  color: #f4e9dd;
+  color: var(--text-primary);
 }
 .dace-app .reader-shell .drawer-tab.active {
   border-bottom-color: var(--reader-accent);
-  color: var(--reader-accent);
+  color: var(--reader-accent-text);
 }
 .dace-app .reader-shell .drawer-close-btn {
   margin-left: auto;
@@ -506,7 +544,7 @@ body.reader-is-resizing .dace-app * {
 }
 
 .dace-app .reader-section-label {
-  color: #77716b;
+  color: var(--text-muted);
   font-family: var(--font-mono);
   font-size: var(--type-micro);
   letter-spacing: 0.16em;
@@ -529,14 +567,14 @@ body.reader-is-resizing .dace-app * {
   text-align: center;
 }
 .dace-app .reader-note-empty-mark {
-  color: rgba(255, 153, 0, 0.32);
+  color: rgba(var(--brand-blue-rgb), 0.32);
   font-family: var(--font-mono);
   font-size: var(--type-micro);
   letter-spacing: 0.32em;
 }
 .dace-app .reader-note-empty h2 {
   margin-top: 18px;
-  color: #f4e9dd;
+  color: var(--text-primary);
   font-family: var(--font-display);
   font-size: var(--type-lg);
   font-weight: 500;
@@ -544,12 +582,12 @@ body.reader-is-resizing .dace-app * {
 .dace-app .reader-note-empty p {
   max-width: 380px;
   margin: 10px 0 20px;
-  color: #77716b;
+  color: var(--text-muted);
   font-size: var(--type-small);
   line-height: 1.7;
 }
 .dace-app .reader-note-empty p strong {
-  color: #b5a697;
+  color: var(--text-secondary);
   font-weight: 500;
 }
 .dace-app .reader-note-head {
@@ -566,7 +604,7 @@ body.reader-is-resizing .dace-app * {
   padding: 0;
   border: 0;
   background: transparent;
-  color: #f4e9dd;
+  color: var(--text-primary);
   font-family: var(--font-editorial);
   font-size: clamp(21px, 2vw, 29px);
   letter-spacing: -0.02em;
@@ -582,7 +620,7 @@ body.reader-is-resizing .dace-app * {
   align-items: center;
   gap: 6px;
   margin-top: 6px;
-  color: #77716b;
+  color: var(--text-muted);
 }
 .dace-app .reader-note-tags input {
   min-width: 0;
@@ -591,24 +629,24 @@ body.reader-is-resizing .dace-app * {
   border: 0;
   border-bottom: 1px solid transparent;
   background: transparent;
-  color: #b5a697;
+  color: var(--text-secondary);
   font-family: var(--font-mono);
   font-size: var(--type-micro);
   letter-spacing: 0.06em;
 }
 .dace-app .reader-note-tags input:focus {
   outline: none;
-  border-bottom-color: rgba(255, 153, 0, 0.45);
+  border-bottom-color: rgba(var(--brand-blue-rgb), 0.45);
 }
 .dace-app .reader-note-tags input::placeholder {
-  color: #5f5a55;
+  color: var(--text-dim);
 }
 .dace-app .reader-save-status {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   flex: 0 0 auto;
-  color: #77716b;
+  color: var(--text-muted);
   font-family: var(--font-mono);
   font-size: var(--type-micro);
   letter-spacing: 0.08em;
@@ -618,20 +656,23 @@ body.reader-is-resizing .dace-app * {
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: #77716b;
+  background: var(--text-muted);
 }
+.dace-app .reader-save-status.status-saved { color: var(--status-success); }
 .dace-app .reader-save-status.status-saved .reader-save-dot {
-  background: #6fa876;
+  background: var(--status-success);
 }
+.dace-app .reader-save-status.status-saving,
+.dace-app .reader-save-status.status-unsaved { color: var(--status-warning); }
 .dace-app .reader-save-status.status-saving .reader-save-dot,
 .dace-app .reader-save-status.status-unsaved .reader-save-dot {
-  background: var(--reader-accent);
+  background: var(--status-warning);
 }
 .dace-app .reader-save-status.status-error {
-  color: #ff6b6b;
+  color: var(--status-danger);
 }
 .dace-app .reader-save-status.status-error .reader-save-dot {
-  background: #ff6b6b;
+  background: var(--status-danger);
 }
 .dace-app .reader-format-bar {
   display: flex;
@@ -649,14 +690,14 @@ body.reader-is-resizing .dace-app * {
   border: 1px solid var(--reader-border);
   border-radius: 5px;
   background: transparent;
-  color: #b5a697;
+  color: var(--text-secondary);
   font-family: var(--font-mono);
   font-size: var(--type-micro);
   cursor: pointer;
 }
 .dace-app .reader-format-bar button:hover {
-  border-color: rgba(255, 153, 0, 0.45);
-  color: var(--reader-accent);
+  border-color: rgba(var(--brand-blue-rgb), 0.45);
+  color: var(--reader-accent-text);
 }
 .dace-app .reader-source-passages {
   margin: 14px 0 10px;
@@ -674,20 +715,20 @@ body.reader-is-resizing .dace-app * {
   max-width: 100%;
   min-height: 28px;
   padding: 0 9px;
-  border: 1px solid rgba(255, 153, 0, 0.24);
+  border: 1px solid rgba(var(--brand-blue-rgb), 0.24);
   border-radius: 999px;
-  background: rgba(255, 153, 0, 0.05);
-  color: #b5a697;
+  background: rgba(var(--brand-blue-rgb), 0.05);
+  color: var(--text-secondary);
   font-family: var(--font-mono);
   font-size: var(--type-micro);
   cursor: pointer;
 }
 .dace-app .reader-source-chip span:first-child {
-  color: var(--reader-accent);
+  color: var(--reader-accent-text);
 }
 .dace-app .reader-source-chip:hover {
-  border-color: rgba(255, 153, 0, 0.6);
-  background: rgba(255, 153, 0, 0.1);
+  border-color: rgba(var(--brand-blue-rgb), 0.6);
+  background: rgba(var(--brand-blue-rgb), 0.1);
 }
 .dace-app .reader-note-editor {
   display: block;
@@ -699,7 +740,7 @@ body.reader-is-resizing .dace-app * {
   border-top: 1px solid var(--reader-border);
   border-bottom: 1px solid var(--reader-border);
   background: transparent;
-  color: #f4e9dd;
+  color: var(--text-primary);
   font-family: var(--font-editorial);
   font-size: 16px;
   line-height: 1.78;
@@ -712,7 +753,7 @@ body.reader-is-resizing .dace-app * {
   box-shadow: none;
 }
 .dace-app .reader-note-editor::placeholder {
-  color: #5f5a55;
+  color: var(--text-dim);
 }
 .dace-app .reader-note-footer {
   display: flex;
@@ -720,7 +761,7 @@ body.reader-is-resizing .dace-app * {
   justify-content: space-between;
   gap: 12px;
   padding: 10px 0;
-  color: #77716b;
+  color: var(--text-muted);
   font-family: var(--font-mono);
   font-size: var(--type-micro);
 }
@@ -731,7 +772,7 @@ body.reader-is-resizing .dace-app * {
   padding: 4px 0;
   border: 0;
   background: transparent;
-  color: var(--reader-accent);
+  color: var(--reader-accent-text);
   font-family: var(--font-mono);
   font-size: var(--type-micro);
   cursor: pointer;
@@ -749,7 +790,7 @@ body.reader-is-resizing .dace-app * {
 }
 .dace-app .reader-inline-empty {
   padding: 24px 0;
-  color: #77716b;
+  color: var(--text-muted);
   font-size: var(--type-small);
   line-height: 1.7;
   text-align: center;
@@ -761,7 +802,7 @@ body.reader-is-resizing .dace-app * {
   margin-top: 8px;
 }
 .dace-app .card-action-link.primary {
-  color: var(--reader-accent);
+  color: var(--reader-accent-text);
   font-weight: 600;
 }
 .dace-app .reader-outline-list,
@@ -785,7 +826,7 @@ body.reader-is-resizing .dace-app * {
   border: 1px solid transparent;
   border-radius: 5px;
   background: rgba(23, 23, 23, 0.6);
-  color: #b5a697;
+  color: var(--text-secondary);
   font-family: var(--font-interface);
   font-size: var(--type-small);
   text-align: left;
@@ -794,20 +835,20 @@ body.reader-is-resizing .dace-app * {
 .dace-app .reader-outline-item.nested {
   margin-left: 14px;
   background: transparent;
-  color: #77716b;
+  color: var(--text-muted);
 }
 .dace-app .reader-outline-item span:last-child {
-  color: var(--reader-accent);
+  color: var(--reader-accent-text);
   font-family: var(--font-mono);
   font-size: var(--type-micro);
 }
 .dace-app .reader-outline-item:hover {
-  border-color: rgba(255, 153, 0, 0.35);
-  color: #f4e9dd;
+  border-color: rgba(var(--brand-blue-rgb), 0.35);
+  color: var(--text-primary);
 }
 .dace-app .reader-view-intro {
   margin-bottom: 14px;
-  color: #b5a697;
+  color: var(--text-secondary);
   font-size: var(--type-small);
   line-height: 1.7;
 }
@@ -821,22 +862,23 @@ body.reader-is-resizing .dace-app * {
   border: 1px solid var(--reader-border);
   border-radius: 5px;
   background: var(--reader-elevated);
-  color: #f4e9dd;
+  color: var(--text-primary);
   font-size: var(--type-small);
   text-align: left;
   cursor: pointer;
 }
 .dace-app .reader-linked-record:hover {
-  border-color: rgba(255, 153, 0, 0.5);
-  color: var(--reader-accent);
+  border-color: rgba(var(--brand-blue-rgb), 0.5);
+  color: var(--reader-accent-text);
 }
 .dace-app .reader-embedded-graph {
+  position: relative;
   height: 240px;
   margin-top: 18px;
   overflow: hidden;
   border: 1px solid var(--reader-border);
   border-radius: 6px;
-  background: #080808;
+  background: var(--reader-bg);
 }
 .dace-app .reader-info-view {
   display: flex;
@@ -849,13 +891,13 @@ body.reader-is-resizing .dace-app * {
   gap: 12px;
   padding: 11px 0;
   border-bottom: 1px solid var(--reader-border);
-  color: #b5a697;
+  color: var(--text-secondary);
   font-size: var(--type-small);
 }
 .dace-app .reader-info-row code {
   display: block;
   overflow-wrap: anywhere;
-  color: #77716b;
+  color: var(--text-muted);
   font-family: var(--font-mono);
   font-size: 10px;
   line-height: 1.5;
@@ -879,14 +921,14 @@ body.reader-is-resizing .dace-app * {
   border: 0;
   border-radius: 4px;
   background: transparent;
-  color: #b5a697;
+  color: var(--text-secondary);
   font-family: var(--font-mono);
   font-size: var(--type-micro);
   cursor: pointer;
 }
 .dace-app .reader-selection-action:hover {
-  background: rgba(255, 153, 0, 0.12);
-  color: var(--reader-accent);
+  background: rgba(var(--brand-blue-rgb), 0.12);
+  color: var(--reader-accent-text);
 }
 .dace-app .reader-narrow-switch {
   position: absolute;
@@ -895,10 +937,10 @@ body.reader-is-resizing .dace-app * {
   z-index: 30;
   min-height: 34px;
   padding: 0 14px;
-  border: 1px solid rgba(255, 153, 0, 0.5);
+  border: 1px solid rgba(var(--brand-blue-rgb), 0.5);
   border-radius: 999px;
   background: rgba(11, 11, 11, 0.94);
-  color: var(--reader-accent);
+  color: var(--reader-accent-text);
   font-family: var(--font-mono);
   font-size: var(--type-micro);
   letter-spacing: 0.1em;
@@ -911,6 +953,9 @@ body.reader-is-resizing .dace-app * {
 .dace-app .reader-shell.is-narrow .reader-toolbar {
   gap: 8px;
   padding: 0 10px;
+}
+.dace-app.reader-header-hidden .reader-shell.is-narrow .reader-toolbar-wrap .reader-toolbar {
+  padding-right: calc(var(--window-control-space) + 10px);
 }
 .dace-app .reader-shell.is-narrow .reader-toolbar-brand,
 .dace-app .reader-shell.is-narrow .reader-doc-trigger span,

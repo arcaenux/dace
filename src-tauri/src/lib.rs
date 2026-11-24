@@ -4,6 +4,8 @@ pub mod db;
 pub mod knowledge;
 pub mod migration;
 pub mod reader;
+pub mod settings;
+pub mod terminal;
 
 use tauri::Manager;
 
@@ -87,7 +89,15 @@ pub fn run() {
                     }
                 }
                 Ok(None) => {}
-                Err(e) => eprintln!("[Dace] Could not apply pending restore: {}", e),
+                Err(e) => {
+                    eprintln!("[Dace] Could not apply pending restore: {}", e);
+                    restore_applied = true;
+                    if let Err(record_err) =
+                        backup::restore::record_startup_restore_error(&app_data_dir, &e)
+                    {
+                        eprintln!("[Dace] Could not record restore startup error: {}", record_err);
+                    }
+                }
             }
 
             // Safe legacy data migration: detect and migrate com.novadome.app data if present.
@@ -138,6 +148,7 @@ pub fn run() {
 
             app.manage(database);
             app.manage(storage);
+            app.manage(std::sync::Arc::new(terminal::TerminalState::new()));
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -148,6 +159,19 @@ pub fn run() {
             is_fullscreen,
             close_window,
             destroy_window,
+            settings::get_app_settings,
+            settings::update_app_settings,
+            settings::reset_app_settings,
+            settings::get_storage_info,
+            settings::get_app_info,
+            settings::pick_backup_directory,
+            terminal::get_terminal_environment,
+            terminal::spawn_terminal_session,
+            terminal::write_terminal_session,
+            terminal::resize_terminal_session,
+            terminal::interrupt_terminal_session,
+            terminal::close_terminal_session,
+            terminal::list_terminal_sessions,
             backup::export_backup,
             backup::inspect_backup_archive,
             backup::restore_backup_archive,
@@ -187,6 +211,12 @@ pub fn run() {
             reader::commands::get_highlight_records,
             reader::commands::create_record_from_excerpt
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|app_handle: &tauri::AppHandle, event: tauri::RunEvent| {
+            if matches!(event, tauri::RunEvent::Exit) {
+                let state = app_handle.state::<std::sync::Arc<terminal::TerminalState>>();
+                terminal::cleanup_all_sessions(&state);
+            }
+        });
 }

@@ -28,7 +28,20 @@ pub async fn export_backup(
     destination_path: Option<String>,
 ) -> Result<BackupResult, String> {
     let dest = match destination_path {
-        Some(p) if !p.trim().is_empty() => std::path::PathBuf::from(p),
+        Some(p) if !p.trim().is_empty() => {
+            let path = std::path::PathBuf::from(p);
+            if path.is_dir() {
+                let picked = rfd::FileDialog::new()
+                    .set_title("Export Dace Backup")
+                    .set_directory(&path)
+                    .add_filter("Dace Backup Archive", &["ndarchive"])
+                    .set_file_name("dace-backup.ndarchive")
+                    .save_file();
+                picked.ok_or_else(|| "Backup export cancelled.".to_string())?
+            } else {
+                path
+            }
+        }
         _ => {
             let picked = rfd::FileDialog::new()
                 .set_title("Export Dace Backup")
@@ -65,6 +78,7 @@ pub async fn export_backup(
 /// When no path is supplied, a native file picker is shown.
 #[tauri::command]
 pub async fn inspect_backup_archive(
+    app: AppHandle,
     archive_path: Option<String>,
 ) -> Result<RestorePreview, String> {
     let path = match archive_path {
@@ -78,9 +92,24 @@ pub async fn inspect_backup_archive(
         }
     };
 
-    tauri::async_runtime::spawn_blocking(move || restore::inspect_archive(&path))
-        .await
-        .map_err(|e| format!("Restore inspection task failed: {}", e))?
+    let app_emit = app.clone();
+    let progress = move |stage: &str, current: usize, total: usize, message: &str| {
+        let _ = app_emit.emit(
+            "dace://restore-inspect-progress",
+            serde_json::json!({
+                "stage": stage,
+                "current": current,
+                "total": total,
+                "message": message,
+            }),
+        );
+    };
+
+    tauri::async_runtime::spawn_blocking(move || {
+        restore::inspect_archive_with_progress(&path, Some(&progress))
+    })
+    .await
+    .map_err(|e| format!("Restore inspection task failed: {}", e))?
 }
 
 /// Fully validates and stages a restore, snapshots the current data, writes the
@@ -90,6 +119,8 @@ pub async fn inspect_backup_archive(
 pub async fn restore_backup_archive(
     app: AppHandle,
     archive_path: String,
+    expected_archive_size: Option<u64>,
+    expected_archive_sha256: Option<String>,
 ) -> Result<RestoreStartResult, String> {
     let path = std::path::PathBuf::from(archive_path);
     let app_for_task = app.clone();
@@ -101,11 +132,6 @@ pub async fn restore_backup_archive(
             .map_err(|e| format!("Failed to resolve app data dir: {}", e))?;
         let db = app_for_task.state::<Database>();
         let current_db = db.path.clone();
-        // Prevent concurrent writes while the recovery snapshot is captured.
-        let guard = db
-            .conn
-            .lock()
-            .map_err(|e| format!("Failed to lock database for restore: {}", e))?;
         let app_emit = app_for_task.clone();
         let progress = move |stage: &str, current: usize, total: usize, message: &str| {
             let _ = app_emit.emit(
@@ -118,14 +144,14 @@ pub async fn restore_backup_archive(
                 }),
             );
         };
-        let result = restore::prepare_restore(
+        restore::prepare_restore_checked(
             &app_data_dir,
             &path,
             current_db.as_deref(),
             Some(&progress),
-        );
-        drop(guard);
-        result
+            expected_archive_size,
+            expected_archive_sha256.as_deref(),
+        )
     })
     .await
     .map_err(|e| format!("Restore task failed: {}", e))??;
@@ -134,6 +160,8 @@ pub async fn restore_backup_archive(
     let app_restart = app.clone();
     std::thread::spawn(move || {
         std::thread::sleep(std::time::Duration::from_millis(1400));
+        // Tauri falls back to a direct process restart if its graceful exit
+        // request fails, so there is no error value to surface here.
         app_restart.request_restart();
     });
 

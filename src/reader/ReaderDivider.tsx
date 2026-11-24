@@ -57,6 +57,7 @@ export const ReaderDivider: FC<ReaderDividerProps> = ({
   }, [containerRef]);
 
   const stopDragging = useCallback(() => {
+    const wasDragging = draggingRef.current;
     draggingRef.current = false;
     setIsDragging(false);
     document.body.classList.remove("reader-is-resizing");
@@ -64,8 +65,9 @@ export const ReaderDivider: FC<ReaderDividerProps> = ({
     if (frameRef.current !== null) {
       cancelAnimationFrame(frameRef.current);
       frameRef.current = null;
+      if (wasDragging) commit();
     }
-  }, [detachListeners]);
+  }, [commit, detachListeners]);
 
   useEffect(() => {
     return () => {

@@ -57,17 +57,22 @@ export const RecordListPanel: FC<RecordListPanelProps> = ({
     return () => clearTimeout(timer);
   }, [searchQuery, onSearch]);
 
+  useEffect(() => {
+    setFocusedIndex((prev) => Math.min(prev, Math.max(0, records.length - 1)));
+  }, [records.length]);
+
   const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    const isButton = e.target instanceof HTMLButtonElement;
     if (e.key === "Escape") {
       e.preventDefault();
       onClose();
     } else if (e.key === "ArrowDown") {
       e.preventDefault();
-      setFocusedIndex((prev) => Math.min(prev + 1, records.length - 1));
+      setFocusedIndex((prev) => Math.min(prev + 1, Math.max(0, records.length - 1)));
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       setFocusedIndex((prev) => Math.max(prev - 1, 0));
-    } else if (e.key === "Enter" && records[focusedIndex]) {
+    } else if (e.key === "Enter" && !isButton && records[focusedIndex]) {
       e.preventDefault();
       onSelectRecord(records[focusedIndex].id);
     }
@@ -131,7 +136,7 @@ export const RecordListPanel: FC<RecordListPanelProps> = ({
             ref={searchInputRef}
             type="text"
             className="record-search-input"
-            placeholder="Search records in SQLite..."
+            placeholder="Search notes & concepts..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />

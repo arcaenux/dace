@@ -1,6 +1,7 @@
 use std::fs::{self, File};
 use std::io::Write;
 use std::path::{Path, PathBuf};
+use std::sync::{Arc, Mutex};
 
 use rusqlite::{params, Connection};
 use sha2::{Digest, Sha256};
@@ -15,7 +16,9 @@ use super::archive::{
 };
 use super::restore::{
     apply_pending_restore, apply_pending_restore_with_hook, confirm_startup_restore,
-    inspect_archive, prepare_restore, take_restore_result, RestoreOutcome, RESTORE_MARKER_FILE,
+    inspect_archive, inspect_archive_with_progress, prepare_restore, prepare_restore_checked,
+    record_startup_restore_error, snapshot_archive,
+    take_restore_result, RestoreOutcome, RESTORE_FAILED_MARKER_FILE, RESTORE_MARKER_FILE,
     RESTORE_RECOVERY_DIR, RESTORE_RESULT_FILE, RESTORE_STAGING_DIR,
 };
 use super::service::create_backup_with_progress;
@@ -268,6 +271,16 @@ fn first_recovery_dir(app: &Path) -> PathBuf {
         .expect("recovery snapshot directory")
 }
 
+fn assert_no_staging_entries(app: &Path) {
+    let staging = app.join(RESTORE_STAGING_DIR);
+    if staging.exists() {
+        assert!(
+            fs::read_dir(&staging).expect("read staging").next().is_none(),
+            "staging must be empty"
+        );
+    }
+}
+
 #[test]
 fn test_restore_round_trip_preserves_all_records_relationships_attachments_highlights_and_annotations() {
     let source = TempDirGuard::new("restore-rich-source");
@@ -285,7 +298,7 @@ fn test_restore_round_trip_preserves_all_records_relationships_attachments_highl
     assert_eq!(preview.attachment_count, 1);
     assert_eq!(preview.highlight_count, 1);
     assert_eq!(preview.annotation_count, 1);
-    assert_eq!(preview.schema_version, 4);
+    assert_eq!(preview.schema_version, crate::db::SCHEMA_VERSION);
     assert!(preview.archive_size > 0);
     assert!(!app.path().join(RESTORE_MARKER_FILE).exists(), "inspection must not write live state");
 
@@ -925,4 +938,279 @@ fn test_startup_confirmation_downgrades_stale_success_result() {
         "unexpected message: {}",
         confirmed.message
     );
+}
+
+#[test]
+fn test_checked_prepare_rejects_archive_changed_after_preview() {
+    let source = TempDirGuard::new("fingerprint-source");
+    let (archive, _seed) = create_rich_archive(source.path());
+    let preview = inspect_archive(&archive).expect("inspect archive");
+
+    let app = TempDirGuard::new("fingerprint-app");
+    let (current_db, _current_seed) = create_current_environment(app.path());
+
+    {
+        let mut file = std::fs::OpenOptions::new()
+            .append(true)
+            .open(&archive)
+            .expect("open archive for mutation");
+        file.write_all(b"\nchanged-after-preview")
+            .expect("append to archive");
+    }
+
+    let err = prepare_restore_checked(
+        app.path(),
+        &archive,
+        Some(&current_db),
+        None,
+        Some(preview.archive_size),
+        Some(&preview.archive_sha256),
+    )
+    .expect_err("changed archive must be rejected");
+    assert!(
+        err.contains("changed since it was reviewed"),
+        "unexpected error: {}",
+        err
+    );
+    assert!(
+        !app.path().join(RESTORE_MARKER_FILE).exists(),
+        "rejected archive must not stage a restore"
+    );
+}
+
+#[test]
+fn test_critical_startup_marker_is_consumed_and_reported() {
+    let app = TempDirGuard::new("critical-marker-app");
+    fs::write(app.path().join(RESTORE_MARKER_FILE), b"{ malformed marker")
+        .expect("write malformed marker");
+    let stale_staging = app.path().join(RESTORE_STAGING_DIR).join("stale");
+    fs::create_dir_all(&stale_staging).expect("create stale staging");
+
+    record_startup_restore_error(app.path(), "marker unreadable")
+        .expect("record startup restore error");
+    assert!(
+        app.path().join(RESTORE_FAILED_MARKER_FILE).exists(),
+        "critical marker must be retained for startup consumption"
+    );
+
+    let outcome = apply_pending_restore(app.path())
+        .expect("consume failed marker")
+        .expect("failure outcome");
+    assert!(!outcome.success);
+    assert!(
+        outcome.message.contains("could not be completed automatically"),
+        "unexpected outcome: {}",
+        outcome.message
+    );
+    assert!(
+        !app.path().join(RESTORE_FAILED_MARKER_FILE).exists(),
+        "failure marker must be consumed exactly once"
+    );
+    assert!(!stale_staging.exists(), "stale staging must be cleaned");
+
+    let taken = take_restore_result(app.path())
+        .expect("read result")
+        .expect("result must remain for the UI");
+    assert_eq!(taken.message, outcome.message);
+
+    let second = apply_pending_restore(app.path()).expect("second startup after marker consumption");
+    assert!(second.is_none(), "a consumed failure marker must never be processed again");
+    assert!(take_restore_result(app.path()).unwrap().is_none());
+}
+
+#[test]
+fn test_inspection_reports_fingerprint_extract_and_verify_stages() {
+    let source = TempDirGuard::new("restore-progress-source");
+    let (archive, _seed) = create_rich_archive(source.path());
+
+    let stages = Arc::new(Mutex::new(Vec::<String>::new()));
+    let progress = {
+        let stages = Arc::clone(&stages);
+        move |stage: &str, _current: usize, _total: usize, _message: &str| {
+            stages
+                .lock()
+                .expect("lock progress stages")
+                .push(stage.to_string());
+        }
+    };
+
+    inspect_archive_with_progress(&archive, Some(&progress)).expect("inspect with progress");
+    drop(progress);
+    let stages = Arc::try_unwrap(stages)
+        .expect("release progress callback")
+        .into_inner()
+        .expect("read progress stages");
+    assert!(stages.iter().any(|stage| stage == "fingerprint"));
+    assert!(stages.iter().any(|stage| stage == "extract"));
+    assert!(stages.iter().any(|stage| stage == "verify"));
+}
+
+#[test]
+fn test_checked_prepare_rejects_wrong_expected_size_and_hash() {
+    let source = TempDirGuard::new("restore-expected-source");
+    let (archive, _seed) = create_rich_archive(source.path());
+    let app = TempDirGuard::new("restore-expected-app");
+    let (current_db, _current_seed) = create_current_environment(app.path());
+    let preview = inspect_archive(&archive).expect("inspect archive");
+
+    let size_error = prepare_restore_checked(
+        app.path(),
+        &archive,
+        Some(&current_db),
+        None,
+        Some(preview.archive_size + 1),
+        Some(&preview.archive_sha256),
+    )
+    .expect_err("wrong size must be rejected");
+    assert!(size_error.contains("changed since it was reviewed"));
+
+    let hash_error = prepare_restore_checked(
+        app.path(),
+        &archive,
+        Some(&current_db),
+        None,
+        Some(preview.archive_size),
+        Some(&"0".repeat(64)),
+    )
+    .expect_err("wrong hash must be rejected");
+    assert!(hash_error.contains("changed since it was reviewed"));
+
+    assert!(!app.path().join(RESTORE_MARKER_FILE).exists());
+    assert!(!app.path().join(RESTORE_RESULT_FILE).exists());
+    assert_no_staging_entries(app.path());
+    assert_eq!(record_count(app.path()), 1);
+}
+
+#[test]
+fn test_prepare_failure_during_extraction_cleans_staging() {
+    let temp = TempDirGuard::new("restore-extract-fail-source");
+    let fake_db = b"placeholder".to_vec();
+    let manifest = make_manifest(
+        &fake_db,
+        vec![attachment_entry("aa/missing.txt", b"missing", "att-missing")],
+    );
+    let db_payload = write_payload(temp.path(), "payload/db", &fake_db);
+    let archive = temp.path().join("missing.ndarchive");
+    write_ndarchive(
+        &archive,
+        &manifest,
+        &[archive_file(
+            "database/dace.db",
+            db_payload,
+            manifest.database.sha256.clone(),
+            fake_db.len() as u64,
+        )],
+    )
+    .expect("write incomplete archive");
+
+    let app = TempDirGuard::new("restore-extract-fail-app");
+    let (current_db, current_seed) = create_current_environment(app.path());
+    let err = prepare_restore(app.path(), &archive, Some(&current_db), None)
+        .expect_err("incomplete archive must fail during extraction");
+    assert!(err.to_lowercase().contains("missing"), "unexpected error: {}", err);
+
+    assert!(!app.path().join(RESTORE_MARKER_FILE).exists());
+    assert!(!app.path().join(RESTORE_RESULT_FILE).exists());
+    assert_no_staging_entries(app.path());
+    assert_eq!(record_count(app.path()), 1);
+    assert!(
+        app.path()
+            .join("attachments")
+            .join(&current_seed.relative_path)
+            .exists(),
+        "live attachments must be untouched"
+    );
+}
+
+#[test]
+fn test_startup_confirmation_detects_tampered_restored_attachment() {
+    let source = TempDirGuard::new("restore-tamper-source");
+    let (archive, seed) = create_rich_archive(source.path());
+    let app = TempDirGuard::new("restore-tamper-app");
+    let (current_db, _current_seed) = create_current_environment(app.path());
+
+    prepare_restore(app.path(), &archive, Some(&current_db), None).expect("prepare restore");
+    let outcome = apply_pending_restore(app.path()).unwrap().expect("outcome");
+    assert!(outcome.success, "{}", outcome.message);
+
+    fs::write(
+        app.path().join("attachments").join(&seed.relative_path),
+        b"tampered after restore",
+    )
+    .expect("tamper restored attachment");
+
+    let db = Database::init(app.path().join("dace.db")).expect("open restored database");
+    let storage =
+        AttachmentStorage::new(app.path().join("attachments")).expect("open restored storage");
+    confirm_startup_restore(app.path(), &db, &storage).expect("confirm startup restore");
+
+    let confirmed = take_restore_result(app.path())
+        .unwrap()
+        .expect("result must remain for the UI");
+    assert!(!confirmed.success, "tampered attachment must not be reported as verified");
+    assert!(
+        confirmed.message.contains("startup checksum verification"),
+        "unexpected message: {}",
+        confirmed.message
+    );
+}
+
+#[test]
+fn test_startup_cleanup_removes_loose_stale_staging_files() {
+    let app = TempDirGuard::new("restore-loose-staging");
+    let staging = app.path().join(RESTORE_STAGING_DIR);
+    fs::create_dir_all(&staging).expect("create stale staging root");
+    fs::write(staging.join("stale.ndarchive"), b"leftover").expect("write stale file");
+    let stale_dir = staging.join("stale-extract");
+    fs::create_dir_all(&stale_dir).expect("create stale dir");
+    fs::write(stale_dir.join("payload"), b"leftover").expect("write stale payload");
+
+    let outcome = apply_pending_restore(app.path()).expect("clean startup");
+    assert!(outcome.is_none());
+    assert_no_staging_entries(app.path());
+}
+
+#[test]
+fn test_unreadable_marker_does_not_delete_active_staging() {
+    let source = TempDirGuard::new("restore-marker-source");
+    let (archive, _seed) = create_rich_archive(source.path());
+    let app = TempDirGuard::new("restore-marker-app");
+    let (current_db, _current_seed) = create_current_environment(app.path());
+
+    prepare_restore(app.path(), &archive, Some(&current_db), None).expect("prepare restore");
+    let marker_path = app.path().join(RESTORE_MARKER_FILE);
+    let marker: serde_json::Value =
+        serde_json::from_str(&fs::read_to_string(&marker_path).expect("read marker"))
+            .expect("parse marker");
+    let active_staging = app
+        .path()
+        .join(marker["staging_dir"].as_str().expect("staging dir"));
+    assert!(active_staging.exists());
+
+    fs::write(&marker_path, b"{ malformed marker").expect("corrupt marker");
+    apply_pending_restore(app.path()).expect_err("unreadable marker must fail");
+    assert!(
+        active_staging.exists(),
+        "an unreadable pending marker must not delete active restore staging"
+    );
+}
+
+#[test]
+fn test_archive_snapshot_stays_stable_when_original_changes() {
+    let source = TempDirGuard::new("restore-snapshot-source");
+    let (archive, _seed) = create_rich_archive(source.path());
+    let preview = inspect_archive(&archive).expect("inspect original archive");
+
+    let snapshot_dir = source.path().join("snapshot");
+    let (stable_archive, snapshot_size, snapshot_hash) =
+        snapshot_archive(&archive, &snapshot_dir, None).expect("snapshot archive");
+    assert_eq!(snapshot_size, preview.archive_size);
+    assert_eq!(snapshot_hash, preview.archive_sha256);
+
+    fs::write(&archive, b"replaced after preview").expect("replace original archive");
+
+    let stable_preview = inspect_archive(&stable_archive).expect("inspect stable snapshot");
+    assert_eq!(stable_preview.archive_sha256, preview.archive_sha256);
+    assert_eq!(stable_preview.record_count, preview.record_count);
+    assert_eq!(stable_preview.attachment_count, preview.attachment_count);
 }
