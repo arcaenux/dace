@@ -432,8 +432,8 @@ export const WorkspaceShell: FC = () => {
     };
   }, [showNotice]);
 
-  const closeOverlay = () => setActiveOverlay(null);
-  const openOverlay = (overlay: OverlayType) => setActiveOverlay(overlay);
+  const closeOverlay = useCallback(() => setActiveOverlay(null), []);
+  const openOverlay = useCallback((overlay: OverlayType) => setActiveOverlay(overlay), []);
 
   const commandList = useMemo(() => {
     return buildCommandList({

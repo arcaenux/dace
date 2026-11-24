@@ -196,7 +196,7 @@ select {
 .overlay-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 300;
+  z-index: var(--z-backdrop);
   display: grid;
   place-items: center;
   padding: 24px;
@@ -296,7 +296,7 @@ select {
   position: fixed;
   left: 50%;
   bottom: 26px;
-  z-index: 400;
+  z-index: var(--z-toast);
   max-width: min(620px, calc(100vw - 40px));
   padding: 11px 16px;
   border: 1px solid rgba(var(--brand-blue-rgb), 0.35);
