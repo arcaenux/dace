@@ -14,12 +14,10 @@
   width: min(680px, calc(100vw - 32px));
   max-height: min(620px, calc(100vh - 80px));
   margin-top: 12vh;
-  border: 1px solid rgba(255, 138, 0, 0.3);
+  border: 1px solid var(--border-medium);
   border-radius: 14px;
-  background:
-    radial-gradient(ellipse at 50% -20%, rgba(255, 138, 0, 0.07), transparent 55%),
-    rgba(11, 11, 11, 0.98);
-  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.8), 0 0 48px rgba(255, 138, 0, 0.06);
+  background: rgba(var(--bg-surface-rgb), 0.98);
+  box-shadow: var(--shadow-elevated), inset 0 1px 0 rgba(255, 255, 255, 0.06);
   overflow: hidden;
   animation: cinema-overlay-in 260ms var(--ease-enter) both;
 }
@@ -27,18 +25,18 @@
 @keyframes cinema-overlay-in {from { opacity: 0; transform: translate3d(0, 12px, 0) scale(0.985); }to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
 }.dace-app .command-input-wrapper {
   padding: 18px 22px;
-  border-bottom: 1px solid rgba(203, 185, 163, 0.1);
+  border-bottom: 1px solid rgba(var(--neutral-300-rgb), 0.1);
   background: rgba(20, 20, 20, 0.42);
-}.dace-app .command-search-icon { width: 18px; height: 18px; color: var(--dace-amber); }.dace-app .command-input {
+}.dace-app .command-search-icon { width: 18px; height: 18px; color: var(--accent-text); }.dace-app .command-input {
   font-family: var(--font-display);
   font-size: 19px;
   font-weight: 400;
   letter-spacing: -0.01em;
-  color: var(--dace-ivory);
-}.dace-app .command-input::placeholder { color: rgba(203, 185, 163, 0.35); }.dace-app .command-palette-kbd,
+  color: var(--text-primary);
+}.dace-app .command-input::placeholder { color: rgba(var(--neutral-300-rgb), 0.35); }.dace-app .command-palette-kbd,
 .dace-app .command-shortcut {
   padding: 3px 7px;
-  border: 1px solid rgba(203, 185, 163, 0.16);
+  border: 1px solid rgba(var(--neutral-300-rgb), 0.16);
   border-radius: 4px;
   background: rgba(20, 20, 20, 0.8);
   color: var(--text-muted);
@@ -55,22 +53,22 @@
   border-radius: 8px;
   background: transparent;
   transition: background-color var(--duration-fast), border-color var(--duration-fast);
-}.dace-app .command-item:hover { background: rgba(248, 237, 225, 0.03); }.dace-app .command-item.selected {
-  border-color: rgba(255, 138, 0, 0.38);
-  background: rgba(255, 138, 0, 0.08);
-  box-shadow: inset 2px 0 0 var(--dace-amber);
+}.dace-app .command-item:hover { background: var(--state-hover); }.dace-app .command-item.selected {
+  border-color: rgba(var(--brand-blue-rgb), 0.38);
+  background: rgba(var(--brand-blue-rgb), 0.08);
+  box-shadow: inset 2px 0 0 var(--accent-primary);
 }.dace-app .command-item-name {
   font-family: var(--font-interface);
   font-size: 13px;
   font-weight: 500;
-  color: var(--dace-ivory);
+  color: var(--text-primary);
 }.dace-app .command-item-desc {
   font-size: var(--type-small);
   line-height: 1.5;
   color: var(--text-muted);
 }.dace-app .command-badge {
   padding: 1px 6px;
-  border: 1px solid rgba(203, 185, 163, 0.14);
+  border: 1px solid rgba(var(--neutral-300-rgb), 0.14);
   border-radius: 3px;
   background: rgba(20, 20, 20, 0.7);
   color: var(--text-muted);
@@ -78,16 +76,16 @@
   font-size: 8px;
   letter-spacing: 0.1em;
 }.dace-app .command-badge.unavailable {
-  color: rgba(203, 185, 163, 0.4);
+  color: rgba(var(--neutral-300-rgb), 0.4);
   background: rgba(138, 138, 138, 0.06);
 }.dace-app .command-empty {
   padding: 48px 20px;
   font-family: var(--font-editorial);
   font-size: 14px;
-  color: rgba(203, 185, 163, 0.5);
+  color: rgba(var(--neutral-300-rgb), 0.5);
 }.dace-app .command-palette-footer {
   padding: 12px 22px;
-  border-top: 1px solid rgba(203, 185, 163, 0.1);
+  border-top: 1px solid rgba(var(--neutral-300-rgb), 0.1);
   background: rgba(11, 11, 11, 0.7);
   font-family: var(--font-mono);
   font-size: var(--type-micro);
@@ -95,10 +93,10 @@
   color: var(--text-muted);
 }.dace-app .footer-hints { gap: 18px; }.dace-app .footer-hint-item { gap: 6px; }.dace-app .footer-hint-item kbd {
   padding: 2px 5px;
-  border: 1px solid rgba(203, 185, 163, 0.16);
+  border: 1px solid rgba(var(--neutral-300-rgb), 0.16);
   border-radius: 3px;
   background: rgba(20, 20, 20, 0.8);
-  color: var(--dace-sand);
+  color: var(--text-secondary);
   font-family: var(--font-mono);
   font-size: var(--type-micro);
 }/* --------------------------------------------------------------------------
@@ -108,89 +106,89 @@
   width: min(600px, calc(100vw - 32px));
   max-height: min(680px, calc(100vh - 80px));
   margin-top: 10vh;
-  border: 1px solid rgba(203, 185, 163, 0.15);
+  border: 1px solid rgba(var(--neutral-300-rgb), 0.15);
   border-radius: 14px;
   background:
-    radial-gradient(ellipse at 50% -20%, rgba(255, 138, 0, 0.055), transparent 55%),
+    radial-gradient(ellipse at 50% -20%, rgba(var(--brand-blue-rgb), 0.055), transparent 55%),
     rgba(11, 11, 11, 0.98);
   box-shadow: 0 30px 90px rgba(0, 0, 0, 0.8);
   animation: cinema-overlay-in 260ms var(--ease-enter) both;
 }.dace-app .shortcut-modal-header {
   padding: 20px 24px;
-  border-bottom: 1px solid rgba(203, 185, 163, 0.1);
+  border-bottom: 1px solid rgba(var(--neutral-300-rgb), 0.1);
   background: rgba(20, 20, 20, 0.42);
 }.dace-app .shortcut-modal-title {
   font-family: var(--font-display);
   font-size: 17px;
   font-weight: 500;
   letter-spacing: -0.015em;
-  color: var(--dace-ivory);
+  color: var(--text-primary);
 }.dace-app .shortcut-modal-body {
   padding: 12px 24px 20px;
   max-height: min(480px, 58vh);
   gap: 0;
-}.dace-app .shortcut-row { padding: 11px 0; border-bottom: 1px solid rgba(203, 185, 163, 0.08); }.dace-app .shortcut-desc { font-family: var(--font-interface); font-size: var(--type-body); color: var(--dace-ivory); }.dace-app .shortcut-context { font-family: var(--font-mono); font-size: var(--type-micro); letter-spacing: 0.06em; color: var(--text-muted); }.dace-app .shortcut-keys {
+}.dace-app .shortcut-row { padding: 11px 0; border-bottom: 1px solid rgba(var(--neutral-300-rgb), 0.08); }.dace-app .shortcut-desc { font-family: var(--font-interface); font-size: var(--type-body); color: var(--text-primary); }.dace-app .shortcut-context { font-family: var(--font-mono); font-size: var(--type-micro); letter-spacing: 0.06em; color: var(--text-muted); }.dace-app .shortcut-keys {
   padding: 4px 8px;
-  border: 1px solid rgba(203, 185, 163, 0.18);
+  border: 1px solid rgba(var(--neutral-300-rgb), 0.18);
   border-radius: 5px;
   background: rgba(20, 20, 20, 0.8);
-  color: var(--dace-sand);
+  color: var(--text-secondary);
   font-family: var(--font-mono);
   font-size: var(--type-micro);
-}.dace-app .shortcut-keys.reserved { border-style: dashed; color: rgba(203, 185, 163, 0.35); }.dace-app .restore-warning {
-  border: 1px solid rgba(255, 138, 0, 0.35);
+}.dace-app .shortcut-keys.reserved { border-style: dashed; color: rgba(var(--neutral-300-rgb), 0.35); }.dace-app .restore-warning {
+  border: 1px solid rgba(var(--status-warning-rgb), 0.35);
   border-radius: 8px;
-  background: rgba(255, 138, 0, 0.06);
-  color: var(--dace-sand);
+  background: rgba(var(--status-warning-rgb), 0.06);
+  color: var(--status-warning);
   font-size: var(--type-body);
   line-height: 1.6;
-}.dace-app .restore-summary-row { border-bottom: 1px solid rgba(203, 185, 163, 0.08); }.dace-app .restore-summary-row dt { font-family: var(--font-mono); font-size: var(--type-micro); letter-spacing: 0.1em; color: var(--text-muted); }.dace-app .restore-summary-row dd { font-size: var(--type-body); color: var(--dace-ivory); }.dace-app .restore-progress { font-family: var(--font-mono); font-size: var(--type-mono); letter-spacing: 0.05em; color: var(--dace-amber); }.dace-app .restore-error { font-size: var(--type-small); line-height: 1.5; color: #ff8b8b; }.dace-app .restore-confirm-btn {
-  border: 1px solid rgba(255, 100, 100, 0.55);
+}.dace-app .restore-summary-row { border-bottom: 1px solid rgba(var(--neutral-300-rgb), 0.08); }.dace-app .restore-summary-row dt { font-family: var(--font-mono); font-size: var(--type-micro); letter-spacing: 0.1em; color: var(--text-muted); }.dace-app .restore-summary-row dd { font-size: var(--type-body); color: var(--text-primary); }.dace-app .restore-progress { font-family: var(--font-mono); font-size: var(--type-mono); letter-spacing: 0.05em; color: var(--accent-text); }.dace-app .restore-error { font-size: var(--type-small); line-height: 1.5; color: var(--status-danger); }.dace-app .restore-confirm-btn {
+  border: 1px solid rgba(var(--status-danger-rgb), 0.55);
   border-radius: 7px;
   background: transparent;
-  color: #ff8b8b;
+  color: var(--status-danger);
   font-family: var(--font-mono);
   font-size: var(--type-mono);
   letter-spacing: 0.08em;
   box-shadow: none;
-}.dace-app .restore-confirm-btn:hover:not(:disabled) { background: rgba(255, 80, 80, 0.1); }.dace-app .primary-outline-btn {
-  border: 1px solid rgba(203, 185, 163, 0.18);
+}.dace-app .restore-confirm-btn:hover:not(:disabled) { background: rgba(var(--status-danger-rgb), 0.1); }.dace-app .primary-outline-btn {
+  border: 1px solid rgba(var(--neutral-300-rgb), 0.18);
   border-radius: 7px;
   background: rgba(20, 20, 20, 0.7);
-  color: var(--dace-sand);
+  color: var(--text-secondary);
   font-family: var(--font-mono);
   font-size: var(--type-mono);
   letter-spacing: 0.08em;
-}.dace-app .primary-outline-btn:hover { border-color: rgba(255, 138, 0, 0.45); color: var(--dace-amber); }/* --------------------------------------------------------------------------
+}.dace-app .primary-outline-btn:hover { border-color: rgba(var(--brand-blue-rgb), 0.45); color: var(--accent-text); }/* --------------------------------------------------------------------------
    Contextual panel
    -------------------------------------------------------------------------- */
 .dace-app .contextual-panel {
   width: min(360px, 92vw);
   background: rgba(11, 11, 11, 0.96);
-  border-left: 1px solid rgba(203, 185, 163, 0.1);
+  border-left: 1px solid rgba(var(--neutral-300-rgb), 0.1);
   box-shadow: -24px 0 60px rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(20px);
 }.dace-app .panel-header {
   height: 58px;
   padding: 0 22px;
-  border-bottom: 1px solid rgba(203, 185, 163, 0.1);
+  border-bottom: 1px solid rgba(var(--neutral-300-rgb), 0.1);
   background: rgba(20, 20, 20, 0.42);
 }.dace-app .panel-title {
   font-family: var(--font-mono);
   font-size: var(--type-micro);
   letter-spacing: 0.18em;
-  color: var(--dace-sand);
+  color: var(--text-secondary);
   text-transform: uppercase;
-}.dace-app .panel-close-btn { color: var(--text-muted); border-radius: 5px; transition: color var(--duration-fast), background-color var(--duration-fast); }.dace-app .panel-close-btn:hover { color: var(--dace-amber); background: rgba(255, 138, 0, 0.08); }.dace-app .panel-content { padding: 24px 22px; }/* --------------------------------------------------------------------------
+}.dace-app .panel-close-btn { color: var(--text-muted); border-radius: 5px; transition: color var(--duration-fast), background-color var(--duration-fast); }.dace-app .panel-close-btn:hover { color: var(--accent-text); background: rgba(var(--brand-blue-rgb), 0.08); }.dace-app .panel-content { padding: 24px 22px; }/* --------------------------------------------------------------------------
    Confirmation dialogs inside the Knowledge Desk
    -------------------------------------------------------------------------- */
 .dace-app .delete-confirm-dialog {
   width: min(460px, calc(100vw - 32px));
   padding: 28px;
-  border: 1px solid rgba(203, 185, 163, 0.15);
+  border: 1px solid rgba(var(--neutral-300-rgb), 0.15);
   border-radius: 12px;
   background:
-    radial-gradient(ellipse at 50% -20%, rgba(255, 138, 0, 0.05), transparent 55%),
+    radial-gradient(ellipse at 50% -20%, rgba(var(--brand-blue-rgb), 0.05), transparent 55%),
     rgba(11, 11, 11, 0.98);
   box-shadow: 0 30px 90px rgba(0, 0, 0, 0.8);
   animation: cinema-overlay-in 240ms var(--ease-enter) both;
@@ -199,12 +197,12 @@
   font-size: 19px;
   font-weight: 500;
   letter-spacing: -0.02em;
-  color: var(--dace-ivory);
+  color: var(--text-primary);
 }.dace-app .confirm-message {
   margin-top: 10px;
   font-size: var(--type-body);
   line-height: 1.65;
-  color: var(--dace-sand);
+  color: var(--text-secondary);
 }.dace-app .confirm-actions {
   display: flex;
   flex-wrap: wrap;
@@ -217,22 +215,28 @@
 .dace-app .quiet-notice {
   bottom: 26px;
   padding: 9px 16px;
-  border: 1px solid rgba(255, 138, 0, 0.32);
+  border: 1px solid rgba(var(--brand-blue-rgb), 0.32);
   border-radius: 8px;
   background: rgba(11, 11, 11, 0.94);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), 0 0 18px rgba(255, 138, 0, 0.05);
-  color: var(--dace-sand);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), 0 0 18px rgba(var(--brand-blue-rgb), 0.05);
+  color: var(--text-secondary);
   font-family: var(--font-mono);
   font-size: var(--type-mono);
   letter-spacing: 0.04em;
   backdrop-filter: blur(14px);
   animation: cinema-overlay-in 220ms var(--ease-enter) both;
 }/* --------------------------------------------------------------------------
-   Focus-visible treatment stays legible on every cinematic surface
+   Focus-visible treatment: restrained and accessible
    -------------------------------------------------------------------------- */
-.dace-app :focus-visible {
+.dace-app :is(button, a, [role="button"], [role="option"], [tabindex]:not([tabindex="-1"])):focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px var(--bg-app), 0 0 0 4px rgba(255, 138, 0, 0.8);
+  box-shadow: var(--state-focus-ring);
+}
+
+.dace-app :is(input, textarea, select):focus-visible {
+  outline: none;
+  border-color: var(--input-focus-border);
+  box-shadow: var(--input-focus-ring);
 }
 
 @media (max-width: 720px) {.dace-app .command-palette { margin-top: 8vh; }.dace-app .command-input { font-size: 16px; }.dace-app .footer-hints { gap: 10px; }.dace-app .footer-hint-item:last-child { display: none; }.dace-app .delete-confirm-dialog { padding: 22px; }

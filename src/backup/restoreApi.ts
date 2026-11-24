@@ -101,6 +101,7 @@ export async function restoreBackupArchive(
   }
 }
 
+
 /** Returns (and consumes) the result of the restore applied on startup. */
 export async function getRestoreResult(): Promise<RestoreOutcome | null> {
   if (!isTauriEnvironment()) {

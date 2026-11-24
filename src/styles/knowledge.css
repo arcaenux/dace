@@ -97,7 +97,7 @@
 }.tag-chip.active {
   background-color: var(--accent-muted);
   border-color: var(--accent-primary);
-  color: var(--accent-primary);
+  color: var(--accent-text);
 }.tag-count {
   font-size: 10px;
   color: var(--text-muted);
@@ -224,21 +224,21 @@
 }.desk-btn.primary {
   background: var(--accent-muted);
   border-color: var(--accent-primary);
-  color: var(--accent-primary);
+  color: var(--accent-text);
 }.desk-btn.primary:hover {
   background: rgba(118, 151, 198, 0.25);
   color: #fff;
 }.desk-btn.danger {
-  color: #d08770;
+  color: var(--status-danger);
 }.desk-btn.danger:hover {
-  background: rgba(208, 135, 112, 0.15);
-  border-color: #d08770;
+  background: rgba(var(--status-danger-rgb), 0.15);
+  border-color: var(--status-danger);
 }.desk-btn.danger-solid {
-  background: #bf616a;
-  border-color: #bf616a;
-  color: #fff;
+  background: var(--status-danger);
+  border-color: var(--status-danger);
+  color: var(--status-danger-contrast);
 }.desk-btn.danger-solid:hover {
-  background: #d08770;
+  background: var(--status-danger);
 }.desk-btn kbd {
   font-family: var(--font-mono);
   font-size: 10px;
@@ -255,22 +255,22 @@
   align-items: center;
   margin-left: var(--space-2);
 }.status-saved {
-  color: var(--text-muted);
+  color: var(--status-success);
   display: inline-flex;
   align-items: center;
   gap: 6px;
 }.status-unsaved {
-  color: #ebcb8b;
+  color: var(--status-warning);
   display: inline-flex;
   align-items: center;
   gap: 6px;
 }.status-saving {
-  color: var(--accent-primary);
+  color: var(--status-warning);
   display: inline-flex;
   align-items: center;
   gap: 6px;
 }.status-error {
-  color: #bf616a;
+  color: var(--status-danger);
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -280,14 +280,14 @@
   border-radius: 50%;
   display: inline-block;
 }.status-dot.green {
-  background-color: #a3be8c;
+  background-color: var(--status-success);
 }.status-dot.amber {
-  background-color: #ebcb8b;
+  background-color: var(--status-warning);
 }.status-dot.pulse {
   background-color: var(--accent-primary);
   animation: pulse 1s infinite alternate;
 }.status-dot.red {
-  background-color: #bf616a;
+  background-color: var(--status-danger);
 }
 
 @keyframes pulse {from { opacity: 0.4; }to { opacity: 1; }
@@ -346,7 +346,7 @@
   line-height: 1;
   padding: 0 2px;
 }.tag-remove-btn:hover {
-  color: #bf616a;
+  color: var(--status-danger);
 }.editor-tag-input {
   background: transparent;
   border: none;
@@ -560,7 +560,7 @@ blockquote,
   text-align: left;
   transition: color var(--duration-fast);
 }.rel-target-link:hover {
-  color: var(--accent-primary);
+  color: var(--accent-text);
   text-decoration: underline;
 }.rel-description {
   font-family: var(--font-quotation);

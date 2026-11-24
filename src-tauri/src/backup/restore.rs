@@ -1093,6 +1093,10 @@ pub(crate) fn apply_pending_restore_with_hook(
     app_data_dir: &Path,
     hook: Option<&dyn Fn(&str) -> Result<(), String>>,
 ) -> Result<Option<RestoreOutcome>, String> {
+    if let Some(outcome) = consume_failed_restore_marker(app_data_dir)? {
+        return Ok(Some(outcome));
+    }
+
     let marker_path = app_data_dir.join(RESTORE_MARKER_FILE);
     if !marker_path.exists() {
         cleanup_stale_staging(app_data_dir);
@@ -1143,6 +1147,7 @@ pub(crate) fn apply_pending_restore_with_hook(
         if outcome.message.starts_with("CRITICAL") {
             let failed_marker = app_data_dir.join(RESTORE_FAILED_MARKER_FILE);
             let _ = fs::rename(&marker_path, &failed_marker);
+            cleanup_stale_staging(app_data_dir);
         } else {
             let _ = fs::remove_file(&marker_path);
             cleanup_stale_staging(app_data_dir);
@@ -1197,6 +1202,7 @@ pub(crate) fn apply_pending_restore_with_hook(
             if outcome.message.starts_with("CRITICAL") {
                 let failed_marker = app_data_dir.join(RESTORE_FAILED_MARKER_FILE);
                 let _ = fs::rename(&marker_path, &failed_marker);
+                cleanup_stale_staging(app_data_dir);
             } else {
                 let _ = fs::remove_file(&marker_path);
                 cleanup_stale_staging(app_data_dir);
@@ -1204,6 +1210,64 @@ pub(crate) fn apply_pending_restore_with_hook(
             Ok(Some(outcome))
         }
     }
+}
+
+/// Consumes a marker left by a critical failure from an earlier attempt. The
+/// user must see that failure once after the next restart instead of having the
+/// marker sit inert while Dace starts with unverified data.
+fn consume_failed_restore_marker(app_data_dir: &Path) -> Result<Option<RestoreOutcome>, String> {
+    let failed_marker = app_data_dir.join(RESTORE_FAILED_MARKER_FILE);
+    if !failed_marker.exists() {
+        return Ok(None);
+    }
+
+    let pending = read_json::<PendingRestore>(&failed_marker).ok();
+    let recovery_dir = pending
+        .as_ref()
+        .and_then(|pending| safe_join(app_data_dir, &pending.recovery_dir).ok())
+        .unwrap_or_else(|| app_data_dir.join(RESTORE_RECOVERY_DIR));
+    let outcome = RestoreOutcome {
+        success: false,
+        message: format!(
+            "CRITICAL: a previous restore failed and could not be completed automatically. Your recovery snapshot is preserved at {}.",
+            recovery_dir.to_string_lossy()
+        ),
+        archive_path: pending.as_ref().map(|pending| pending.archive_path.clone()),
+        record_count: None,
+        attachment_count: None,
+        recovery_dir: Some(recovery_dir.to_string_lossy().to_string()),
+        completed_at: now_rfc3339(),
+    };
+    write_json_atomic(&app_data_dir.join(RESTORE_RESULT_FILE), &outcome)?;
+    let _ = fs::remove_file(&failed_marker);
+    cleanup_stale_staging(app_data_dir);
+    Ok(Some(outcome))
+}
+
+/// Records a startup-level restore error as a user-visible failure outcome so a
+/// corrupt or unsupported pending marker can never be reported as success.
+pub fn record_startup_restore_error(app_data_dir: &Path, error: &str) -> Result<(), String> {
+    let outcome = RestoreOutcome {
+        success: false,
+        message: format!(
+            "CRITICAL: Dace could not apply a pending restore ({}). No data was replaced. The recovery snapshot at {} remains available.",
+            error,
+            app_data_dir.join(RESTORE_RECOVERY_DIR).to_string_lossy()
+        ),
+        archive_path: None,
+        record_count: None,
+        attachment_count: None,
+        recovery_dir: Some(app_data_dir.join(RESTORE_RECOVERY_DIR).to_string_lossy().to_string()),
+        completed_at: now_rfc3339(),
+    };
+    write_json_atomic(&app_data_dir.join(RESTORE_RESULT_FILE), &outcome)?;
+
+    let marker_path = app_data_dir.join(RESTORE_MARKER_FILE);
+    if marker_path.exists() {
+        let _ = fs::rename(&marker_path, app_data_dir.join(RESTORE_FAILED_MARKER_FILE));
+    }
+    cleanup_stale_staging(app_data_dir);
+    Ok(())
 }
 
 /// Returns and consumes the outcome of the most recent restore so the UI can
@@ -1288,7 +1352,7 @@ pub fn confirm_startup_restore(
     if let Err(err) = verification {
         outcome.success = false;
         outcome.message = format!(
-            "CRITICAL: restore data failed verification after startup ({}). Your recovery snapshot is preserved at {}.",
+            "CRITICAL: restored data failed verification after startup ({}). Dace is running with unverified data; close Dace and restore the recovery snapshot at {} manually or choose another backup.",
             err,
             outcome
                 .recovery_dir

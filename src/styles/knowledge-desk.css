@@ -5,28 +5,20 @@
    ========================================================================== */
 
 .dace-app .knowledge-desk-root {
-  --dace-surface: #101010;
-  --dace-elevated: #151515;
-  --dace-active: #1b1b1b;
-  --dace-border: #292929;
-  --dace-ivory: #f4e9dd;
-  --dace-sand: #b5a697;
-  --dace-muted: #77716b;
-  --dace-amber: #ff9900;
-  --dace-amber-bright: #ffb04d;
-  --dace-amber-deep: #8a4a0a;
-  --status-success: #7ea98b;
-  --status-danger: #a65b57;
-
   position: relative;
   display: flex;
   width: 100%;
   height: 100%;
   min-height: 0;
-  padding-top: 118px;
-  padding-left: var(--rail-plane);
+  padding-top: 0;
+  padding-left: 0;
   overflow: hidden;
-  background: #101010;
+  background: var(--bg-app);
+}
+
+.dace-app .record-list-panel:not(.open) {
+  visibility: hidden !important;
+  pointer-events: none !important;
 }
 
 .dace-app .knowledge-main-area,
@@ -63,14 +55,18 @@
   position: relative;
   z-index: 20;
   display: flex;
-  flex: 0 0 52px;
+  flex: 0 0 44px;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  height: 52px;
-  padding: 0 46px 0 52px;
-  border-bottom: 1px solid #292929;
-  background: #101010;
+  height: 44px;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+}
+
+.dace-app .editor-container.in-focus .desk-toolbar {
+  padding-right: calc(var(--window-control-space) + 236px);
 }
 
 .dace-app .desk-toolbar-left,
@@ -94,7 +90,7 @@
   border: 1px solid transparent;
   border-radius: 4px;
   background: transparent;
-  color: #77716b;
+  color: var(--text-muted);
   cursor: pointer;
   transition: color 140ms ease, border-color 140ms ease, background-color 140ms ease;
 }
@@ -103,7 +99,7 @@
 .dace-app .desk-toolbar-icon[aria-expanded="true"] {
   border-color: #292929;
   background: #151515;
-  color: #f4e9dd;
+  color: var(--text-primary);
 }
 
 .dace-app .desk-toolbar-rule {
@@ -113,7 +109,7 @@
 }
 
 .dace-app .desk-toolbar-context {
-  color: #f4e9dd;
+  color: var(--text-primary);
   font-family: var(--font-interface);
   font-size: 11px;
   font-weight: 500;
@@ -126,7 +122,7 @@
   align-items: center;
   gap: 7px;
   margin-left: 12px;
-  color: #77716b;
+  color: var(--text-muted);
   font-family: var(--font-mono);
   font-size: 10px;
   letter-spacing: 0.04em;
@@ -141,8 +137,8 @@
 }
 
 .dace-app .desk-save-status.saved { color: var(--status-success); }
-.dace-app .desk-save-status.saving { color: #b5a697; }
-.dace-app .desk-save-status.unsaved { color: #ff9900; }
+.dace-app .desk-save-status.saving { color: var(--status-warning); }
+.dace-app .desk-save-status.unsaved { color: var(--status-warning); }
 .dace-app .desk-save-status.error { color: var(--status-danger); }
 
 .dace-app .desk-save-status button {
@@ -164,10 +160,10 @@
   gap: 7px;
   height: 28px;
   padding: 0 11px;
-  border: 1px solid #8a4a0a;
+  border: 1px solid rgba(var(--brand-blue-rgb), 0.45);
   border-radius: 4px;
-  background: rgba(255, 153, 0, 0.06);
-  color: #ff9900;
+  background: rgba(var(--brand-blue-rgb), 0.06);
+  color: var(--accent-text);
   font-family: var(--font-mono);
   font-size: 10px;
   letter-spacing: 0.07em;
@@ -176,8 +172,8 @@
 }
 
 .dace-app .desk-save-button:hover {
-  border-color: #ff9900;
-  background: rgba(255, 153, 0, 0.12);
+  border-color: var(--accent-text);
+  background: rgba(var(--brand-blue-rgb), 0.12);
 }
 
 .dace-app .desk-actions-menu {
@@ -204,7 +200,7 @@
   border: none;
   border-radius: 4px;
   background: transparent;
-  color: #b5a697;
+  color: var(--text-secondary);
   font-family: var(--font-interface);
   font-size: 11px;
   text-align: left;
@@ -213,17 +209,17 @@
 
 .dace-app .desk-actions-menu button:hover {
   background: #1b1b1b;
-  color: #f4e9dd;
+  color: var(--text-primary);
 }
 
-.dace-app .desk-actions-menu button.destructive { color: #a65b57; }
+.dace-app .desk-actions-menu button.destructive { color: var(--status-danger); }
 .dace-app .desk-actions-menu button.destructive:hover {
-  background: rgba(166, 91, 87, 0.12);
-  color: #c9827d;
+  background: rgba(var(--status-danger-rgb), 0.12);
+  color: var(--status-danger);
 }
 
 .dace-app .desk-actions-menu kbd {
-  color: #77716b;
+  color: var(--text-muted);
   font-family: var(--font-mono);
   font-size: 9px;
 }
@@ -242,18 +238,18 @@
   flex: 1;
   min-height: 0;
   overflow: hidden;
-  padding: 54px 48px 0 84px;
-  background: #101010;
+  padding: 40px 48px;
+  background: var(--bg-app);
 }
 
 .dace-app .editor-document {
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-width: 900px;
+  max-width: 700px;
   height: 100%;
   min-height: 0;
-  margin: 0;
+  margin: 0 auto;
   border: none;
   border-radius: 0;
   background: transparent;
@@ -264,32 +260,38 @@
   display: block;
   flex: 0 0 auto;
   width: 100%;
-  min-height: 58px;
+  min-height: 44px;
   padding: 0;
   border: none;
   outline: none;
   resize: none;
   overflow: hidden;
   background: transparent;
-  color: #f4e9dd;
+  color: var(--text-primary);
   font-family: var(--font-editorial);
-  font-size: clamp(40px, 3.35vw, 56px);
-  font-weight: 400;
-  line-height: 1.06;
-  letter-spacing: -0.035em;
-  caret-color: #ff9900;
+  font-size: clamp(28px, 2.7vw, 38px);
+  font-weight: 500;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  caret-color: var(--accent-primary);
+}
+
+.dace-app .editor-title-input:focus,
+.dace-app .editor-title-input:focus-visible {
+  outline: none;
+  box-shadow: none;
 }
 
 .dace-app .editor-title-input::placeholder {
-  color: rgba(181, 166, 151, 0.32);
+  color: var(--text-muted);
   font-style: italic;
 }
 
 .dace-app .editor-tags-container {
   flex: 0 0 auto;
-  margin-top: 30px;
-  padding: 0 0 13px;
-  border-bottom: 1px solid #292929;
+  margin-top: 18px;
+  padding: 0 0 10px;
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .dace-app .editor-tags-container .tags-list {
@@ -304,26 +306,26 @@
   padding: 0;
   border: none;
   background: transparent;
-  color: #b5a697;
+  color: var(--text-secondary);
   font-family: var(--font-interface);
   font-size: 12px;
   cursor: pointer;
 }
 
-.dace-app .add-tag-button:hover { color: #ff9900; }
+.dace-app .add-tag-button:hover { color: var(--accent-text); }
 
 .dace-app .tag-chip {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  color: #b5a697;
+  color: var(--text-secondary);
   font-family: var(--font-interface);
   font-size: 12px;
 }
 
 .dace-app .tag-chip::before {
   content: "#";
-  color: #77716b;
+  color: var(--text-muted);
 }
 
 .dace-app .tag-remove-btn {
@@ -334,51 +336,64 @@
   padding: 0;
   border: none;
   background: transparent;
-  color: #77716b;
+  color: var(--text-muted);
   font-family: var(--font-interface);
   font-size: 12px;
   line-height: 1;
   cursor: pointer;
 }
 
-.dace-app .tag-remove-btn:hover { color: #ff9900; }
+.dace-app .tag-remove-btn:hover { color: var(--accent-text); }
 
 .dace-app .tag-input {
   width: 108px;
   height: 22px;
   padding: 0;
   border: none;
-  border-bottom: 1px solid #8a4a0a;
+  border-bottom: 1px solid rgba(var(--brand-blue-rgb), 0.5);
   border-radius: 0;
   outline: none;
   background: transparent;
-  color: #f4e9dd;
+  color: var(--text-primary);
   font-family: var(--font-interface);
   font-size: 12px;
+}
+
+.dace-app .tag-input:focus,
+.dace-app .tag-input:focus-visible {
+  outline: none;
+  box-shadow: none;
+  border-bottom-color: var(--accent-primary);
 }
 
 .dace-app .editor-textarea {
   flex: 1;
   width: 100%;
   min-height: 0;
-  padding: 56px 6px 40px 0;
+  padding: 24px 0 40px 0;
   border: none;
   outline: none;
   resize: none;
   overflow-y: auto;
   overscroll-behavior: contain;
   background: transparent;
-  color: #f4e9dd;
+  color: var(--text-primary);
   font-family: var(--font-interface);
   font-size: 15px;
   font-weight: 400;
-  line-height: 1.75;
+  line-height: 1.7;
   letter-spacing: -0.005em;
-  caret-color: #ff9900;
+  caret-color: var(--accent-primary);
+}
+
+.dace-app .editor-textarea:focus,
+.dace-app .editor-textarea:focus-visible {
+  outline: none;
+  box-shadow: none;
 }
 
 .dace-app .editor-textarea::placeholder {
-  color: rgba(181, 166, 151, 0.26);
+  color: var(--text-muted);
   font-style: italic;
 }
 
@@ -405,7 +420,7 @@
   padding: 13px 46px 0 84px;
   border-top: 1px solid #292929;
   background: #101010;
-  color: #77716b;
+  color: var(--text-muted);
   font-family: var(--font-mono);
   font-size: 9px;
   letter-spacing: 0.08em;
@@ -420,8 +435,8 @@
   background: #7ea98b;
 }
 
-.dace-app .editor-status-bar .status-dot.saving { background: #b5a697; }
-.dace-app .editor-status-bar .status-dot.unsaved { background: #ff9900; }
+.dace-app .editor-status-bar .status-dot.saving { background: var(--text-secondary); }
+.dace-app .editor-status-bar .status-dot.unsaved { background: var(--accent-primary); }
 .dace-app .editor-status-bar .status-dot.error { background: #a65b57; }
 
 .dace-app .editor-status-spacer { flex: 1; }
@@ -430,11 +445,11 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  color: #b5a697;
+  color: var(--text-secondary);
 }
 
 .dace-app .command-mark {
-  color: #ff9900;
+  color: var(--accent-text);
   font-family: var(--font-interface);
   font-size: 12px;
   line-height: 1;
@@ -446,48 +461,63 @@
 
 .dace-app .desk-context-panel {
   display: flex;
-  flex: 0 0 430px;
+  flex: 0 0 360px;
   flex-direction: column;
-  width: 430px;
+  width: 360px;
   min-height: 0;
-  border-left: 1px solid #292929;
-  background: #101010;
+  border-left: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  transition:
+    width 200ms cubic-bezier(0.2, 0, 0, 1),
+    flex-basis 200ms cubic-bezier(0.2, 0, 0, 1),
+    opacity 160ms ease;
+  overflow: hidden;
+}
+
+.dace-app .desk-context-panel.is-collapsed {
+  width: 0 !important;
+  flex: 0 0 0 !important;
+  border-left: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  overflow: hidden !important;
 }
 
 .dace-app .editor-container.in-focus + .desk-context-panel { display: none; }
 
 .dace-app .desk-context-tabs {
   display: flex;
-  flex: 0 0 52px;
+  flex: 0 0 44px;
   align-items: center;
-  gap: 28px;
-  height: 52px;
-  padding: 0 30px 0 50px;
-  border-bottom: 1px solid #292929;
+  gap: 20px;
+  height: 44px;
+  padding: 0 20px;
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .dace-app .desk-context-tab {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  height: 52px;
+  gap: 6px;
+  height: 44px;
   padding: 0;
   border: none;
-  border-bottom: 1px solid transparent;
+  border-bottom: 2px solid transparent;
   background: transparent;
-  color: #77716b;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.07em;
+  color: var(--text-muted);
+  font-family: var(--font-interface);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
   cursor: pointer;
-  transition: color 140ms ease, border-color 140ms ease;
+  transition: color 120ms ease, border-color 120ms ease;
 }
 
-.dace-app .desk-context-tab:hover { color: #b5a697; }
+.dace-app .desk-context-tab:hover { color: var(--text-primary); }
 
 .dace-app .desk-context-tab.active {
-  border-bottom-color: #ff9900;
-  color: #f4e9dd;
+  border-bottom-color: var(--accent-primary);
+  color: var(--text-primary);
 }
 
 .dace-app .desk-context-body {
@@ -495,7 +525,7 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: 58px 49px 60px 70px;
+  padding: 24px 20px;
 }
 
 .dace-app .desk-context-body.graph-active {
@@ -504,9 +534,9 @@
 }
 
 .dace-app .desk-context-section {
-  margin-bottom: 28px;
-  padding-bottom: 28px;
-  border-bottom: 1px solid #292929;
+  margin-bottom: 24px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .dace-app .desk-context-section:last-child {
@@ -521,14 +551,14 @@
   padding: 0;
   border: none;
   background: transparent;
-  color: #f4e9dd;
+  color: var(--text-primary);
   font-family: var(--font-interface);
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
 }
 
-.dace-app .desk-section-toggle svg { color: #77716b; }
+.dace-app .desk-section-toggle svg { color: var(--text-muted); }
 
 /* Existing relationship workflow, restyled as a quiet section. */
 .dace-app .desk-context-panel .relationships-panel {
@@ -538,6 +568,26 @@
   border-radius: 0;
   background: transparent;
   box-shadow: none;
+}
+
+.dace-app .relationship-inline-card {
+  margin-bottom: 16px;
+  padding: 14px;
+  border: 1px solid rgba(var(--brand-blue-rgb), 0.35);
+  border-radius: 8px;
+  background: rgba(20, 20, 20, 0.88);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dace-app .relationship-inline-title {
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
 }
 
 .dace-app .desk-context-panel .relationships-header {
@@ -558,12 +608,12 @@
   padding: 0;
   border: none;
   background: transparent;
-  color: #f4e9dd;
+  color: var(--text-primary);
   cursor: pointer;
 }
 
 .dace-app .desk-context-panel .relationships-title {
-  color: #f4e9dd;
+  color: var(--text-primary);
   font-family: var(--font-interface);
   font-size: 13px;
   font-weight: 500;
@@ -572,7 +622,7 @@
 
 .dace-app .desk-context-panel .relationships-count-badge {
   margin-left: 7px;
-  color: #77716b;
+  color: var(--text-muted);
   font-family: var(--font-mono);
   font-size: 9px;
 }
@@ -581,14 +631,14 @@
   padding: 0;
   border: none;
   background: transparent;
-  color: #b5a697;
+  color: var(--text-secondary);
   font-family: var(--font-mono);
   font-size: 10px;
   letter-spacing: 0.02em;
   text-transform: none;
 }
 
-.dace-app .desk-context-panel .relationships-header-actions .desk-btn:hover { color: #ff9900; }
+.dace-app .desk-context-panel .relationships-header-actions .desk-btn:hover { color: var(--accent-text); }
 
 .dace-app .desk-context-panel .relationships-empty-state,
 .dace-app .desk-context-panel .attachments-empty-state {
@@ -601,7 +651,7 @@
   display: block;
   max-width: 310px;
   margin: 0;
-  color: #77716b;
+  color: var(--text-muted);
   font-family: var(--font-interface);
   font-size: 11px;
   line-height: 1.65;
@@ -615,7 +665,7 @@
 
 .dace-app .desk-context-panel .section-label {
   margin-bottom: 8px;
-  color: #77716b;
+  color: var(--text-muted);
   font-family: var(--font-mono);
   font-size: 9px;
   font-weight: 400;
@@ -641,7 +691,7 @@
 .dace-app .desk-context-panel .rel-badge {
   border: none;
   background: transparent;
-  color: #ff9900;
+  color: var(--accent-text);
   font-family: var(--font-mono);
   font-size: 9px;
   letter-spacing: 0.06em;
@@ -652,26 +702,28 @@
   padding: 0;
   border: none;
   background: transparent;
-  color: #b5a697;
+  color: var(--text-secondary);
   font-family: var(--font-interface);
   font-size: 11px;
   text-align: left;
   cursor: pointer;
 }
 
-.dace-app .desk-context-panel .rel-target-link:hover { color: #ff9900; }
+.dace-app .desk-context-panel .rel-target-link:hover { color: var(--accent-text); }
 .dace-app .desk-context-panel .rel-description {
   margin-top: 5px;
-  color: #77716b;
+  color: var(--text-muted);
   font-size: 10px;
   line-height: 1.5;
 }
 
 .dace-app .desk-context-panel .rel-actions {
-  display: none;
+  opacity: 0;
+  transition: opacity var(--duration-fast) ease;
 }
 
-.dace-app .desk-context-panel .relationship-card:hover .rel-actions { display: block; }
+.dace-app .desk-context-panel .relationship-card:hover .rel-actions,
+.dace-app .desk-context-panel .relationship-card:focus-within .rel-actions { opacity: 1; }
 .dace-app .desk-context-panel .rel-delete-btn {
   margin-top: 4px;
   padding: 0;
@@ -710,7 +762,7 @@
 }
 
 .dace-app .desk-context-panel .attachments-heading {
-  color: #f4e9dd;
+  color: var(--text-primary);
   font-family: var(--font-interface);
   font-size: 13px;
   font-weight: 500;
@@ -718,7 +770,7 @@
 }
 
 .dace-app .desk-context-panel .attachments-counter {
-  color: #77716b;
+  color: var(--text-muted);
   font-family: var(--font-mono);
   font-size: 9px;
 }
@@ -727,14 +779,14 @@
   padding: 0;
   border: none;
   background: transparent;
-  color: #b5a697;
+  color: var(--text-secondary);
   font-family: var(--font-mono);
   font-size: 10px;
   letter-spacing: 0.02em;
   text-transform: none;
 }
 
-.dace-app .desk-context-panel .add-attachment-btn.quiet:hover { color: #ff9900; }
+.dace-app .desk-context-panel .add-attachment-btn.quiet:hover { color: var(--accent-text); }
 
 .dace-app .desk-context-panel .attachments-list-container { margin-top: 0; }
 
@@ -749,7 +801,7 @@
 }
 
 .dace-app .desk-context-panel .attachment-filename {
-  color: #b5a697;
+  color: var(--text-secondary);
   font-family: var(--font-interface);
   font-size: 11px;
 }
@@ -759,7 +811,7 @@
   padding: 4px 8px;
   border-color: #292929;
   background: #151515;
-  color: #b5a697;
+  color: var(--text-secondary);
   font-family: var(--font-mono);
   font-size: 9px;
   text-transform: uppercase;
@@ -772,7 +824,7 @@
 }
 
 .dace-app .desk-context-panel .record-excerpts-title {
-  color: #f4e9dd;
+  color: var(--text-primary);
   font-family: var(--font-interface);
   font-size: 12px;
   font-weight: 500;
@@ -788,7 +840,7 @@
 }
 
 .dace-app .desk-meta-grid span:nth-child(odd) {
-  color: #77716b;
+  color: var(--text-muted);
   font-family: var(--font-mono);
   font-size: 9px;
   letter-spacing: 0.1em;
@@ -796,7 +848,7 @@
 }
 
 .dace-app .desk-meta-grid span:nth-child(even) {
-  color: #b5a697;
+  color: var(--text-secondary);
   font-family: var(--font-interface);
   font-size: 11px;
 }
@@ -805,14 +857,14 @@
 .dace-app .desk-outline-note,
 .dace-app .desk-empty-note {
   margin: 0 0 18px;
-  color: #77716b;
+  color: var(--text-muted);
   font-family: var(--font-interface);
   font-size: 11px;
   line-height: 1.65;
 }
 
 .dace-app .desk-empty-note code {
-  color: #b5a697;
+  color: var(--text-secondary);
   font-family: var(--font-mono);
   font-size: 10px;
 }
@@ -834,18 +886,18 @@
   padding: 7px 0;
   border: none;
   background: transparent;
-  color: #b5a697;
+  color: var(--text-secondary);
   font-family: var(--font-interface);
   font-size: 11px;
   text-align: left;
   cursor: pointer;
 }
 
-.dace-app .desk-outline-list button:hover { color: #ff9900; }
+.dace-app .desk-outline-list button:hover { color: var(--accent-text); }
 
 .dace-app .outline-line {
   flex: 0 0 18px;
-  color: #77716b;
+  color: var(--text-muted);
   font-family: var(--font-mono);
   font-size: 9px;
 }
@@ -911,14 +963,14 @@
   border: 1px solid #292929;
   border-radius: 4px;
   background: #151515;
-  color: #b5a697;
+  color: var(--text-secondary);
   font-family: var(--font-mono);
   font-size: 9px;
   letter-spacing: 0.06em;
   cursor: pointer;
 }
 
-.dace-app .desk-graph-open:hover { color: #ff9900; border-color: #8a4a0a; }
+.dace-app .desk-graph-open:hover { color: var(--accent-text); border-color: rgba(var(--brand-blue-rgb), 0.5); }
 
 /* Empty desk */
 .dace-app .desk-empty-state {
@@ -933,7 +985,7 @@
 }
 
 .dace-app .desk-empty-heading {
-  color: #f4e9dd;
+  color: var(--text-primary);
   font-family: var(--font-editorial);
   font-size: clamp(38px, 4.6vw, 64px);
   font-weight: 400;
@@ -943,7 +995,7 @@
 
 .dace-app .desk-empty-sub {
   max-width: 480px;
-  color: #b5a697;
+  color: var(--text-secondary);
   font-family: var(--font-interface);
   font-size: 13px;
   line-height: 1.65;

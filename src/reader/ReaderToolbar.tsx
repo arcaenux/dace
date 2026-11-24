@@ -118,7 +118,9 @@ export const ReaderToolbar: FC<ReaderToolbarProps> = ({
   const commitPageDraft = () => {
     const parsed = Number.parseInt(pageDraft, 10);
     if (Number.isFinite(parsed)) {
-      onPageChange(Math.min(totalPages, Math.max(1, parsed)));
+      const clamped = Math.min(totalPages, Math.max(1, parsed));
+      setPageDraft(String(clamped));
+      onPageChange(clamped);
     } else {
       setPageDraft(String(currentPage));
     }
@@ -136,7 +138,9 @@ export const ReaderToolbar: FC<ReaderToolbarProps> = ({
   return (
     <header className="reader-toolbar" aria-label="Research Reader controls">
       <div className="reader-toolbar-group reader-toolbar-start">
-        <span className="reader-toolbar-brand">DACE</span>
+        {(isFocusSpace || showRestoreNavigation) && (
+          <span className="reader-toolbar-brand">DACE</span>
+        )}
 
         <div className="reader-toolbar-picker" ref={docPickerRef}>
           <button

@@ -91,7 +91,7 @@ export const ConnectExcerptModal: FC<ConnectExcerptModalProps> = ({
   };
 
   const handleLinkRecord = async () => {
-    if (!selectedRecordId) {
+    if (!effectiveSelectedRecordId) {
       onShowNotice("Please select a knowledge record to connect");
       return;
     }
@@ -100,7 +100,7 @@ export const ConnectExcerptModal: FC<ConnectExcerptModalProps> = ({
     try {
       await readerApi.linkHighlightToRecord(
         highlight.id,
-        selectedRecordId,
+        effectiveSelectedRecordId,
         commentary.trim() || null
       );
       onShowNotice("Excerpt connected to selected knowledge record");
@@ -116,7 +116,10 @@ export const ConnectExcerptModal: FC<ConnectExcerptModalProps> = ({
   const filteredRecords = existingRecords.filter((r) =>
     r.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
-  const canLinkSelectedRecord = filteredRecords.some((record) => record.id === selectedRecordId);
+  const effectiveSelectedRecordId = filteredRecords.some((r) => r.id === selectedRecordId)
+    ? selectedRecordId
+    : (filteredRecords[0]?.id ?? "");
+  const canLinkSelectedRecord = effectiveSelectedRecordId !== "";
 
   return (
     <div
@@ -234,7 +237,7 @@ export const ConnectExcerptModal: FC<ConnectExcerptModalProps> = ({
                 <select
                   className="card-note-edit"
                   style={{ minHeight: "36px", padding: "6px 8px" }}
-                  value={selectedRecordId}
+                  value={effectiveSelectedRecordId}
                   onChange={(e) => setSelectedRecordId(e.target.value)}
                 >
                   {filteredRecords.length === 0 ? (

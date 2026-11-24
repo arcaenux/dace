@@ -217,12 +217,12 @@ export function buildCommandList(ctx: CommandContext): CommandItem[] {
     {
       id: "system:settings",
       name: "Open Settings",
-      description: "Configure application preferences and local workspace options (planned)",
+      description: "Configure startup, workspace, editor, storage and backup preferences",
       category: "System",
-      available: false,
-      unavailabilityReason: "Planned for Milestone 6 (System Settings & Administration)",
+      shortcut: "Alt+5",
+      available: true,
       execute: () => {
-        ctx.setNotice("Settings panel is scheduled for Milestone 6.");
+        ctx.setActiveActivity("settings");
         ctx.closeOverlay();
       },
     },

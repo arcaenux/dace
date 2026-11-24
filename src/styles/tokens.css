@@ -1,44 +1,205 @@
 /* ==========================================================================
-   Dace — Canonical Cinematic Design Tokens
+   Dace — Design Foundation Tokens
+   Dace Blue is the original brand identity. The blue primitives below are
+   sampled from the supplied folded-ribbon mark (dominant #197BFA).
 
-   One permanent identity. No appearance modes, no theme scopes, and no
-   duplicated palettes. Colour, type, spacing, motion and state values are
-   defined exactly once and retargeted through semantic aliases only.
+   Token architecture:
+   1. Brand + neutral + status primitives (raw values)
+   2. Theme/appearance role tokens (semantic aliases)
+   3. Compatibility aliases for existing components
+   4. Typography, spacing, elevation and motion scales
+
+   Root hooks:
+   - data-theme="dace-blue"     selects a colour theme (default is Dace Blue)
+   - data-appearance="dark|light" selects an appearance (default is dark)
+   No selector or persisted preference is implemented in this milestone.
    ========================================================================== */
 
-:root {
-  /* ----------------------------------------------------------------------
-     Palette — supplied cinematic reference
-     ---------------------------------------------------------------------- */
-  --dace-black: #0b0b0b;
-  --dace-surface: #141414;
-  --dace-elevated: #1e1e1e;
-  --dace-active: #2a2a2a;
-  --dace-border: #2a2a2a;
-  --dace-ivory: #f8ede1;
-  --dace-sand: #cbb9a3;
-  --dace-muted: #8a8a8a;
-  --dace-amber: #ff8a00;
-  --dace-amber-bright: #ffab4d;
-  --dace-amber-deep: #8a4410;
-  --dace-danger: #ff4d4d;
+:root,
+:root[data-theme="dace-blue"],
+:root[data-appearance="dark"] {
+  color-scheme: dark;
 
-  /* ----------------------------------------------------------------------
-     Typography
-     ---------------------------------------------------------------------- */
-  --font-interface: "Space Grotesk Variable", "Space Grotesk", "Manrope Variable", Manrope, sans-serif;
+  /* ------------------------------------------------------------------
+     1. Brand primitives — sampled from the supplied mark
+     ------------------------------------------------------------------ */
+  --brand-blue-rgb: 25, 123, 250;
+  --brand-blue: rgb(var(--brand-blue-rgb));
+  --brand-blue-hover-rgb: 59, 140, 255;
+  --brand-blue-hover: rgb(var(--brand-blue-hover-rgb));
+  --brand-blue-text: #5AA6FF;
+  --brand-blue-strong-rgb: 10, 95, 216;
+  --brand-blue-strong: rgb(var(--brand-blue-strong-rgb));
+  --brand-blue-contrast: #FFFFFF;
+  --brand-blue-05: rgba(var(--brand-blue-rgb), 0.05);
+  --brand-blue-07: rgba(var(--brand-blue-rgb), 0.07);
+  --brand-blue-10: rgba(var(--brand-blue-rgb), 0.1);
+  --brand-blue-12: rgba(var(--brand-blue-rgb), 0.12);
+  --brand-blue-14: rgba(var(--brand-blue-rgb), 0.14);
+  --brand-blue-20: rgba(var(--brand-blue-rgb), 0.2);
+  --brand-blue-28: rgba(var(--brand-blue-rgb), 0.28);
+  --brand-blue-38: rgba(var(--brand-blue-rgb), 0.38);
+  --brand-blue-45: rgba(var(--brand-blue-rgb), 0.45);
+  --brand-blue-50: rgba(var(--brand-blue-rgb), 0.5);
+  --brand-blue-55: rgba(var(--brand-blue-rgb), 0.55);
+  --brand-blue-60: rgba(var(--brand-blue-rgb), 0.6);
+
+  /* ------------------------------------------------------------------
+     1b. Restrained cool-neutral primitives
+     ------------------------------------------------------------------ */
+  --neutral-0: #FFFFFF;
+  --neutral-50: #F7F9FC;
+  --neutral-100: #EFF3F9;
+  --neutral-200: #E2E8F2;
+  --neutral-300: #C4CDDB;
+  --neutral-300-rgb: 196, 205, 219;
+  --neutral-400: #98A3B5;
+  --neutral-500-rgb: 107, 119, 140;
+  --neutral-500: #6B778C;
+  --neutral-600: #3B475B;
+  --neutral-700: #2A3548;
+  --neutral-750: #202A3B;
+  --neutral-800: #1A2231;
+  --neutral-850: #151C29;
+  --neutral-900: #111722;
+  --neutral-950: #0B0F17;
+
+  /* ------------------------------------------------------------------
+     1c. Accessible status primitives (dark-appearance values)
+     ------------------------------------------------------------------ */
+  --status-info: #5AA6FF;
+  --status-success: #4ADE80;
+  --status-warning: #FBBF24;
+  --status-danger: #FF6B6B;
+  --status-success-rgb: 74, 222, 128;
+  --status-warning-rgb: 251, 191, 36;
+  --status-danger-rgb: 255, 107, 107;
+  --status-danger-contrast: #140D06;
+
+  /* ------------------------------------------------------------------
+     2. Surface, text and border roles
+     ------------------------------------------------------------------ */
+  --bg-app: var(--neutral-950);
+  --bg-surface: var(--neutral-900);
+  --bg-surface-elevated: var(--neutral-850);
+  --bg-surface-active: var(--neutral-800);
+  --bg-surface-subtle: rgba(255, 255, 255, 0.04);
+  --bg-selection: var(--brand-blue-20);
+  --bg-app-rgb: 11, 15, 23;
+  --bg-surface-rgb: 17, 23, 34;
+  --bg-surface-elevated-rgb: 21, 28, 41;
+
+  --text-primary: var(--neutral-200);
+  --text-normal: var(--neutral-200);
+  --text-secondary: var(--neutral-300);
+  --text-muted: var(--neutral-400);
+  --text-dim: var(--neutral-500);
+  --text-bright: var(--neutral-0);
+
+  --border-subtle: #243044;
+  --border-medium: #34415A;
+  --border-active: var(--brand-blue-45);
+  --border-dim: var(--border-subtle);
+  --border-hairline: 1px solid var(--border-subtle);
+  --border-focus: 1px solid var(--brand-blue-60);
+
+  --accent-primary: var(--brand-blue);
+  --accent-hover: var(--brand-blue-hover);
+  --accent-text: var(--brand-blue-text);
+  --accent-secondary: var(--brand-blue-strong);
+  --accent-muted: var(--brand-blue-14);
+  --accent-subtle: var(--brand-blue-07);
+  --accent-contrast: var(--brand-blue-contrast);
+  --accent-on-brand: #140D06;
+
+  /* Reserved note/interaction hues — kept distinct from the brand blue. */
+  --accent-pink: #E879A6;
+  --accent-pink-muted: rgba(232, 121, 166, 0.12);
+  --accent-violet: #A78BFA;
+  --accent-violet-muted: rgba(167, 139, 250, 0.12);
+  --accent-yellow: var(--status-warning);
+  --accent-yellow-muted: rgba(var(--status-warning-rgb), 0.12);
+
+  --badge-bg: rgba(255, 255, 255, 0.05);
+  --badge-text: var(--neutral-400);
+  --overlay-backdrop: rgba(3, 7, 18, 0.78);
+
+  /* ------------------------------------------------------------------
+     3. Interaction, focus and status roles
+     ------------------------------------------------------------------ */
+  --state-hover: rgba(226, 232, 242, 0.06);
+  --state-active: rgba(226, 232, 242, 0.1);
+  --state-selected: var(--brand-blue-12);
+  --state-disabled: 0.4;
+  --state-focus-ring: 0 0 0 2px var(--bg-app), 0 0 0 3px var(--brand-blue-55);
+  --input-focus-border: var(--brand-blue-text);
+  --input-focus-ring: 0 0 0 1px var(--brand-blue-28);
+
+  --danger: var(--status-danger);
+  --danger-border: rgba(var(--status-danger-rgb), 0.45);
+  --danger-subtle: rgba(var(--status-danger-rgb), 0.1);
+
+  /* Research highlights — subdued, legible tints over dark surfaces. */
+  --hl-important-bg: var(--brand-blue-12);
+  --hl-important-border: var(--brand-blue-50);
+  --hl-important-text: #9CC7FF;
+  --hl-question-bg: var(--accent-violet-muted);
+  --hl-question-border: rgba(167, 139, 250, 0.45);
+  --hl-question-text: #CFC3FF;
+  --hl-insight-bg: rgba(var(--status-success-rgb), 0.12);
+  --hl-insight-border: rgba(var(--status-success-rgb), 0.45);
+  --hl-insight-text: #A7F3C4;
+  --hl-definition-bg: rgba(var(--status-warning-rgb), 0.11);
+  --hl-definition-border: rgba(var(--status-warning-rgb), 0.4);
+  --hl-definition-text: #FDE3A7;
+
+  /* ------------------------------------------------------------------
+     4. Compatibility aliases — deprecated; existing components keep working.
+        New code should use the semantic roles above.
+     ------------------------------------------------------------------ */
+  --dace-black: var(--bg-app);
+  --dace-surface: var(--bg-surface);
+  --dace-elevated: var(--bg-surface-elevated);
+  --dace-active: var(--bg-surface-active);
+  --dace-border: var(--border-subtle);
+  --dace-ivory: var(--text-primary);
+  --dace-sand: var(--text-secondary);
+  --dace-muted: var(--text-muted);
+  --dace-amber: var(--accent-primary);
+  --dace-amber-bright: var(--accent-hover);
+  --dace-amber-deep: var(--accent-secondary);
+  --dace-danger: var(--status-danger);
+
+  --type-lg: 16px;
+
+  --brand-symbol-radius: 4px;
+  --brand-symbol-shadow: none;
+  --brand-symbol-color: var(--neutral-400);
+
+  --shadow-subtle: 0 1px 3px rgba(2, 6, 23, 0.4);
+  --shadow-elevated: 0 12px 32px rgba(2, 6, 23, 0.62), 0 1px 3px rgba(2, 6, 23, 0.4);
+  --glow-accent: none;
+  --glow-soft: none;
+  --glow-pink: none;
+  --glow-yellow: none;
+  --ambient-veil: none;
+
+  /* ------------------------------------------------------------------
+     5. Typography — friendly study mode (Manrope UI + Newsreader study)
+     ------------------------------------------------------------------ */
+  --font-interface: "Manrope Variable", Manrope, "Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-sans: var(--font-interface);
-  --font-display: "Space Grotesk Variable", "Space Grotesk", "Manrope Variable", sans-serif;
-  --font-editorial: "Newsreader Variable", Newsreader, "Cormorant Garamond", Garamond, Georgia, serif;
-  --font-quotation: "Newsreader Variable", Newsreader, "Cormorant Garamond", Georgia, serif;
+  --font-display: "Manrope Variable", Manrope, "Space Grotesk", sans-serif;
+  --font-editorial: "Newsreader Variable", Newsreader, Georgia, serif;
+  --font-quotation: "Newsreader Variable", Newsreader, Georgia, serif;
   --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
-  --letter-spacing-display: -0.035em;
-  --letter-spacing-editorial: -0.018em;
-  --letter-spacing-interface: -0.006em;
-  --letter-spacing-quote: 0.01em;
-  --letter-spacing-caps: 0.07em;
-  --letter-spacing-overline: 0.18em;
+  --letter-spacing-display: -0.02em;
+  --letter-spacing-editorial: -0.01em;
+  --letter-spacing-interface: -0.005em;
+  --letter-spacing-quote: 0;
+  --letter-spacing-caps: 0.04em;
+  --letter-spacing-overline: 0.08em;
 
   --font-weight-regular: 400;
   --font-weight-medium: 500;
@@ -51,27 +212,27 @@
   --font-size-base: 0.875rem;
   --font-size-md: 0.9375rem;
   --font-size-lg: 1.125rem;
-  --font-size-xl: 1.375rem;
-  --font-size-2xl: 1.75rem;
-  --font-size-3xl: 2.5rem;
-  --font-size-4xl: 3.75rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 2rem;
+  --font-size-4xl: 2.75rem;
 
-  --type-micro: 9px;
-  --type-mono: 10px;
-  --type-small: 11px;
+  --type-micro: 10px;
+  --type-mono: 11px;
+  --type-small: 12px;
   --type-body: 13px;
-  --type-lede: clamp(15px, 1.12vw, 18px);
-  --type-section: clamp(20px, 1.35vw, 23px);
-  --type-clock: clamp(38px, 3.25vw, 54px);
-  --type-display: clamp(74px, 8.2vw, 138px);
+  --type-lede: 16px;
+  --type-section: 18px;
+  --type-clock: 32px;
+  --type-display: clamp(36px, 4vw, 54px);
 
   --line-height-tight: 1.25;
   --line-height-normal: 1.5;
   --line-height-relaxed: 1.65;
 
-  /* ----------------------------------------------------------------------
-     Spacing & layout
-     ---------------------------------------------------------------------- */
+  /* ------------------------------------------------------------------
+     6. Spacing and layout
+     ------------------------------------------------------------------ */
   --space-1: 0.25rem;
   --space-2: 0.5rem;
   --space-3: 0.75rem;
@@ -88,106 +249,119 @@
   --space-18: 4.5rem;
 
   --layout-rail: 84px;
-  --layout-topbar: 70px;
-  --layout-content-max: 1320px;
-  --layout-gutter: clamp(20px, 3vw, 44px);
+  --layout-topbar: 48px;
+  --layout-content-max: 1200px;
+  --layout-gutter: clamp(16px, 2.5vw, 32px);
   --layout-panel: 340px;
 
-  /* ----------------------------------------------------------------------
-     Radii, borders, surfaces & state
-     ---------------------------------------------------------------------- */
-  --radius-xs: 4px;
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 22px;
+  --control-height-sm: 28px;
+  --control-height-md: 34px;
+  --control-height-lg: 40px;
+
+  --z-stage: 1;
+  --z-rail: 60;
+  --z-drag-region: 65;
+  --z-topbar: 70;
+  --z-floating: 80;
+  --z-window-controls: 500;
+  --z-backdrop: 1000;
+  --z-modal: 1010;
+  --z-dropdown: 1100;
+  --z-popover: 1150;
+  --z-toast: 1200;
+
+  --radius-xs: 3px;
+  --radius-sm: 5px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
   --radius-pill: 999px;
   --radius-full: 50%;
 
-  --border-hairline: 1px solid var(--dace-border);
-  --border-focus: 1px solid rgba(255, 138, 0, 0.55);
-  --border-dim: var(--dace-border);
+  /* ------------------------------------------------------------------
+     7. Motion — purposeful, short, lightweight
+     ------------------------------------------------------------------ */
+  --duration-fast: 100ms;
+  --duration-normal: 180ms;
+  --duration-slow: 280ms;
+  --duration-ambient: 0ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-enter: cubic-bezier(0.2, 0, 0, 1);
+  --motion-drift: none;
+}
 
-  --bg-app: var(--dace-black);
-  --bg-surface: var(--dace-surface);
-  --bg-surface-elevated: var(--dace-elevated);
-  --bg-surface-active: var(--dace-active);
-  --bg-surface-subtle: rgba(248, 237, 225, 0.035);
-  --bg-selection: rgba(255, 138, 0, 0.2);
+/* -------------------------------------------------------------------------
+   Future light appearance hook. Inactive until data-appearance="light" is
+   set by a future, separately reviewed milestone.
+   ------------------------------------------------------------------------- */
+:root[data-appearance="light"] {
+  color-scheme: light;
 
-  --text-primary: var(--dace-ivory);
-  --text-secondary: var(--dace-sand);
-  --text-muted: var(--dace-muted);
-  --text-dim: #5c5c5c;
-  --text-bright: #fffaf4;
-  --text-normal: var(--dace-ivory);
+  --brand-blue-rgb: 10, 95, 216;
+  --brand-blue-hover-rgb: 8, 80, 188;
+  --brand-blue-text: #0A5FD8;
+  --brand-blue-strong-rgb: 6, 71, 168;
+  --brand-blue-strong: rgb(var(--brand-blue-strong-rgb));
+  --brand-blue-contrast: #FFFFFF;
+  --accent-on-brand: #FFFFFF;
 
-  --accent-primary: var(--dace-amber);
-  --accent-hover: var(--dace-amber-bright);
-  --accent-muted: rgba(255, 138, 0, 0.15);
-  --accent-secondary: var(--dace-amber-deep);
-  --accent-subtle: rgba(255, 138, 0, 0.08);
-  --accent-text: var(--dace-amber);
-  --accent-pink: var(--dace-amber);
-  --accent-pink-muted: rgba(255, 138, 0, 0.14);
-  --accent-violet: var(--dace-amber-deep);
-  --accent-violet-muted: rgba(138, 68, 16, 0.18);
-  --accent-yellow: var(--dace-amber-bright);
-  --accent-yellow-muted: rgba(255, 171, 77, 0.16);
+  --bg-app: var(--neutral-50);
+  --bg-surface: var(--neutral-0);
+  --bg-surface-elevated: var(--neutral-100);
+  --bg-surface-active: var(--neutral-200);
+  --bg-surface-subtle: rgba(15, 23, 42, 0.035);
+  --bg-selection: rgba(10, 95, 216, 0.14);
+  --bg-app-rgb: 247, 249, 252;
+  --bg-surface-rgb: 255, 255, 255;
+  --bg-surface-elevated-rgb: 239, 243, 249;
 
-  --badge-bg: rgba(255, 138, 0, 0.1);
-  --badge-text: var(--dace-sand);
-  --overlay-backdrop: rgba(5, 5, 5, 0.82);
+  --text-primary: var(--neutral-900);
+  --text-normal: var(--neutral-900);
+  --text-secondary: #334155;
+  --text-muted: #64748B;
+  --text-dim: #94A3B8;
+  --text-bright: var(--neutral-950);
 
-  --shadow-subtle: 0 2px 12px rgba(0, 0, 0, 0.45);
-  --shadow-elevated: 0 24px 70px rgba(0, 0, 0, 0.72), 0 2px 10px rgba(0, 0, 0, 0.5);
-  --glow-accent: 0 0 24px rgba(255, 138, 0, 0.18);
-  --glow-soft: 0 0 60px rgba(255, 138, 0, 0.1);
-  --glow-pink: 0 0 18px rgba(255, 138, 0, 0.12);
-  --glow-yellow: 0 0 22px rgba(255, 171, 77, 0.15);
-  --ambient-veil: radial-gradient(circle at 74% 18%, rgba(255, 138, 0, 0.11), transparent 42%);
+  --border-subtle: #D7DEEA;
+  --border-medium: #BCC7D8;
+  --border-active: rgba(10, 95, 216, 0.42);
+  --border-dim: var(--border-subtle);
+  --border-focus: 1px solid rgba(10, 95, 216, 0.58);
 
-  --brand-symbol-radius: 50%;
-  --brand-symbol-shadow: 0 0 0 2px var(--dace-border);
-  --brand-symbol-color: var(--dace-sand);
+  --badge-bg: rgba(15, 23, 42, 0.05);
+  --badge-text: #475569;
+  --overlay-backdrop: rgba(15, 23, 42, 0.34);
 
-  --state-hover: rgba(255, 237, 225, 0.045);
-  --state-active: rgba(255, 138, 0, 0.12);
-  --state-selected: rgba(255, 138, 0, 0.16);
-  --state-disabled: 0.42;
-  --state-focus-ring: 0 0 0 2px rgba(255, 138, 0, 0.55);
+  --state-hover: rgba(15, 23, 42, 0.05);
+  --state-active: rgba(15, 23, 42, 0.09);
+  --state-selected: rgba(10, 95, 216, 0.1);
+  --state-focus-ring: 0 0 0 2px var(--bg-app), 0 0 0 3px rgba(10, 95, 216, 0.5);
+  --input-focus-border: #0A5FD8;
+  --input-focus-ring: 0 0 0 1px rgba(10, 95, 216, 0.22);
 
-  --status-danger: var(--dace-danger);
-  --status-warning: #ffb547;
-  --status-success: #7fd6a3;
-  --danger: var(--dace-danger);
-  --danger-border: rgba(255, 77, 77, 0.55);
-  --danger-subtle: rgba(255, 77, 77, 0.1);
+  --status-info: #0A5FD8;
+  --status-success: #047857;
+  --status-warning: #B45309;
+  --status-danger: #B42318;
+  --status-success-rgb: 4, 120, 87;
+  --status-warning-rgb: 180, 83, 9;
+  --status-danger-rgb: 180, 35, 24;
+  --status-danger-contrast: #FFFFFF;
 
-  /* Research highlights — warm cinematic family */
-  --hl-important-bg: rgba(255, 138, 0, 0.2);
-  --hl-important-border: rgba(255, 138, 0, 0.7);
-  --hl-important-text: #ffc07a;
-  --hl-question-bg: rgba(203, 185, 163, 0.18);
-  --hl-question-border: rgba(203, 185, 163, 0.6);
-  --hl-question-text: #e6d8c7;
-  --hl-insight-bg: rgba(127, 214, 163, 0.16);
-  --hl-insight-border: rgba(127, 214, 163, 0.55);
-  --hl-insight-text: #a9e5c5;
-  --hl-definition-bg: rgba(255, 171, 77, 0.14);
-  --hl-definition-border: rgba(255, 171, 77, 0.5);
-  --hl-definition-text: #ffd3a1;
+  --accent-pink: #BE185D;
+  --accent-pink-muted: rgba(190, 24, 93, 0.1);
+  --accent-violet: #6D28D9;
+  --accent-violet-muted: rgba(109, 40, 217, 0.1);
 
-  /* ----------------------------------------------------------------------
-     Motion
-     ---------------------------------------------------------------------- */
-  --duration-fast: 140ms;
-  --duration-normal: 240ms;
-  --duration-slow: 420ms;
-  --duration-ambient: 18s;
-  --ease-standard: cubic-bezier(0.22, 1, 0.36, 1);
-  --ease-enter: cubic-bezier(0.16, 1, 0.3, 1);
-  --motion-drift: 18s ease-in-out infinite alternate;
+  --hl-important-text: #0A5FD8;
+  --hl-question-border: rgba(109, 40, 217, 0.38);
+  --hl-question-text: #5B21B6;
+  --hl-insight-text: #047857;
+  --hl-definition-text: #92400E;
+
+  --brand-symbol-color: #64748B;
+  --shadow-subtle: 0 1px 3px rgba(15, 23, 42, 0.1);
+  --shadow-elevated: 0 12px 32px rgba(15, 23, 42, 0.16), 0 1px 3px rgba(15, 23, 42, 0.1);
 }
 
 @media (prefers-reduced-motion: reduce) {

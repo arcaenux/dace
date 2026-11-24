@@ -8,8 +8,10 @@
 .dace-app .knowledge-desk-root,
 .dace-app .research-reader-container,
 .dace-app .knowledge-graph-container {
-  padding-top: var(--top-plane);
-  padding-left: var(--rail-plane);
+  width: 100%;
+  height: 100%;
+  padding-top: 0;
+  padding-left: 0;
 }/* Knowledge Desk presentation now lives in knowledge-desk.css so the
    writing canvas and its contextual rail can be styled as one system. */
 
@@ -18,24 +20,22 @@
    -------------------------------------------------------------------------- */
 .dace-app .research-reader-container,
 .dace-app .reader-workspace-area {
-  background:
-    radial-gradient(circle at 50% -10%, rgba(255, 138, 0, 0.03), transparent 42%),
-    var(--bg-app);
+  background: var(--bg-app);
 }.dace-app .reader-header {
   height: 58px;
   padding: 0 clamp(18px, 2.6vw, 38px);
   background: rgba(11, 11, 11, 0.62);
-  border-bottom: 1px solid rgba(203, 185, 163, 0.09);
+  border-bottom: 1px solid rgba(var(--neutral-300-rgb), 0.09);
   backdrop-filter: blur(18px);
 }.dace-app .reader-doc-select-btn,
 .dace-app .reader-nav-btn,
 .dace-app .reader-action-btn,
 .dace-app .reader-page-input,
 .dace-app .activity-dropdown {
-  border: 1px solid rgba(203, 185, 163, 0.14);
+  border: 1px solid rgba(var(--neutral-300-rgb), 0.14);
   border-radius: 6px;
   background: rgba(20, 20, 20, 0.62);
-  color: var(--dace-sand);
+  color: var(--text-secondary);
   font-family: var(--font-mono);
   font-size: var(--type-mono);
   letter-spacing: 0.06em;
@@ -44,17 +44,17 @@
   font-family: var(--font-display);
   font-size: var(--type-body);
   letter-spacing: -0.01em;
-  color: var(--dace-ivory);
+  color: var(--text-primary);
 }.dace-app .reader-doc-select-btn:hover,
 .dace-app .reader-nav-btn:hover,
 .dace-app .reader-action-btn:hover {
-  border-color: rgba(255, 138, 0, 0.5);
-  color: var(--dace-amber);
-  background: rgba(255, 138, 0, 0.06);
+  border-color: rgba(var(--brand-blue-rgb), 0.5);
+  color: var(--accent-text);
+  background: rgba(var(--brand-blue-rgb), 0.06);
 }.dace-app .reader-action-btn.active {
-  border-color: rgba(255, 138, 0, 0.6);
-  background: rgba(255, 138, 0, 0.12);
-  color: var(--dace-amber);
+  border-color: rgba(var(--brand-blue-rgb), 0.6);
+  background: rgba(var(--brand-blue-rgb), 0.12);
+  color: var(--accent-text);
 }.dace-app .reader-page-indicator {
   font-family: var(--font-mono);
   font-size: var(--type-mono);
@@ -65,18 +65,18 @@
   border: none;
   border-radius: 0;
   background:
-    radial-gradient(ellipse at 50% 0%, rgba(255, 138, 0, 0.035), transparent 55%),
+    radial-gradient(ellipse at 50% 0%, rgba(var(--brand-blue-rgb), 0.035), transparent 55%),
     linear-gradient(180deg, #0a0a0a, #060606);
   box-shadow: none;
 }.dace-app .reader-viewport.distraction-free { background: #050505; }.dace-app .pdf-page-container {
   border-radius: 3px;
-  box-shadow: 0 20px 70px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(203, 185, 163, 0.08);
+  box-shadow: 0 20px 70px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(var(--neutral-300-rgb), 0.08);
 }.dace-app .reader-drawer {
   background: rgba(11, 11, 11, 0.96);
-  border-left: 1px solid rgba(203, 185, 163, 0.1);
+  border-left: 1px solid rgba(var(--neutral-300-rgb), 0.1);
   box-shadow: -24px 0 60px rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(20px);
-}.dace-app .reader-drawer-tabs { background: rgba(11, 11, 11, 0.6); border-bottom: 1px solid rgba(203, 185, 163, 0.1); }.dace-app .drawer-tab { font-family: var(--font-mono); font-size: var(--type-micro); letter-spacing: 0.14em; }.dace-app .drawer-tab.active { color: var(--dace-amber); border-bottom-color: var(--dace-amber); }.dace-app .drawer-close-btn {
+}.dace-app .reader-drawer-tabs { background: rgba(11, 11, 11, 0.6); border-bottom: 1px solid rgba(var(--neutral-300-rgb), 0.1); }.dace-app .drawer-tab { font-family: var(--font-mono); font-size: var(--type-micro); letter-spacing: 0.14em; }.dace-app .drawer-tab.active { color: var(--accent-text); border-bottom-color: var(--accent-primary); }.dace-app .drawer-close-btn {
   flex: 0 0 36px;
   display: inline-grid;
   place-items: center;
@@ -90,49 +90,40 @@
   cursor: pointer;
   transition: color var(--duration-fast) var(--ease-standard), background-color var(--duration-fast) var(--ease-standard);
 }.dace-app .drawer-close-btn:hover {
-  color: var(--dace-amber);
-  background: rgba(255, 138, 0, 0.07);
+  color: var(--accent-text);
+  background: rgba(var(--brand-blue-rgb), 0.07);
 }.dace-app .annotation-card,
 .dace-app .card-quote,
 .dace-app .excerpt-quote-text,
 .dace-app .record-excerpt-quote {
-  border: 1px solid rgba(203, 185, 163, 0.12);
+  border: 1px solid rgba(var(--neutral-300-rgb), 0.12);
   border-radius: 7px;
   background: rgba(20, 20, 20, 0.65);
 }.dace-app .card-note-area,
 .dace-app .card-note-edit,
 .dace-app .excerpt-commentary {
-  border: 1px solid rgba(203, 185, 163, 0.14);
+  border: 1px solid rgba(var(--neutral-300-rgb), 0.14);
   border-radius: 6px;
   background: rgba(11, 11, 11, 0.7);
-  color: var(--dace-ivory);
-}.dace-app .card-action-link { color: var(--dace-amber); font-family: var(--font-mono); font-size: var(--type-micro); letter-spacing: 0.08em; }.dace-app .floating-selection-toolbar,
+  color: var(--text-primary);
+}.dace-app .card-action-link { color: var(--accent-text); font-family: var(--font-mono); font-size: var(--type-micro); letter-spacing: 0.08em; }.dace-app .floating-selection-toolbar,
 .dace-app .scanned-pdf-banner {
-  border: 1px solid rgba(255, 138, 0, 0.45);
+  border: 1px solid rgba(var(--brand-blue-rgb), 0.45);
   border-radius: 8px;
   background: rgba(16, 12, 7, 0.96);
-  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.6), 0 0 24px rgba(255, 138, 0, 0.08);
-}.dace-app .markdown-reader-content { color: var(--dace-sand); line-height: 1.8; }.dace-app .markdown-reader-content h1,
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.6), 0 0 24px rgba(var(--brand-blue-rgb), 0.08);
+}.dace-app .markdown-reader-content { color: var(--text-secondary); line-height: 1.8; }.dace-app .markdown-reader-content h1,
 .dace-app .markdown-reader-content h2,
 .dace-app .markdown-reader-content h3 {
-  color: var(--dace-ivory);
+  color: var(--text-primary);
   font-family: var(--font-display);
   font-weight: 500;
 }/* --------------------------------------------------------------------------
    Knowledge Graph — the canvas is the workspace
    -------------------------------------------------------------------------- */
 .dace-app .knowledge-graph-container {
-  background:
-    radial-gradient(circle at 70% 12%, rgba(255, 138, 0, 0.055), transparent 40%),
-    url("../assets/images/textures/starfield.webp") center / 900px 900px repeat,
-    #060606;
-}.dace-app .knowledge-graph-canvas { border-radius: 0; }.dace-app .knowledge-graph-container::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: radial-gradient(ellipse at 50% 50%, transparent 52%, rgba(0, 0, 0, 0.42) 100%);
-}/* The component uses .graph-floating-search-bar / .graph-search-input-wrap —
+  background: var(--bg-app);
+}.dace-app .knowledge-graph-canvas { border-radius: 0; }/* The component uses .graph-floating-search-bar / .graph-search-input-wrap —
    style them explicitly so the floating search is never an unstyled box. */
 .dace-app .graph-floating-search-bar {
   position: absolute;
@@ -152,17 +143,17 @@
   gap: 10px;
   height: 44px;
   padding: 0 14px;
-  border: 1px solid rgba(203, 185, 163, 0.16);
+  border: 1px solid rgba(var(--neutral-300-rgb), 0.16);
   border-radius: 8px;
   background: rgba(11, 11, 11, 0.86);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
   backdrop-filter: blur(16px);
   transition: border-color var(--duration-normal), box-shadow var(--duration-normal);
 }.dace-app .graph-search-input-wrap:focus-within {
-  border-color: rgba(255, 138, 0, 0.55);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), 0 0 22px rgba(255, 138, 0, 0.09);
+  border-color: rgba(var(--brand-blue-rgb), 0.55);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), 0 0 22px rgba(var(--brand-blue-rgb), 0.09);
 }.dace-app .graph-floating-search-bar .search-icon {
-  color: var(--dace-amber);
+  color: var(--accent-text);
   font-size: var(--type-body);
   line-height: 1;
 }.dace-app .graph-search-input {
@@ -171,51 +162,52 @@
   border: none;
   outline: none;
   background: transparent;
-  color: var(--dace-ivory);
+  color: var(--text-primary);
   font-family: var(--font-interface);
   font-size: var(--type-body);
-}.dace-app .graph-search-input::placeholder { color: rgba(203, 185, 163, 0.42); }.dace-app .search-clear-btn {
+}.dace-app .graph-search-input::placeholder { color: rgba(var(--neutral-300-rgb), 0.42); }.dace-app .search-clear-btn {
   border: none;
   background: transparent;
   color: var(--text-muted);
   font-size: 16px;
   line-height: 1;
   cursor: pointer;
-}.dace-app .search-clear-btn:hover { color: var(--dace-amber); }.dace-app .graph-search-dropdown {
+}.dace-app .search-clear-btn:hover { color: var(--accent-text); }.dace-app .graph-search-dropdown {
   margin-top: 8px;
-  border: 1px solid rgba(203, 185, 163, 0.14);
+  border: 1px solid rgba(var(--neutral-300-rgb), 0.14);
   border-radius: 8px;
   background: rgba(11, 11, 11, 0.95);
   box-shadow: 0 16px 44px rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(16px);
-  overflow: hidden;
+  overflow-y: auto;
 }.dace-app .search-result-item {
   padding: 10px 14px;
   border: 1px solid transparent;
-  border-bottom-color: rgba(203, 185, 163, 0.08);
+  border-bottom-color: rgba(var(--neutral-300-rgb), 0.08);
   cursor: pointer;
 }.dace-app .search-result-item:last-child { border-bottom-color: transparent; }.dace-app .search-result-item:hover {
-  border-color: rgba(255, 138, 0, 0.35);
-  background: rgba(255, 138, 0, 0.07);
-}.dace-app .result-title { font-family: var(--font-display); font-size: var(--type-body); color: var(--dace-ivory); }.dace-app .result-preview { font-size: var(--type-mono); color: var(--text-muted); }.dace-app .graph-top-actions {
+  border-color: rgba(var(--brand-blue-rgb), 0.35);
+  background: rgba(var(--brand-blue-rgb), 0.07);
+}.dace-app .result-title { font-family: var(--font-display); font-size: var(--type-body); color: var(--text-primary); }.dace-app .result-preview { font-size: var(--type-mono); color: var(--text-muted); }.dace-app .graph-top-actions {
   position: absolute;
-  top: 26px;
-  right: 26px;
+  top: 20px;
+  right: 24px;
   z-index: 15;
 }.dace-app .graph-top-actions .desk-btn {
-  height: 38px;
-  padding: 0 14px;
-  border: 1px solid rgba(255, 138, 0, 0.45);
-  border-radius: 7px;
-  background: rgba(255, 138, 0, 0.1);
-  color: var(--dace-amber);
-  font-family: var(--font-mono);
-  font-size: var(--type-mono);
-  letter-spacing: 0.08em;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid rgba(var(--brand-blue-rgb), 0.45);
+  border-radius: var(--radius-sm);
+  background: rgba(var(--brand-blue-rgb), 0.12);
+  color: var(--accent-text);
+  font-family: var(--font-interface);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  letter-spacing: 0;
 }.dace-app .graph-top-actions .desk-btn:hover {
-  border-color: var(--dace-amber);
-  background: rgba(255, 138, 0, 0.18);
-  box-shadow: 0 0 24px rgba(255, 138, 0, 0.12);
+  border-color: var(--accent-primary);
+  background: rgba(var(--brand-blue-rgb), 0.2);
+  box-shadow: none;
 }.dace-app .graph-viewport-controls {
   position: absolute;
   left: 26px;
@@ -226,33 +218,35 @@
 }.dace-app .graph-control-btn {
   width: 38px;
   height: 38px;
-  border: 1px solid rgba(203, 185, 163, 0.14);
+  border: 1px solid rgba(var(--neutral-300-rgb), 0.14);
   border-radius: 7px;
   background: rgba(11, 11, 11, 0.84);
-  color: var(--dace-sand);
+  color: var(--text-secondary);
   font-family: var(--font-mono);
   font-size: var(--type-body);
   backdrop-filter: blur(12px);
 }.dace-app .graph-control-btn:hover {
-  border-color: rgba(255, 138, 0, 0.5);
-  color: var(--dace-amber);
-  background: rgba(255, 138, 0, 0.08);
+  border-color: rgba(var(--brand-blue-rgb), 0.5);
+  color: var(--accent-text);
+  background: rgba(var(--brand-blue-rgb), 0.08);
 }.dace-app .graph-contextual-card {
   right: 26px;
   bottom: 26px;
   width: min(340px, calc(100% - 52px));
+  max-height: min(70vh, 520px);
+  overflow-y: auto;
   padding: 18px;
-  border: 1px solid rgba(203, 185, 163, 0.14);
+  border: 1px solid rgba(var(--neutral-300-rgb), 0.14);
   border-radius: 10px;
   background: rgba(11, 11, 11, 0.94);
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.65);
   backdrop-filter: blur(18px);
   animation: cinema-enter 260ms var(--ease-enter) both;
 }.dace-app .graph-contextual-card .card-top { display: flex; align-items: center; justify-content: space-between; }.dace-app .graph-contextual-card .card-badge {
-  border: 1px solid rgba(255, 138, 0, 0.35);
+  border: 1px solid rgba(var(--brand-blue-rgb), 0.35);
   border-radius: 4px;
-  background: rgba(255, 138, 0, 0.08);
-  color: var(--dace-amber);
+  background: rgba(var(--brand-blue-rgb), 0.08);
+  color: var(--accent-text);
   font-family: var(--font-mono);
   font-size: var(--type-micro);
   letter-spacing: 0.14em;
@@ -262,44 +256,73 @@
   font-size: 17px;
   font-weight: 500;
   letter-spacing: -0.02em;
-  color: var(--dace-ivory);
-}.dace-app .graph-contextual-card .card-preview { font-size: var(--type-small); line-height: 1.6; color: var(--dace-sand); }.dace-app .connections-heading { font-family: var(--font-mono); font-size: var(--type-micro); letter-spacing: 0.1em; color: var(--text-muted); }.dace-app .connected-chip {
-  border: 1px solid rgba(203, 185, 163, 0.14);
+  color: var(--text-primary);
+}.dace-app .graph-contextual-card .card-preview { font-size: var(--type-small); line-height: 1.6; color: var(--text-secondary); }.dace-app .connections-heading { font-family: var(--font-mono); font-size: var(--type-micro); letter-spacing: 0.1em; color: var(--text-muted); }.dace-app .connected-chip {
+  border: 1px solid rgba(var(--neutral-300-rgb), 0.14);
   border-radius: 4px;
   background: rgba(20, 20, 20, 0.7);
-  color: var(--dace-sand);
+  color: var(--text-secondary);
   font-family: var(--font-mono);
   font-size: var(--type-micro);
   cursor: pointer;
-}.dace-app .connected-chip.outgoing { border-color: rgba(255, 138, 0, 0.35); }.dace-app .connected-chip .chip-type { border: none; background: transparent; color: var(--dace-amber); padding: 0; }.dace-app .graph-empty-overlay { background: rgba(6, 6, 6, 0.62); backdrop-filter: blur(4px); }.dace-app .graph-empty-card {
-  border: 1px solid rgba(203, 185, 163, 0.12);
+}.dace-app .connected-chip.outgoing { border-color: rgba(var(--brand-blue-rgb), 0.35); }.dace-app .connected-chip .chip-type { border: none; background: transparent; color: var(--accent-text); padding: 0; }.dace-app .graph-empty-overlay { background: rgba(6, 6, 6, 0.62); backdrop-filter: blur(4px); }.dace-app .graph-empty-card {
+  border: 1px solid rgba(var(--neutral-300-rgb), 0.12);
   border-radius: 12px;
   background: rgba(11, 11, 11, 0.92);
   padding: 38px;
   text-align: center;
-}.dace-app .empty-constellation-icon { color: var(--dace-amber); font-size: 28px; }.dace-app .empty-heading { font-family: var(--font-display); font-size: 22px; font-weight: 500; color: var(--dace-ivory); }.dace-app .empty-sub { max-width: 380px; font-size: var(--type-body); line-height: 1.6; color: var(--dace-sand); }/* --------------------------------------------------------------------------
+}.dace-app .empty-constellation-icon { color: var(--accent-text); font-size: 28px; }.dace-app .empty-heading { font-family: var(--font-display); font-size: 22px; font-weight: 500; color: var(--text-primary); }.dace-app .empty-sub { max-width: 380px; font-size: var(--type-body); line-height: 1.6; color: var(--text-secondary); }/* --------------------------------------------------------------------------
    Focus space — only the document and a quiet exit
    -------------------------------------------------------------------------- */
 .dace-app .focus-space-container {
-  background:
-    radial-gradient(circle at 78% 8%, rgba(255, 138, 0, 0.035), transparent 40%),
-    var(--bg-app);
-}.dace-app .focus-ambient-trigger { top: 20px; right: 24px; opacity: 0.2; transition: opacity var(--duration-normal); }.dace-app .focus-ambient-trigger:hover { opacity: 0.9; }.dace-app .focus-exit-btn {
-  height: 34px;
-  padding: 0 12px;
-  border: 1px solid rgba(203, 185, 163, 0.16);
-  border-radius: 7px;
-  background: rgba(11, 11, 11, 0.82);
-  color: var(--dace-sand);
-  font-family: var(--font-mono);
-  font-size: var(--type-micro);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  backdrop-filter: blur(12px);
-}.dace-app .focus-exit-btn:hover {
-  border-color: rgba(255, 138, 0, 0.5);
-  color: var(--dace-amber);
-  background: rgba(255, 138, 0, 0.08);
+  background: var(--bg-app);
+}
+.dace-app .focus-ambient-trigger {
+  position: absolute;
+  top: 10px;
+  right: calc(var(--window-control-space) + 16px);
+  z-index: var(--z-floating);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  opacity: 0.35;
+  transition: opacity var(--duration-normal);
+}
+.dace-app .focus-ambient-trigger:hover,
+.dace-app .focus-ambient-trigger:focus-within {
+  opacity: 1;
+}
+.dace-app .focus-exit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  font-family: var(--font-interface);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  backdrop-filter: none;
+  cursor: pointer;
+}
+.dace-app .focus-exit-btn:hover {
+  border-color: rgba(var(--brand-blue-rgb), 0.5);
+  color: var(--accent-text);
+  background: rgba(var(--brand-blue-rgb), 0.08);
+}
+.dace-app .focus-space-container .home-workspace {
+  padding-top: 64px;
+}
+.dace-app .workspace-stage.focus-active .graph-floating-search-bar {
+  top: 56px;
+}
+.dace-app .workspace-stage.focus-active .graph-top-actions {
+  top: 56px;
 }/* Planned modules keep the same grammar */
 .dace-app .activity-placeholder {
   display: flex;
@@ -313,7 +336,7 @@
   background: transparent;
   box-shadow: none;
   text-align: left;
-}.dace-app .activity-title { font-family: var(--font-display); font-size: 26px; font-weight: 500; letter-spacing: -0.03em; color: var(--dace-ivory); }.dace-app .activity-desc { font-family: var(--font-editorial); font-size: 14px; line-height: 1.6; color: var(--dace-sand); }
+}.dace-app .activity-title { font-family: var(--font-display); font-size: 26px; font-weight: 500; letter-spacing: -0.03em; color: var(--text-primary); }.dace-app .activity-desc { font-family: var(--font-editorial); font-size: 14px; line-height: 1.6; color: var(--text-secondary); }
 
 /* Responsive internal workspaces */
 @media (max-width: 1080px) {.dace-app .desk-workspace { flex-direction: column; }.dace-app .editor-scroll-area { overflow-y: auto; padding: 28px clamp(20px, 5vw, 48px) 16px; }.dace-app .editor-document { max-width: 720px; }.dace-app .editor-textarea { flex: none; min-height: clamp(220px, 34vh, 420px); }.dace-app .desk-context-rail {
@@ -321,7 +344,7 @@
     max-height: 40%;
     padding: 22px clamp(20px, 5vw, 48px) 36px;
     border-left: none;
-    border-top: 1px solid rgba(203, 185, 163, 0.09);
+    border-top: 1px solid rgba(var(--neutral-300-rgb), 0.09);
     background: rgba(20, 20, 20, 0.16);
   }.dace-app .graph-floating-search-bar { top: 18px; }.dace-app .graph-top-actions { top: 18px; right: 18px; }.dace-app .graph-viewport-controls { left: 18px; bottom: 18px; }.dace-app .graph-contextual-card { right: 18px; bottom: 18px; }.dace-app .reader-header { padding: 0 16px; }.dace-app .reader-drawer { width: min(300px, 42vw); }
 }
