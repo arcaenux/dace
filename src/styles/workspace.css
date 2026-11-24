@@ -77,13 +77,13 @@ select {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: var(--dace-amber);
+  color: var(--accent-text);
   font-family: var(--font-mono);
   font-size: var(--type-micro);
   letter-spacing: 0.2em;
   text-transform: uppercase;
 }.activity-title {
-  color: var(--dace-ivory);
+  color: var(--text-primary);
   font-family: var(--font-display);
   font-size: clamp(28px, 3vw, 44px);
   font-weight: 500;
@@ -91,7 +91,7 @@ select {
   line-height: 1.05;
 }.activity-desc {
   max-width: 460px;
-  color: var(--dace-sand);
+  color: var(--text-secondary);
   font-family: var(--font-display);
   font-size: var(--type-body);
   line-height: 1.65;
@@ -99,18 +99,18 @@ select {
   align-self: flex-start;
   min-height: 34px;
   padding: 0 14px;
-  border: 1px solid rgba(255, 138, 0, 0.42);
+  border: 1px solid rgba(var(--brand-blue-rgb), 0.42);
   border-radius: 999px;
   background: transparent;
-  color: var(--dace-amber);
+  color: var(--accent-text);
   font-family: var(--font-mono);
   font-size: var(--type-micro);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   transition: background-color 160ms ease, box-shadow 160ms ease;
 }.activity-back-btn:hover {
-  background: rgba(255, 138, 0, 0.09);
-  box-shadow: 0 0 22px rgba(255, 138, 0, 0.12);
+  background: rgba(var(--brand-blue-rgb), 0.09);
+  box-shadow: 0 0 22px rgba(var(--brand-blue-rgb), 0.12);
 }/* Contextual slide-over */
 .contextual-panel {
   position: absolute;
@@ -121,7 +121,7 @@ select {
   display: flex;
   flex-direction: column;
   width: min(360px, 88vw);
-  border-left: 1px solid rgba(203, 185, 163, 0.12);
+  border-left: 1px solid rgba(var(--neutral-300-rgb), 0.12);
   background: rgba(11, 11, 11, 0.96);
   box-shadow: -30px 0 70px rgba(0, 0, 0, 0.5);
   transform: translateX(101%);
@@ -135,9 +135,9 @@ select {
   justify-content: space-between;
   gap: 12px;
   padding: 22px 22px 16px;
-  border-bottom: 1px solid rgba(203, 185, 163, 0.1);
+  border-bottom: 1px solid rgba(var(--neutral-300-rgb), 0.1);
 }.panel-title {
-  color: var(--dace-ivory);
+  color: var(--text-primary);
   font-family: var(--font-display);
   font-size: var(--type-small);
   font-weight: 500;
@@ -154,15 +154,15 @@ select {
   color: var(--text-muted);
   transition: color 140ms ease, border-color 140ms ease, background-color 140ms ease;
 }.panel-close-btn:hover {
-  border-color: rgba(255, 138, 0, 0.35);
-  background: rgba(255, 138, 0, 0.07);
-  color: var(--dace-amber);
+  border-color: rgba(var(--brand-blue-rgb), 0.35);
+  background: rgba(var(--brand-blue-rgb), 0.07);
+  color: var(--accent-text);
 }.panel-content {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   padding: 24px 22px;
-  color: var(--dace-sand);
+  color: var(--text-secondary);
   font-size: var(--type-small);
   line-height: 1.6;
 }/* Focus mode */
@@ -175,19 +175,19 @@ select {
   gap: 8px;
   height: 34px;
   padding: 0 12px;
-  border: 1px solid rgba(203, 185, 163, 0.16);
+  border: 1px solid rgba(var(--neutral-300-rgb), 0.16);
   border-radius: 999px;
   background: rgba(11, 11, 11, 0.82);
-  color: var(--dace-sand);
+  color: var(--text-secondary);
   font-family: var(--font-mono);
   font-size: var(--type-micro);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   backdrop-filter: blur(12px);
 }.focus-exit-btn:hover {
-  border-color: rgba(255, 138, 0, 0.5);
-  color: var(--dace-amber);
-  background: rgba(255, 138, 0, 0.08);
+  border-color: rgba(var(--brand-blue-rgb), 0.5);
+  color: var(--accent-text);
+  background: rgba(var(--brand-blue-rgb), 0.08);
 }.focus-exit-btn kbd {
   font-family: var(--font-mono);
   font-size: var(--type-micro);
@@ -210,10 +210,10 @@ select {
   width: min(620px, 100%);
   max-height: min(640px, 86vh);
   overflow: hidden;
-  border: 1px solid rgba(203, 185, 163, 0.16);
+  border: 1px solid rgba(var(--neutral-300-rgb), 0.16);
   border-radius: 12px;
   background: rgba(14, 14, 14, 0.98);
-  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.72), 0 0 40px rgba(255, 138, 0, 0.05);
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.72), 0 0 40px rgba(var(--brand-blue-rgb), 0.05);
   animation: overlay-rise 220ms var(--ease-enter) both;
 }
 
@@ -229,14 +229,14 @@ select {
   gap: 16px;
 }.restore-warning {
   padding: 14px 16px;
-  border: 1px solid rgba(255, 138, 0, 0.32);
+  border: 1px solid rgba(var(--status-warning-rgb), 0.32);
   border-radius: 8px;
-  background: rgba(255, 138, 0, 0.07);
-  color: var(--dace-sand);
+  background: rgba(var(--status-warning-rgb), 0.07);
+  color: var(--status-warning);
   font-size: var(--type-small);
   line-height: 1.6;
 }.restore-warning strong {
-  color: var(--dace-ivory);
+  color: var(--text-primary);
 }.restore-summary {
   display: flex;
   flex-direction: column;
@@ -245,7 +245,7 @@ select {
   grid-template-columns: 1fr auto;
   gap: 16px;
   padding: 9px 0;
-  border-bottom: 1px solid rgba(203, 185, 163, 0.08);
+  border-bottom: 1px solid rgba(var(--neutral-300-rgb), 0.08);
 }.restore-summary-row dt {
   color: var(--text-muted);
   font-family: var(--font-mono);
@@ -253,7 +253,7 @@ select {
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }.restore-summary-row dd {
-  color: var(--dace-ivory);
+  color: var(--text-primary);
   font-size: var(--type-small);
   text-align: right;
 }.restore-warnings {
@@ -263,12 +263,12 @@ select {
   color: #ffb47a;
   font-size: var(--type-small);
 }.restore-progress {
-  color: var(--dace-amber);
+  color: var(--accent-text);
   font-family: var(--font-mono);
   font-size: var(--type-mono);
   letter-spacing: 0.05em;
 }.restore-error {
-  color: #ff8b8b;
+  color: var(--status-danger);
   font-size: var(--type-small);
   line-height: 1.5;
 }.restore-footer {
@@ -299,11 +299,11 @@ select {
   z-index: 400;
   max-width: min(620px, calc(100vw - 40px));
   padding: 11px 16px;
-  border: 1px solid rgba(255, 138, 0, 0.35);
+  border: 1px solid rgba(var(--brand-blue-rgb), 0.35);
   border-radius: 999px;
   background: rgba(14, 12, 9, 0.96);
-  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.6), 0 0 24px rgba(255, 138, 0, 0.08);
-  color: var(--dace-ivory);
+  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.6), 0 0 24px rgba(var(--brand-blue-rgb), 0.08);
+  color: var(--text-primary);
   font-family: var(--font-mono);
   font-size: var(--type-mono);
   letter-spacing: 0.02em;

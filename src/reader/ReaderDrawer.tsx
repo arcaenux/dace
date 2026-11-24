@@ -562,19 +562,17 @@ export const ReaderDrawer: FC<ReaderDrawerProps> = ({
               onInsertMarkdown={onInsertMarkdown}
               onJumpToPage={onJumpToPage}
             />
-            {hasNote && (
-              <HighlightsPanel
-                highlights={highlights}
-                selectedHighlightId={selectedHighlightId}
-                annotationRequestId={annotationRequestId}
-                onSelectHighlight={onSelectHighlight}
-                onJumpToPage={onJumpToPage}
-                onOpenConnectModal={onOpenConnectModal}
-                onHighlightDeleted={onHighlightDeleted}
-                onHighlightUpdated={onHighlightUpdated}
-                onShowNotice={onShowNotice}
-              />
-            )}
+            <HighlightsPanel
+              highlights={highlights}
+              selectedHighlightId={selectedHighlightId}
+              annotationRequestId={annotationRequestId}
+              onSelectHighlight={onSelectHighlight}
+              onJumpToPage={onJumpToPage}
+              onOpenConnectModal={onOpenConnectModal}
+              onHighlightDeleted={onHighlightDeleted}
+              onHighlightUpdated={onHighlightUpdated}
+              onShowNotice={onShowNotice}
+            />
           </>
         )}
 

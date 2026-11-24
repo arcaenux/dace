@@ -21,10 +21,15 @@ import {
   saveReaderSession,
 } from "./readerSession.ts";
 import { visibleNoteTags } from "./noteSaveState.ts";
+import type { ResearchReaderIntent } from "../core/appIntents.ts";
+import type { SaveParticipantRegistry } from "../core/saveRegistry.ts";
 
 interface ResearchReaderViewProps {
   initialAttachmentId?: string | null;
   initialPage?: number | null;
+  intent?: ResearchReaderIntent | null;
+  onConsumeIntent?: (intentId: string) => void;
+  saveRegistry: SaveParticipantRegistry;
   onNavigateToRecord?: (recordId: string) => void;
   onShowNotice: (msg: string) => void;
   isFocusSpace?: boolean;
@@ -64,6 +69,9 @@ function outlineFromText(content: string): OutlineItem[] {
 export const ResearchReaderView: FC<ResearchReaderViewProps> = ({
   initialAttachmentId,
   initialPage = 1,
+  intent,
+  onConsumeIntent,
+  saveRegistry,
   onNavigateToRecord,
   onShowNotice,
   isFocusSpace = false,
@@ -97,8 +105,10 @@ export const ResearchReaderView: FC<ResearchReaderViewProps> = ({
   const hydratedAttachmentRef = useRef<string | null>(null);
   const initialScrollTopRef = useRef(0);
   const initialWritingScrollTopRef = useRef(0);
+  const handledIntentIdsRef = useRef<Set<string>>(new Set());
 
   const layout = useAdaptiveReaderLayout(onChromeChange);
+  const setReaderMode = layout.setMode;
   const note = useReaderNote(activeAttachment, { onSaveError: onShowNotice });
   // Excerpt markers are scanned over the whole note. Defer that work so a
   // long document never blocks the keystroke that produced the update.
@@ -107,6 +117,15 @@ export const ResearchReaderView: FC<ResearchReaderViewProps> = ({
     () => parseNoteExcerpts(deferredNoteContent),
     [deferredNoteContent]
   );
+
+  useEffect(() => {
+    const unregister = saveRegistry.register({
+      isDirty: () => note.isDirty(),
+      isSaving: () => note.isSaving(),
+      flush: async () => (await note.flushSave()) !== "error",
+    });
+    return unregister;
+  }, [saveRegistry, note.isDirty, note.isSaving, note.flushSave]);
 
   const viewerType = activeAttachment
     ? getViewerType(activeAttachment.mime_type, activeAttachment.file_name)
@@ -218,12 +237,17 @@ export const ResearchReaderView: FC<ResearchReaderViewProps> = ({
   }, [note.flushSave, onShowNotice]);
 
   useEffect(() => {
-    const onSaveEvent = () => {
+    if (!intent || handledIntentIdsRef.current.has(intent.id)) return;
+    handledIntentIdsRef.current.add(intent.id);
+    onConsumeIntent?.(intent.id);
+
+    if (intent.type === "save-active") {
       void handleSaveNote();
-    };
-    window.addEventListener("dace:save-reader-note", onSaveEvent);
-    return () => window.removeEventListener("dace:save-reader-note", onSaveEvent);
-  }, [handleSaveNote]);
+      return;
+    }
+
+    setReaderMode(intent.mode);
+  }, [intent, onConsumeIntent, handleSaveNote, setReaderMode]);
 
   const handleImport = async () => {
     try {
@@ -361,8 +385,8 @@ export const ResearchReaderView: FC<ResearchReaderViewProps> = ({
   const showDocument = layout.mode !== "writing";
   // Narrow layouts still need a writing workspace: research shows the
   // document with a switch, writing shows the notes full width.
-  const showWriting = layout.mode !== "reading";
-  const showDivider = layout.mode === "research" && !layout.isNarrow;
+  const showWriting = layout.mode === "writing" || (layout.mode === "research" && !layout.isNarrow);
+  const showDivider = Boolean(activeAttachment) && layout.mode === "research" && !layout.isNarrow;
   const gridColumns =
     showDivider
       ? `minmax(0, ${layout.ratio}fr) 10px minmax(0, ${1 - layout.ratio}fr)`

@@ -24,6 +24,32 @@ interface KnowledgeGraphViewProps {
   focusRecordId?: string | null;
 }
 
+// Canvas colours are read from the semantic token layer so the graph follows
+// the same brand/status system without changing simulation or interaction.
+const readGraphPalette = () => {
+  const styles = getComputedStyle(document.documentElement);
+  const token = (name: string, fallback: string) =>
+    styles.getPropertyValue(name).trim() || fallback;
+
+  const brandRgb = token("--brand-blue-rgb", "25, 123, 250");
+  const neutral300Rgb = token("--neutral-300-rgb", "196, 205, 219");
+  const neutral500Rgb = token("--neutral-500-rgb", "107, 119, 140");
+  const bgAppRgb = token("--bg-app-rgb", "11, 15, 23");
+  const bgSurfaceRgb = token("--bg-surface-rgb", "17, 23, 34");
+
+  return {
+    brand: `rgb(${brandRgb})`,
+    brandRgb,
+    neutral300Rgb,
+    neutral500Rgb,
+    bgAppRgb,
+    bgSurfaceRgb,
+    accentText: token("--accent-text", "#5AA6FF"),
+    textPrimary: token("--text-primary", "#E2E8F2"),
+    textSecondary: token("--text-secondary", "#C4CDDB"),
+  };
+};
+
 export const KnowledgeGraphView: FC<KnowledgeGraphViewProps> = ({
   onOpenRecordInDesk,
   onShowNotice,
@@ -122,15 +148,18 @@ export const KnowledgeGraphView: FC<KnowledgeGraphViewProps> = ({
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
+    const palette = readGraphPalette();
 
     // High-DPI resolution scaling
     const dpr = window.devicePixelRatio || 1;
     const width = canvas.clientWidth;
     const height = canvas.clientHeight;
+    const targetW = Math.round(width * dpr);
+    const targetH = Math.round(height * dpr);
 
-    if (canvas.width !== width * dpr || canvas.height !== height * dpr) {
-      canvas.width = width * dpr;
-      canvas.height = height * dpr;
+    if (canvas.width !== targetW || canvas.height !== targetH) {
+      canvas.width = targetW;
+      canvas.height = targetH;
     }
 
     // Step physics simulation
@@ -139,30 +168,30 @@ export const KnowledgeGraphView: FC<KnowledgeGraphViewProps> = ({
     ctx.save();
     ctx.scale(dpr, dpr);
 
-    // 1. Deep space / workspace background
-    ctx.fillStyle = "#0b0b0b";
-    ctx.fillRect(0, 0, width, height);
-
-    // 2. Subtle radial atmospheric nebula gradient
-    const centerX = width / 2;
-    const centerY = height / 2;
-    const nebulaGrad = ctx.createRadialGradient(
-      centerX,
-      centerY,
-      50,
-      centerX,
-      centerY,
-      Math.max(width, height) * 0.75
-    );
-    nebulaGrad.addColorStop(0, "rgba(255, 138, 0, 0.07)");
-    nebulaGrad.addColorStop(0.5, "rgba(138, 68, 16, 0.035)");
-    nebulaGrad.addColorStop(1, "rgba(11, 11, 11, 0)");
-    ctx.fillStyle = nebulaGrad;
+    // 1. Clean workspace background
+    ctx.fillStyle = `rgb(${palette.bgAppRgb})`;
     ctx.fillRect(0, 0, width, height);
 
     // Apply Camera Transform
     ctx.translate(width / 2 + pan.x, height / 2 + pan.y);
     ctx.scale(zoom, zoom);
+
+    // 2. Crisp, restrained world-space dot grid (Heptabase-inspired spatial reference)
+    if (zoom > 0.35) {
+      const gridStep = 48;
+      const halfW = width / (2 * zoom);
+      const halfH = height / (2 * zoom);
+      const minX = Math.floor((-pan.x / zoom - halfW) / gridStep) * gridStep;
+      const maxX = Math.ceil((-pan.x / zoom + halfW) / gridStep) * gridStep;
+      const minY = Math.floor((-pan.y / zoom - halfH) / gridStep) * gridStep;
+      const maxY = Math.ceil((-pan.y / zoom + halfH) / gridStep) * gridStep;
+      ctx.fillStyle = "rgba(148, 163, 184, 0.08)";
+      for (let gx = minX; gx <= maxX; gx += gridStep) {
+        for (let gy = minY; gy <= maxY; gy += gridStep) {
+          ctx.fillRect(gx - 0.75, gy - 0.75, 1.5, 1.5);
+        }
+      }
+    }
 
     const nodes = simulationRef.current.nodes;
     const links = simulationRef.current.links;
@@ -179,17 +208,17 @@ export const KnowledgeGraphView: FC<KnowledgeGraphViewProps> = ({
         selectedNodeId !== null &&
         (link.sourceId === selectedNodeId || link.targetId === selectedNodeId);
 
-      let strokeStyle = "rgba(203, 185, 163, 0.22)";
+      let strokeStyle = `rgba(${palette.neutral300Rgb}, 0.22)`;
       let lineWidth = 1.2;
 
       if (isLinkSelected) {
-        strokeStyle = "rgba(255, 138, 0, 0.95)";
+        strokeStyle = `rgba(${palette.brandRgb}, 0.95)`;
         lineWidth = 2.4;
       } else if (isConnectedToSelected) {
-        strokeStyle = "rgba(255, 138, 0, 0.78)";
+        strokeStyle = `rgba(${palette.brandRgb}, 0.78)`;
         lineWidth = 1.8;
       } else if (hasSelection) {
-        strokeStyle = "rgba(203, 185, 163, 0.07)";
+        strokeStyle = `rgba(${palette.neutral300Rgb}, 0.07)`;
         lineWidth = 0.8;
       }
 
@@ -241,10 +270,10 @@ export const KnowledgeGraphView: FC<KnowledgeGraphViewProps> = ({
         const pillH = 14 / zoom;
 
         // Label Background Capsule
-        ctx.fillStyle = "rgba(20, 20, 20, 0.92)";
+        ctx.fillStyle = `rgba(${palette.bgSurfaceRgb}, 0.92)`;
         ctx.strokeStyle = isLinkSelected
-          ? "rgba(255, 138, 0, 0.85)"
-          : "rgba(203, 185, 163, 0.35)";
+          ? `rgba(${palette.brandRgb}, 0.85)`
+          : `rgba(${palette.neutral300Rgb}, 0.35)`;
         ctx.lineWidth = 1 / zoom;
         ctx.beginPath();
         ctx.roundRect(midX - pillW / 2, midY - pillH / 2, pillW, pillH, 4 / zoom);
@@ -252,7 +281,7 @@ export const KnowledgeGraphView: FC<KnowledgeGraphViewProps> = ({
         ctx.stroke();
 
         // Label Text
-        ctx.fillStyle = isLinkSelected ? "#ff8a00" : "#cbb9a3";
+        ctx.fillStyle = isLinkSelected ? palette.accentText : palette.textSecondary;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.fillText(labelText, midX, midY);
@@ -275,20 +304,20 @@ export const KnowledgeGraphView: FC<KnowledgeGraphViewProps> = ({
       const glow = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, glowRadius);
 
       if (isSelected) {
-        glow.addColorStop(0, "rgba(255, 138, 0, 0.5)");
-        glow.addColorStop(0.5, "rgba(255, 138, 0, 0.18)");
-        glow.addColorStop(1, "rgba(255, 138, 0, 0)");
+        glow.addColorStop(0, `rgba(${palette.brandRgb}, 0.5)`);
+        glow.addColorStop(0.5, `rgba(${palette.brandRgb}, 0.18)`);
+        glow.addColorStop(1, `rgba(${palette.brandRgb}, 0)`);
       } else if (isNeighbor || isHovered) {
-        glow.addColorStop(0, "rgba(203, 185, 163, 0.34)");
-        glow.addColorStop(0.6, "rgba(138, 68, 16, 0.14)");
-        glow.addColorStop(1, "rgba(138, 68, 16, 0)");
+        glow.addColorStop(0, `rgba(${palette.neutral300Rgb}, 0.34)`);
+        glow.addColorStop(0.6, `rgba(${palette.neutral500Rgb}, 0.14)`);
+        glow.addColorStop(1, `rgba(${palette.neutral500Rgb}, 0)`);
       } else if (isDimmed) {
-        glow.addColorStop(0, "rgba(138, 138, 138, 0.04)");
-        glow.addColorStop(1, "rgba(138, 138, 138, 0)");
+        glow.addColorStop(0, `rgba(${palette.neutral500Rgb}, 0.04)`);
+        glow.addColorStop(1, `rgba(${palette.neutral500Rgb}, 0)`);
       } else {
-        glow.addColorStop(0, "rgba(203, 185, 163, 0.2)");
-        glow.addColorStop(0.7, "rgba(138, 68, 16, 0.07)");
-        glow.addColorStop(1, "rgba(11, 11, 11, 0)");
+        glow.addColorStop(0, `rgba(${palette.neutral300Rgb}, 0.2)`);
+        glow.addColorStop(0.7, `rgba(${palette.neutral500Rgb}, 0.07)`);
+        glow.addColorStop(1, `rgba(${palette.bgAppRgb}, 0)`);
       }
 
       ctx.fillStyle = glow;
@@ -303,20 +332,20 @@ export const KnowledgeGraphView: FC<KnowledgeGraphViewProps> = ({
       ctx.arc(node.x, node.y, r, 0, Math.PI * 2);
 
       if (isSelected) {
-        ctx.fillStyle = "#ff8a00";
-        ctx.strokeStyle = "#f8ede1";
+        ctx.fillStyle = palette.brand;
+        ctx.strokeStyle = palette.textPrimary;
         ctx.lineWidth = 2.2 / zoom;
       } else if (isNeighbor) {
-        ctx.fillStyle = "#2a2016";
-        ctx.strokeStyle = "#ffab4d";
+        ctx.fillStyle = `rgb(${palette.bgSurfaceRgb})`;
+        ctx.strokeStyle = `rgba(${palette.brandRgb}, 0.72)`;
         ctx.lineWidth = 1.8 / zoom;
       } else if (isDimmed) {
-        ctx.fillStyle = "#0d0d0c";
-        ctx.strokeStyle = "rgba(138, 138, 138, 0.24)";
+        ctx.fillStyle = `rgb(${palette.bgAppRgb})`;
+        ctx.strokeStyle = `rgba(${palette.neutral500Rgb}, 0.24)`;
         ctx.lineWidth = 1 / zoom;
       } else {
-        ctx.fillStyle = "#171410";
-        ctx.strokeStyle = "rgba(203, 185, 163, 0.45)";
+        ctx.fillStyle = `rgb(${palette.bgSurfaceRgb})`;
+        ctx.strokeStyle = `rgba(${palette.neutral300Rgb}, 0.45)`;
         ctx.lineWidth = 1.4 / zoom;
       }
 
@@ -344,7 +373,7 @@ export const KnowledgeGraphView: FC<KnowledgeGraphViewProps> = ({
         const textH = fontSize * 1.2;
 
         // Subtle background pill for label readability
-        ctx.fillStyle = "rgba(11, 11, 11, 0.82)";
+        ctx.fillStyle = `rgba(${palette.bgAppRgb}, 0.82)`;
         ctx.beginPath();
         ctx.roundRect(
           node.x - textW / 2 - 4 / zoom,
@@ -357,13 +386,13 @@ export const KnowledgeGraphView: FC<KnowledgeGraphViewProps> = ({
 
         // Text fill
         if (isSelected) {
-          ctx.fillStyle = "#ff8a00";
+          ctx.fillStyle = palette.accentText;
         } else if (isNeighbor || isHovered) {
-          ctx.fillStyle = "#f8ede1";
+          ctx.fillStyle = palette.textPrimary;
         } else if (isDimmed) {
-          ctx.fillStyle = "rgba(138, 138, 138, 0.26)";
+          ctx.fillStyle = `rgba(${palette.neutral500Rgb}, 0.26)`;
         } else {
-          ctx.fillStyle = "#cbb9a3";
+          ctx.fillStyle = palette.textSecondary;
         }
 
         ctx.textAlign = "center";
@@ -460,6 +489,7 @@ export const KnowledgeGraphView: FC<KnowledgeGraphViewProps> = ({
 
   // Mouse Handlers
   const handleMouseDown = (e: ReactMouseEvent<HTMLCanvasElement>) => {
+    if (e.button !== 0) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
@@ -535,7 +565,7 @@ export const KnowledgeGraphView: FC<KnowledgeGraphViewProps> = ({
     }
   };
 
-  const handleMouseUp = () => {
+  const handleMouseUp = useCallback(() => {
     if (isDraggingNodeRef.current && draggedNodeRef.current) {
       draggedNodeRef.current.isPinned = false;
       isDraggingNodeRef.current = false;
@@ -543,7 +573,12 @@ export const KnowledgeGraphView: FC<KnowledgeGraphViewProps> = ({
       simulationRef.current.reheat(0.1);
     }
     isDraggingCanvasRef.current = false;
-  };
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener("mouseup", handleMouseUp);
+    return () => window.removeEventListener("mouseup", handleMouseUp);
+  }, [handleMouseUp]);
 
   // Double-click node to open in Knowledge Desk immediately
   const handleDoubleClick = (e: ReactMouseEvent<HTMLCanvasElement>) => {
@@ -584,11 +619,21 @@ export const KnowledgeGraphView: FC<KnowledgeGraphViewProps> = ({
 
   // Viewport Actions
   const handleZoomIn = () => {
-    setZoom((z) => Math.min(z * 1.25, 3.5));
+    setZoom((z) => {
+      const next = Math.min(z * 1.25, 3.5);
+      const ratio = next / z;
+      setPan((p) => ({ x: p.x * ratio, y: p.y * ratio }));
+      return next;
+    });
   };
 
   const handleZoomOut = () => {
-    setZoom((z) => Math.max(z * 0.8, 0.2));
+    setZoom((z) => {
+      const next = Math.max(z * 0.8, 0.2);
+      const ratio = next / z;
+      setPan((p) => ({ x: p.x * ratio, y: p.y * ratio }));
+      return next;
+    });
   };
 
   const handleResetView = () => {

@@ -9,9 +9,10 @@ import {
   useImperativeHandle,
   KeyboardEvent,
 } from "react";
-import { ArrowLeft, MoreHorizontal, PanelLeft, Save } from "lucide-react";
+import { ArrowLeft, MoreHorizontal, PanelLeft, PanelRight, Save } from "lucide-react";
 import { KnowledgeRecord, SaveStatus } from "./types";
 import { useDismissable } from "../core/useDismissable";
+import { useSettings } from "../settings/SettingsContext";
 
 export interface RecordEditorHandle {
   flushSave: () => Promise<boolean>;
@@ -32,6 +33,8 @@ export interface RecordEditorProps {
   canNavigateBack?: boolean;
   onNavigateBack?: () => void;
   previousRecordTitle?: string | null;
+  isContextOpen?: boolean;
+  onToggleContext?: () => void;
 }
 
 const statusLabels: Record<SaveStatus, string> = {
@@ -53,6 +56,8 @@ export const RecordEditor = forwardRef<RecordEditorHandle, RecordEditorProps>(fu
     canNavigateBack,
     onNavigateBack,
     previousRecordTitle,
+    isContextOpen = true,
+    onToggleContext,
   },
   ref
 ) {
@@ -64,6 +69,8 @@ export const RecordEditor = forwardRef<RecordEditorHandle, RecordEditorProps>(fu
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
+  const { settings } = useSettings();
+  const autosaveDelayMs = settings.editor.autosaveDelayMs;
 
   const titleTextareaRef = useRef<HTMLTextAreaElement>(null);
   const bodyTextareaRef = useRef<HTMLTextAreaElement>(null);
@@ -148,7 +155,7 @@ export const RecordEditor = forwardRef<RecordEditorHandle, RecordEditorProps>(fu
             }
             debounceTimerRef.current = window.setTimeout(() => {
               performSave();
-            }, 1000);
+            }, autosaveDelayMs);
           } else {
             isDirtyRef.current = false;
             setSaveStatus("saved");
@@ -169,7 +176,7 @@ export const RecordEditor = forwardRef<RecordEditorHandle, RecordEditorProps>(fu
 
     inFlightPromiseRef.current = execPromise;
     return await execPromise;
-  }, [onSaveRecord]);
+  }, [autosaveDelayMs, onSaveRecord]);
 
   // Trigger debounced autosave when user edits
   const triggerAutosave = useCallback(() => {
@@ -181,8 +188,8 @@ export const RecordEditor = forwardRef<RecordEditorHandle, RecordEditorProps>(fu
     }
     debounceTimerRef.current = window.setTimeout(() => {
       performSave();
-    }, 1000);
-  }, [performSave]);
+    }, autosaveDelayMs);
+  }, [autosaveDelayMs, performSave]);
 
   // Flush save immediately (clears debounce timer and awaits save)
   const flushSave = useCallback(async (): Promise<boolean> => {
@@ -403,7 +410,14 @@ export const RecordEditor = forwardRef<RecordEditorHandle, RecordEditorProps>(fu
 
           {isMoreMenuOpen && (
             <div ref={moreMenuRef} className="desk-actions-menu" role="menu">
-              <button type="button" role="menuitem" onClick={flushSave}>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setIsMoreMenuOpen(false);
+                  void flushSave();
+                }}
+              >
                 Save now
                 <kbd>Ctrl S</kbd>
               </button>
@@ -418,6 +432,19 @@ export const RecordEditor = forwardRef<RecordEditorHandle, RecordEditorProps>(fu
             <Save size={13} strokeWidth={1.6} aria-hidden="true" />
             Save
           </button>
+
+          {onToggleContext && (
+            <button
+              type="button"
+              className={`desk-toolbar-icon ${isContextOpen ? "active" : ""}`}
+              onClick={onToggleContext}
+              title={isContextOpen ? "Hide context panel" : "Show context panel"}
+              aria-label="Toggle context panel"
+              aria-pressed={isContextOpen}
+            >
+              <PanelRight size={15} strokeWidth={1.6} aria-hidden="true" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -473,17 +500,24 @@ export const RecordEditor = forwardRef<RecordEditorHandle, RecordEditorProps>(fu
           <textarea
             ref={bodyTextareaRef}
             className="editor-textarea"
-            placeholder="Write knowledge here… (Markdown supported)"
+            placeholder={
+              settings.editor.defaultFormat === "markdown"
+                ? "Write knowledge here… (Markdown supported)"
+                : "Write knowledge here…"
+            }
             value={content}
             onChange={(e) => handleContentChange(e.target.value)}
+            spellCheck={settings.editor.spellcheck}
             aria-label="Record content"
           />
         </div>
       </div>
 
       <div className="editor-status-bar" aria-label="Editor status">
-        <span>{wordCount} {wordCount === 1 ? "word" : "words"}</span>
-        <span>Markdown</span>
+        {settings.editor.showWordCount && (
+          <span>{wordCount} {wordCount === 1 ? "word" : "words"}</span>
+        )}
+        <span>{settings.editor.defaultFormat === "markdown" ? "Markdown" : "Plain text"}</span>
         <span className={`status-dot ${saveStatus}`} />
         <span>{statusLabels[saveStatus]}</span>
         <span className="editor-status-spacer" />

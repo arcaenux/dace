@@ -1,8 +1,10 @@
+import type { WorkspaceIntentRequest } from "./appIntents.ts";
 import type { CommandItem, WorkspaceActivityId } from "./types.ts";
 
 export interface CommandContext {
   activeActivity: WorkspaceActivityId;
   setActiveActivity: (activity: WorkspaceActivityId) => void;
+  requestIntent: (request: WorkspaceIntentRequest) => void;
   isFocusSpace: boolean;
   enterFocusSpace: () => Promise<void>;
   exitFocusSpace: () => Promise<void>;
@@ -49,10 +51,8 @@ export function buildCommandList(ctx: CommandContext): CommandItem[] {
       shortcut: "Ctrl+N",
       available: true,
       execute: () => {
-        ctx.setActiveActivity("knowledge-desk");
+        ctx.requestIntent({ type: "new-record" });
         ctx.closeOverlay();
-        window.dispatchEvent(new CustomEvent("dace:new-record"));
-        window.dispatchEvent(new CustomEvent("novadome:new-record"));
       },
     },
     {
@@ -63,10 +63,8 @@ export function buildCommandList(ctx: CommandContext): CommandItem[] {
       shortcut: "Ctrl+O",
       available: true,
       execute: () => {
-        ctx.setActiveActivity("knowledge-desk");
+        ctx.requestIntent({ type: "import-attachment" });
         ctx.closeOverlay();
-        window.dispatchEvent(new CustomEvent("dace:import-attachment"));
-        window.dispatchEvent(new CustomEvent("novadome:import-attachment"));
       },
     },
     {
@@ -77,7 +75,7 @@ export function buildCommandList(ctx: CommandContext): CommandItem[] {
       available: true,
       execute: () => {
         ctx.closeOverlay();
-        window.dispatchEvent(new CustomEvent("dace:export-backup"));
+        ctx.requestIntent({ type: "export-backup" });
       },
     },
     {
@@ -88,7 +86,7 @@ export function buildCommandList(ctx: CommandContext): CommandItem[] {
       available: true,
       execute: () => {
         ctx.closeOverlay();
-        window.dispatchEvent(new CustomEvent("dace:restore-backup"));
+        ctx.requestIntent({ type: "restore-backup" });
       },
     },
     {
@@ -99,10 +97,8 @@ export function buildCommandList(ctx: CommandContext): CommandItem[] {
       shortcut: "Ctrl+Shift+F",
       available: true,
       execute: () => {
-        ctx.setActiveActivity("knowledge-desk");
+        ctx.requestIntent({ type: "search-records" });
         ctx.closeOverlay();
-        window.dispatchEvent(new CustomEvent("dace:search-records"));
-        window.dispatchEvent(new CustomEvent("novadome:search-records"));
       },
     },
     {
@@ -113,11 +109,8 @@ export function buildCommandList(ctx: CommandContext): CommandItem[] {
       shortcut: "Ctrl+S",
       available: true,
       execute: () => {
-        if (ctx.activeActivity === "knowledge-desk") {
-          window.dispatchEvent(new CustomEvent("dace:save-record"));
-          window.dispatchEvent(new CustomEvent("novadome:save-record"));
-        } else if (ctx.activeActivity === "reader") {
-          window.dispatchEvent(new CustomEvent("dace:save-reader-note"));
+        if (ctx.activeActivity === "knowledge-desk" || ctx.activeActivity === "reader") {
+          ctx.requestIntent({ type: "save-active" });
         } else {
           ctx.setNotice("Switch to Knowledge Desk or the Research Reader to save active documents.");
         }
@@ -181,8 +174,7 @@ export function buildCommandList(ctx: CommandContext): CommandItem[] {
       shortcut: "Alt+Shift+1",
       available: true,
       execute: () => {
-        ctx.setActiveActivity("reader");
-        window.dispatchEvent(new CustomEvent("dace:reader-mode", { detail: "reading" }));
+        ctx.requestIntent({ type: "reader-mode", mode: "reading" });
         ctx.closeOverlay();
       },
     },
@@ -194,8 +186,7 @@ export function buildCommandList(ctx: CommandContext): CommandItem[] {
       shortcut: "Alt+Shift+2",
       available: true,
       execute: () => {
-        ctx.setActiveActivity("reader");
-        window.dispatchEvent(new CustomEvent("dace:reader-mode", { detail: "research" }));
+        ctx.requestIntent({ type: "reader-mode", mode: "research" });
         ctx.closeOverlay();
       },
     },
@@ -207,32 +198,31 @@ export function buildCommandList(ctx: CommandContext): CommandItem[] {
       shortcut: "Alt+Shift+3",
       available: true,
       execute: () => {
-        ctx.setActiveActivity("reader");
-        window.dispatchEvent(new CustomEvent("dace:reader-mode", { detail: "writing" }));
+        ctx.requestIntent({ type: "reader-mode", mode: "writing" });
         ctx.closeOverlay();
       },
     },
     {
       id: "nav:terminal",
       name: "Open Terminal",
-      description: "Embedded pseudo-terminal for workspace CLI automation",
+      description: "Open a real local shell in an integrated PTY workspace",
       category: "Navigation",
-      available: false,
-      unavailabilityReason: "Planned for Milestone 5 (PTY & Native Subsystems)",
+      shortcut: "Alt+6",
+      available: true,
       execute: () => {
-        ctx.setNotice("Terminal integration is planned for Milestone 5.");
+        ctx.setActiveActivity("terminal");
         ctx.closeOverlay();
       },
     },
     {
       id: "system:settings",
       name: "Open Settings",
-      description: "Configure application preferences and local workspace options (planned)",
+      description: "Configure startup, workspace, editor, storage and backup preferences",
       category: "System",
-      available: false,
-      unavailabilityReason: "Planned for Milestone 6 (System Settings & Administration)",
+      shortcut: "Alt+5",
+      available: true,
       execute: () => {
-        ctx.setNotice("Settings panel is scheduled for Milestone 6.");
+        ctx.setActiveActivity("settings");
         ctx.closeOverlay();
       },
     },
