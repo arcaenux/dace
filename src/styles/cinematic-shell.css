@@ -296,7 +296,8 @@ body,
 }
 
 .dace-app .workspace-stage {
-  flex: 1 1 0;
+  flex: 1 1 auto;
+  width: 100%;
   min-width: 0;
   height: 100%;
   position: relative;
@@ -317,7 +318,8 @@ body,
    -------------------------------------------------------------------------- */
 
 .dace-app .workspace-rail {
-  position: relative;
+  position: absolute;
+  inset: 0 auto 0 0;
   width: var(--rail-plane);
   min-width: var(--rail-plane);
   height: 100%;
@@ -335,6 +337,10 @@ body,
   overflow: visible;
   pointer-events: none;
   user-select: none;
+}
+
+.dace-app .workspace-rail.is-overlay {
+  z-index: calc(var(--z-rail) + 1);
 }
 
 .dace-app .workspace-rail.is-collapsed {

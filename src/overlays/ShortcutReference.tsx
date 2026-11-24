@@ -43,6 +43,12 @@ export const ShortcutReference: FC<ShortcutReferenceProps> = ({
       status: "active",
     },
     {
+      keyCombo: "Ctrl + B",
+      description: "Toggle Curved Sidebar",
+      context: "Open or hide the navigation rail over the active view, including Focus Space",
+      status: "active",
+    },
+    {
       keyCombo: "Ctrl + S",
       description: "Save Knowledge Record",
       context: "Flush and commit active record to SQLite database",

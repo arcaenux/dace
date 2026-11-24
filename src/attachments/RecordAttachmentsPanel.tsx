@@ -52,6 +52,14 @@ export const RecordAttachmentsPanel: FC<RecordAttachmentsPanelProps> = ({
     loadAttachments();
   }, [loadAttachments]);
 
+  useEffect(() => {
+    const onAttachmentDeleted = () => {
+      void loadAttachments();
+    };
+    window.addEventListener("dace:attachment-deleted", onAttachmentDeleted);
+    return () => window.removeEventListener("dace:attachment-deleted", onAttachmentDeleted);
+  }, [loadAttachments]);
+
   // Handle native file picker import
   const handlePickAndImport = async () => {
     try {
@@ -125,10 +133,14 @@ export const RecordAttachmentsPanel: FC<RecordAttachmentsPanelProps> = ({
   // Permanently delete from storage
   const handlePermanentDelete = async (attachmentId: string) => {
     try {
-      await api.deleteAttachment(attachmentId);
+      const deleted = await api.deleteAttachment(attachmentId);
+      if (!deleted) {
+        onShowNotice("Could not delete attachment file");
+        return;
+      }
       setDeleteConfirmId(null);
       onShowNotice("Managed document permanently purged from storage");
-      await loadAttachments();
+      window.dispatchEvent(new CustomEvent("dace:attachment-deleted", { detail: attachmentId }));
     } catch (err) {
       console.error("Failed to permanently delete attachment:", err);
       onShowNotice("Failed to delete attachment file");
@@ -273,7 +285,9 @@ export const RecordAttachmentsPanel: FC<RecordAttachmentsPanelProps> = ({
                   <div className="attachment-card-footer">
                     {deleteConfirmId === att.id ? (
                       <div className="delete-confirm-box">
-                        <span className="confirm-warn-text">Permanently delete from disk?</span>
+                        <span className="confirm-warn-text">
+                          Delete from all notes? This removes the file and its highlights from storage.
+                        </span>
                         <div className="confirm-btns">
                           <button
                             type="button"

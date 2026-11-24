@@ -13,6 +13,7 @@ interface WorkspaceRailProps {
   compact?: boolean;
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
+  isOverlayOpen?: boolean;
 }
 
 interface OrbitNode {
@@ -49,13 +50,15 @@ export const WorkspaceRail: FC<WorkspaceRailProps> = ({
   compact = false,
   isCollapsed = false,
   onToggleCollapse,
+  isOverlayOpen = false,
 }) => {
   const activeNode = useMemo(
     () => navItems.find((item) => item.id === activeActivity) ?? navItems[0],
     [activeActivity]
   );
 
-  if (isFocusSpace || hidden) return null;
+  const isEffectivelyCollapsed = isCollapsed && !isOverlayOpen;
+  if ((isFocusSpace || hidden) && !isOverlayOpen) return null;
 
   const haloStyle = {
     "--active-x": `${activeNode.x}px`,
@@ -64,9 +67,9 @@ export const WorkspaceRail: FC<WorkspaceRailProps> = ({
 
   return (
     <aside
-      className={`workspace-rail ${isCollapsed ? "is-collapsed" : ""} ${compact ? "is-compact" : ""}`}
+      className={`workspace-rail ${isEffectivelyCollapsed ? "is-collapsed" : ""} ${compact ? "is-compact" : ""} ${isOverlayOpen ? "is-overlay" : ""}`}
       aria-label="Primary navigation"
-      aria-hidden={isCollapsed}
+      aria-hidden={isEffectivelyCollapsed}
     >
       <div className="rail-brand" aria-label="DACE">
         <span className="rail-brand-mark" aria-hidden="true" />
@@ -120,7 +123,7 @@ export const WorkspaceRail: FC<WorkspaceRailProps> = ({
               aria-current={isActive ? "page" : undefined}
               aria-label={item.label}
               data-tooltip={item.label}
-              tabIndex={isCollapsed ? -1 : 0}
+              tabIndex={isEffectivelyCollapsed ? -1 : 0}
               style={
                 {
                   "--node-x": `${item.x}px`,
@@ -148,7 +151,7 @@ export const WorkspaceRail: FC<WorkspaceRailProps> = ({
           aria-pressed={isPanelOpen}
           data-tooltip="Workspace details"
           data-dismiss-ignore
-          tabIndex={isCollapsed ? -1 : 0}
+          tabIndex={isEffectivelyCollapsed ? -1 : 0}
         >
           <span className="rail-nav-icon">
             <PanelRight size={15} strokeWidth={1.55} aria-hidden="true" />
@@ -162,7 +165,7 @@ export const WorkspaceRail: FC<WorkspaceRailProps> = ({
             onClick={onToggleCollapse}
             aria-label="Collapse navigation"
             title="Collapse navigation (Ctrl+B)"
-            tabIndex={isCollapsed ? -1 : 0}
+            tabIndex={isEffectivelyCollapsed ? -1 : 0}
           >
             <span className="rail-nav-icon">
               <ChevronLeft size={15} strokeWidth={1.55} aria-hidden="true" />
