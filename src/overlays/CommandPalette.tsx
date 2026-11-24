@@ -20,6 +20,7 @@ export const CommandPalette: FC<CommandPaletteProps> = ({
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const selectedItemRef = useRef<HTMLDivElement>(null);
   useDismissable(isOpen, onClose, containerRef, {
     triggerRef,
     group: "workspace-overlay",
@@ -44,6 +45,12 @@ export const CommandPalette: FC<CommandPaletteProps> = ({
       setSelectedIndex(Math.max(0, filteredCommands.length - 1));
     }
   }, [filteredCommands.length, selectedIndex]);
+
+  useEffect(() => {
+    if (isOpen) {
+      selectedItemRef.current?.scrollIntoView({ block: "nearest" });
+    }
+  }, [isOpen, selectedIndex]);
 
   if (!isOpen) return null;
 
@@ -105,6 +112,7 @@ export const CommandPalette: FC<CommandPaletteProps> = ({
               return (
                 <div
                   key={cmd.id}
+                  ref={isSelected ? selectedItemRef : undefined}
                   role="option"
                   aria-selected={isSelected}
                   className={`command-item ${isSelected ? "selected" : ""}`}

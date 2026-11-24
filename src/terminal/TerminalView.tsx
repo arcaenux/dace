@@ -50,6 +50,11 @@ export function TerminalView({ onNotice }: TerminalViewProps) {
   const pendingRef = useRef(new Map<string, Uint8Array[]>());
   const activeIdRef = useRef<string | null>(null);
   const environmentRef = useRef<TerminalEnvironment | null>(null);
+  const endedIdsRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    endedIdsRef.current = new Set(sessions.filter((s) => s.ended).map((s) => s.sessionId));
+  }, [sessions]);
 
   const report = useCallback(
     (message: string) => {
@@ -72,27 +77,27 @@ export function TerminalView({ onNotice }: TerminalViewProps) {
         lineHeight: 1.35,
         scrollback: 5000,
         theme: {
-          background: "#0b0b0b",
-          foreground: "#f8ede1",
-          cursor: "#ff8a00",
-          cursorAccent: "#0b0b0b",
-          selectionBackground: "rgba(255, 138, 0, 0.28)",
-          black: "#0b0b0b",
-          red: "#ff4d4d",
-          green: "#9bd17c",
-          yellow: "#ffab4d",
-          blue: "#79b8ef",
-          magenta: "#d7a4d0",
-          cyan: "#82c8c8",
-          white: "#f8ede1",
-          brightBlack: "#8a8a8a",
-          brightRed: "#ff7373",
-          brightGreen: "#b9e39f",
-          brightYellow: "#ffc98a",
-          brightBlue: "#a7d3fa",
-          brightMagenta: "#ecc8e7",
-          brightCyan: "#a9dedf",
-          brightWhite: "#fffaf4",
+          background: "#0B0F17",
+          foreground: "#E2E8F2",
+          cursor: "#5AA6FF",
+          cursorAccent: "#0B0F17",
+          selectionBackground: "rgba(25, 123, 250, 0.24)",
+          black: "#0B0F17",
+          red: "#FF6B6B",
+          green: "#4ADE80",
+          yellow: "#FBBF24",
+          blue: "#5AA6FF",
+          magenta: "#A78BFA",
+          cyan: "#5CE1E6",
+          white: "#E2E8F2",
+          brightBlack: "#64748B",
+          brightRed: "#FF8787",
+          brightGreen: "#86EFAC",
+          brightYellow: "#FDE68A",
+          brightBlue: "#93C5FD",
+          brightMagenta: "#C4B5FD",
+          brightCyan: "#A5F3FC",
+          brightWhite: "#FFFFFF",
         },
       });
       const fit = new FitAddon();
@@ -111,9 +116,13 @@ export function TerminalView({ onNotice }: TerminalViewProps) {
       }
 
       terminal.onData((data) => {
+        if (endedIdsRef.current.has(sessionId)) return;
         void writeTerminalSession(sessionId, data).catch((err) => report(errorMessage(err)));
       });
       terminal.onResize(({ cols, rows }) => {
+        setSessions((current) =>
+          current.map((s) => (s.sessionId === sessionId ? { ...s, cols, rows } : s))
+        );
         void resizeTerminalSession(sessionId, cols, rows).catch(() => {
           // Exit events race with resize; the session state is authoritative.
         });
@@ -318,6 +327,14 @@ export function TerminalView({ onNotice }: TerminalViewProps) {
     const handleKeys = (event: KeyboardEvent) => {
       const sessionId = activeIdRef.current;
       if (!sessionId || !event.ctrlKey || !event.shiftKey) return;
+      const target = event.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" || target.tagName === "TEXTAREA") &&
+        !target.classList.contains("xterm-helper-textarea")
+      ) {
+        return;
+      }
       const terminal = terminalsRef.current.get(sessionId);
       if (!terminal) return;
       const key = event.key.toLowerCase();
@@ -327,6 +344,7 @@ export function TerminalView({ onNotice }: TerminalViewProps) {
         event.preventDefault();
         void navigator.clipboard?.writeText(selection);
       } else if (key === "v") {
+        if (endedIdsRef.current.has(sessionId)) return;
         event.preventDefault();
         void navigator.clipboard
           ?.readText()
@@ -356,7 +374,7 @@ export function TerminalView({ onNotice }: TerminalViewProps) {
     for (let line = buffer.length - 1; line >= 0; line -= 1) {
       const text = buffer.getLine(line)?.translateToString(true) ?? "";
       if (text.toLowerCase().includes(query)) {
-        terminal.scrollToLine(line + 1);
+        terminal.scrollToLine(line);
         setSearchResult(`Match at line ${line + 1}`);
         return;
       }

@@ -17,8 +17,8 @@ use super::archive::{
 use super::restore::{
     apply_pending_restore, apply_pending_restore_with_hook, confirm_startup_restore,
     inspect_archive, inspect_archive_with_progress, prepare_restore, prepare_restore_checked,
-    snapshot_archive,
-    take_restore_result, RestoreOutcome, RESTORE_MARKER_FILE,
+    record_startup_restore_error, snapshot_archive,
+    take_restore_result, RestoreOutcome, RESTORE_FAILED_MARKER_FILE, RESTORE_MARKER_FILE,
     RESTORE_RECOVERY_DIR, RESTORE_RESULT_FILE, RESTORE_STAGING_DIR,
 };
 use super::service::create_backup_with_progress;
@@ -939,6 +939,85 @@ fn test_startup_confirmation_downgrades_stale_success_result() {
         confirmed.message
     );
 }
+
+#[test]
+fn test_checked_prepare_rejects_archive_changed_after_preview() {
+    let source = TempDirGuard::new("fingerprint-source");
+    let (archive, _seed) = create_rich_archive(source.path());
+    let preview = inspect_archive(&archive).expect("inspect archive");
+
+    let app = TempDirGuard::new("fingerprint-app");
+    let (current_db, _current_seed) = create_current_environment(app.path());
+
+    {
+        let mut file = std::fs::OpenOptions::new()
+            .append(true)
+            .open(&archive)
+            .expect("open archive for mutation");
+        file.write_all(b"\nchanged-after-preview")
+            .expect("append to archive");
+    }
+
+    let err = prepare_restore_checked(
+        app.path(),
+        &archive,
+        Some(&current_db),
+        None,
+        Some(preview.archive_size),
+        Some(&preview.archive_sha256),
+    )
+    .expect_err("changed archive must be rejected");
+    assert!(
+        err.contains("changed since it was reviewed"),
+        "unexpected error: {}",
+        err
+    );
+    assert!(
+        !app.path().join(RESTORE_MARKER_FILE).exists(),
+        "rejected archive must not stage a restore"
+    );
+}
+
+#[test]
+fn test_critical_startup_marker_is_consumed_and_reported() {
+    let app = TempDirGuard::new("critical-marker-app");
+    fs::write(app.path().join(RESTORE_MARKER_FILE), b"{ malformed marker")
+        .expect("write malformed marker");
+    let stale_staging = app.path().join(RESTORE_STAGING_DIR).join("stale");
+    fs::create_dir_all(&stale_staging).expect("create stale staging");
+
+    record_startup_restore_error(app.path(), "marker unreadable")
+        .expect("record startup restore error");
+    assert!(
+        app.path().join(RESTORE_FAILED_MARKER_FILE).exists(),
+        "critical marker must be retained for startup consumption"
+    );
+
+    let outcome = apply_pending_restore(app.path())
+        .expect("consume failed marker")
+        .expect("failure outcome");
+    assert!(!outcome.success);
+    assert!(
+        outcome.message.contains("could not be completed automatically"),
+        "unexpected outcome: {}",
+        outcome.message
+    );
+    assert!(
+        !app.path().join(RESTORE_FAILED_MARKER_FILE).exists(),
+        "failure marker must be consumed exactly once"
+    );
+    assert!(!stale_staging.exists(), "stale staging must be cleaned");
+
+    let taken = take_restore_result(app.path())
+        .expect("read result")
+        .expect("result must remain for the UI");
+    assert_eq!(taken.message, outcome.message);
+
+    let second = apply_pending_restore(app.path()).expect("second startup after marker consumption");
+    assert!(second.is_none(), "a consumed failure marker must never be processed again");
+    assert!(take_restore_result(app.path()).unwrap().is_none());
+}
+
 #[test]
 fn test_inspection_reports_fingerprint_extract_and_verify_stages() {
     let source = TempDirGuard::new("restore-progress-source");

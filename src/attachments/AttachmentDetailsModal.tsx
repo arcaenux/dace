@@ -1,6 +1,7 @@
-import { FC, useState, useEffect } from "react";
+import { FC, useState, useEffect, useRef } from "react";
 import { AttachmentDetails, formatFileSize } from "./types";
 import * as api from "./attachmentsApi";
+import { useDismissable } from "../core/useDismissable";
 
 interface AttachmentDetailsModalProps {
   attachmentId: string;
@@ -16,6 +17,13 @@ export const AttachmentDetailsModal: FC<AttachmentDetailsModalProps> = ({
   const [details, setDetails] = useState<AttachmentDetails | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [copiedHash, setCopiedHash] = useState<boolean>(false);
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  useDismissable(true, onClose, modalRef, {
+    group: "attachment-dialog",
+    autoFocus: true,
+    restoreFocus: true,
+  });
 
   useEffect(() => {
     let isMounted = true;
@@ -49,14 +57,11 @@ export const AttachmentDetailsModal: FC<AttachmentDetailsModalProps> = ({
   return (
     <div
       className="overlay-backdrop"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
       role="dialog"
       aria-modal="true"
       aria-label="Attachment Details"
     >
-      <div className="attachment-details-modal">
+      <div ref={modalRef} className="attachment-details-modal">
         <div className="details-header">
           <h3 className="details-title">Document Storage & Integrity</h3>
           <button type="button" className="card-close-btn" onClick={onClose}>

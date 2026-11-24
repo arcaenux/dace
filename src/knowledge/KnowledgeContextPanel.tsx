@@ -54,6 +54,7 @@ interface KnowledgeContextPanelProps {
   onOpenExcerptInReader?: (attachmentId: string, pageNumber: number) => void;
   onJumpToLine: (line: number) => void;
   onOpenFullGraph?: () => void;
+  isOpen?: boolean;
 }
 
 const views: { id: DeskContextView; label: string; icon: typeof PanelRight }[] = [
@@ -84,6 +85,7 @@ export const KnowledgeContextPanel: FC<KnowledgeContextPanelProps> = ({
   onOpenExcerptInReader,
   onJumpToLine,
   onOpenFullGraph,
+  isOpen = true,
 }) => {
   const [view, setView] = useState<DeskContextView>("context");
   const [metadataExpanded, setMetadataExpanded] = useState(true);
@@ -102,7 +104,11 @@ export const KnowledgeContextPanel: FC<KnowledgeContextPanelProps> = ({
   };
 
   return (
-    <aside className="desk-context-panel" aria-label="Record context">
+    <aside
+      className={`desk-context-panel ${isOpen ? "" : "is-collapsed"}`}
+      aria-label="Record context"
+      aria-hidden={!isOpen}
+    >
       <div className="desk-context-tabs" role="tablist" aria-label="Record views" onKeyDown={handleTabKeyDown}>
         {views.map((item, index) => {
           const Icon = item.icon;
@@ -131,6 +137,7 @@ export const KnowledgeContextPanel: FC<KnowledgeContextPanelProps> = ({
           <>
             <section className="desk-context-section" aria-label="Connections">
               <RecordRelationshipsPanel
+                key={record.id}
                 recordId={record.id}
                 recordTitle={record.title}
                 onNavigateToRecord={onNavigateToRecord}

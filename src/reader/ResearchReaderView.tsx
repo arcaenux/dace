@@ -385,8 +385,8 @@ export const ResearchReaderView: FC<ResearchReaderViewProps> = ({
   const showDocument = layout.mode !== "writing";
   // Narrow layouts still need a writing workspace: research shows the
   // document with a switch, writing shows the notes full width.
-  const showWriting = layout.mode !== "reading";
-  const showDivider = layout.mode === "research" && !layout.isNarrow;
+  const showWriting = layout.mode === "writing" || (layout.mode === "research" && !layout.isNarrow);
+  const showDivider = Boolean(activeAttachment) && layout.mode === "research" && !layout.isNarrow;
   const gridColumns =
     showDivider
       ? `minmax(0, ${layout.ratio}fr) 10px minmax(0, ${1 - layout.ratio}fr)`

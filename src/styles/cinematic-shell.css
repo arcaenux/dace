@@ -1,75 +1,43 @@
 /* ==========================================================================
-   Dace — shell composition
-
-   Two overlay planes define the frame:
-   1. an orbital navigation arc on the left edge;
-   2. a restrained brand/version strip across the top.
-   The workspace stage begins at viewport origin; no sidebar column or toolbar
-   band participates in the layout.
+   Dace — Shell Composition & Spatial Architecture
+   A minimal, focused, content-first interface chrome.
+   Compact 48px header, restrained geometric rail, space-reclaiming stage.
    ========================================================================== */
+
 :root {
-  --shell-gutter: clamp(26px, 6.5vw, 109px);
-  --shell-right-gutter: clamp(20px, 1.8vw, 30px);
-  --hero-indent: clamp(56px, 8.4vw, 140px);
-  --section-indent: clamp(26px, 2.8vw, 47px);
-  --rail-plane: 190px;
-  --top-plane: 86px;
-  --window-control-space: 121px;
-  --window-control-gap: 4px;
-  --window-control-inset: 28px;
-  --orbital-line: rgba(203, 185, 163, 0.17);
-  --orbital-active: rgba(255, 138, 0, 0.9);
-}html,
+  --shell-gutter: clamp(16px, 3vw, 48px);
+  --shell-right-gutter: 16px;
+  --rail-plane: 140px;
+  --top-plane: 48px;
+  --window-control-space: 104px;
+  --window-control-gap: 2px;
+  --window-control-inset: 10px;
+  --orbital-line: rgba(146, 147, 143, 0.15);
+  --orbital-active: var(--accent-primary);
+}
+
+html,
 body,
 #root,
 .dace-app {
   font-family: var(--font-interface);
-}.dace-app {
-  isolation: isolate;
-  background:
-    radial-gradient(circle at 74% 12%, rgba(255, 138, 0, 0.055), transparent 38%),
-    var(--bg-app);
-}.dace-app > .stage-decoration {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  overflow: hidden;
-  pointer-events: none;
-}.stage-decoration-ring {
-  position: absolute;
-  top: 6vh;
-  left: -38vw;
-  width: 64vw;
-  height: 88vh;
-  border: 1px solid rgba(203, 185, 163, 0.055);
-  border-radius: 50%;
-  transform: rotate(-14deg);
-}.stage-decoration-rule {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 1px;
+  margin: 0;
+  padding: 0;
+  width: 100%;
   height: 100%;
-  background: linear-gradient(180deg, transparent, rgba(255, 138, 0, 0.11) 36%, transparent 82%);
-}.dace-app > .workspace-stage {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  min-width: 0;
   overflow: hidden;
-}.dace-app::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background:
-    var(--ambient-veil),
-    url("../assets/images/textures/starfield.webp") center / 720px 720px repeat,
-    url("../assets/images/textures/subtle-grain.webp") center / 220px 220px repeat;
-  opacity: 0.15;
-  mix-blend-mode: screen;
-}.sr-only {
+}
+
+.dace-app {
+  isolation: isolate;
+  background: var(--bg-app);
+  color: var(--text-primary);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.sr-only {
   position: absolute !important;
   width: 1px !important;
   height: 1px !important;
@@ -79,359 +47,560 @@ body,
   clip: rect(0, 0, 0, 0) !important;
   white-space: nowrap !important;
   border: 0 !important;
-}/* WCAG 2.2 — keyboard focus is always visible and never the default ring. */
-.dace-app :is(button, a, input, textarea, select, [tabindex]:not([tabindex="-1"])):focus-visible {
-  outline: 2px solid var(--dace-amber);
-  outline-offset: 3px;
-}/* WCAG 2.2 2.5.8 — small controls still have a 24px hit area. */
+}
+
+/* Restrained, accessible focus indicators */
+.dace-app :is(button, a, [role="button"], [role="tab"], [tabindex]:not([tabindex="-1"])):focus-visible {
+  outline: none;
+  box-shadow: var(--state-focus-ring);
+}
+
+.dace-app :is(input, textarea, select):focus-visible {
+  outline: none;
+  border-color: var(--input-focus-border);
+  box-shadow: var(--input-focus-ring);
+}
+
 .dace-app :is(.panel-close-btn, .search-clear-btn, .tag-remove-btn) {
   min-width: 24px;
   min-height: 24px;
-}/* --------------------------------------------------------------------------
-   Orbital navigation
+}
+
+/* --------------------------------------------------------------------------
+   Top Bar Region (Compact 48px Header Chrome)
    -------------------------------------------------------------------------- */
-.dace-app > .workspace-rail {
-  position: absolute;
-  inset: 0 auto 0 0;
-  z-index: 60;
-  width: var(--rail-plane);
+
+.dace-app .workspace-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--top-plane);
+  min-height: var(--top-plane);
+  padding: 0 calc(var(--window-control-space) + 12px) 0 12px;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-subtle);
+  position: relative;
+  z-index: var(--z-topbar);
+  pointer-events: auto;
+  user-select: none;
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   min-width: 0;
-  height: 100%;
-  overflow: visible;
+}
+
+.topbar-nav-toggle {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
   background: transparent;
-  border: none;
-  box-shadow: none;
-  pointer-events: none;
-}.dace-app > .workspace-rail::before {
-  content: "";
-  position: absolute;
-  top: 5%;
-  left: -520px;
-  width: 640px;
-  height: 92%;
-  border: 1px solid rgba(203, 185, 163, 0.075);
-  border-radius: 50%;
-  box-shadow:
-    inset 18px 0 60px rgba(255, 138, 0, 0.025),
-    0 0 80px rgba(0, 0, 0, 0.5);
-  pointer-events: none;
-}.dace-app > .workspace-rail::after {
-  content: "";
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color 120ms ease, border-color 120ms ease, background-color 120ms ease;
+}
+
+.topbar-nav-toggle:hover {
+  color: var(--text-primary);
+  border-color: var(--border-subtle);
+  background: var(--state-hover);
+}
+
+.topbar-brand {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+}
+
+.topbar-brand-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.topbar-brand-logo {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.topbar-brand-name {
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  line-height: 1;
+}
+
+.topbar-workspace-name {
+  color: var(--text-primary);
+  font-family: var(--font-interface);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.topbar-breadcrumb-sep {
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1;
+  opacity: 0.6;
+}
+
+.topbar-command-pill {
+  gap: 8px !important;
+  padding: 0 9px !important;
+  color: var(--text-secondary) !important;
+}
+
+.topbar-brand-descriptor {
+  color: var(--text-muted);
+  font-family: var(--font-interface);
+  font-size: 11px;
+  letter-spacing: 0;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.topbar-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.topbar-version {
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  margin-right: 4px;
+}
+
+.dace-app .topbar-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 7px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface-elevated);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  cursor: pointer;
+  transition: color 120ms ease, border-color 120ms ease, background-color 120ms ease;
+}
+
+.dace-app .topbar-icon-btn:hover {
+  border-color: var(--border-medium);
+  background: var(--state-hover);
+  color: var(--text-primary);
+}
+
+.dace-app .topbar-icon-btn kbd {
+  display: inline-block;
+  padding: 1px 4px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xs);
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+.dace-app .topbar-icon-btn-quiet {
+  padding: 0;
+  width: 28px;
+}
+
+/* --------------------------------------------------------------------------
+   Frameless Window Chrome
+   -------------------------------------------------------------------------- */
+
+.window-drag-region {
   position: absolute;
   top: 0;
   left: 0;
-  width: 1px;
-  height: 100%;
-  background: linear-gradient(180deg, transparent, rgba(255, 138, 0, 0.1) 32%, transparent 76%);
-  pointer-events: none;
-}.rail-brand,
-.rail-spacer,
-.rail-tail {
-  display: none;
-}.rail-orbit {
+  right: var(--window-control-space);
+  height: var(--top-plane);
+  z-index: var(--z-drag-region);
+  pointer-events: auto;
+}
+
+.window-controls {
   position: absolute;
-  inset: 0;
+  top: 10px;
+  right: var(--window-control-inset);
+  z-index: var(--z-window-controls);
+  display: flex;
+  align-items: center;
+  gap: var(--window-control-gap);
+  pointer-events: auto;
+}
+
+.dace-app .window-control {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 120ms ease, background-color 120ms ease;
+}
+
+.dace-app .window-control:hover {
+  background: var(--state-hover);
+  color: var(--text-primary);
+}
+
+.dace-app .window-control:active {
+  background: var(--state-active);
+}
+
+.dace-app .window-control-close:hover,
+.dace-app .window-control-close:active {
+  background: rgba(184, 88, 84, 0.2);
+  color: #df7a76;
+}
+
+/* --------------------------------------------------------------------------
+   Workspace Shell Body & Layout Sizing
+   -------------------------------------------------------------------------- */
+
+.workspace-shell-body {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
   width: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.dace-app .workspace-stage {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+  background: var(--bg-app);
+}
+
+.dace-app .central-workspace {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+}
+
+/* --------------------------------------------------------------------------
+   Navigation Rail (Clean, Restrained, Content-First)
+   -------------------------------------------------------------------------- */
+
+.dace-app .workspace-rail {
+  position: relative;
+  width: var(--rail-plane);
+  min-width: var(--rail-plane);
+  height: 100%;
+  flex-shrink: 0;
+  z-index: var(--z-rail);
+  background: transparent;
+  border-right: none;
+  display: flex;
+  flex-direction: column;
+  transition:
+    width 200ms cubic-bezier(0.2, 0, 0, 1),
+    min-width 200ms cubic-bezier(0.2, 0, 0, 1),
+    transform 200ms cubic-bezier(0.2, 0, 0, 1),
+    opacity 160ms ease;
+  overflow: visible;
+  pointer-events: none;
+  user-select: none;
+}
+
+.dace-app .workspace-rail.is-collapsed {
+  width: 0 !important;
+  min-width: 0 !important;
+  border-right: none !important;
+  transform: translateX(-100%);
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+.dace-app .workspace-rail.is-collapsed * {
+  pointer-events: none !important;
+}
+
+.rail-orbit {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--rail-plane);
   height: 100%;
   overflow: visible;
   pointer-events: none;
-}.rail-orbit path {
+}
+
+.rail-curved-fill {
+  fill: var(--bg-surface);
+  stroke: none;
+}
+
+.rail-curved-border {
+  fill: none;
+  stroke: var(--border-subtle);
+  stroke-width: 1;
+}
+
+.rail-orbit-arc {
   fill: none;
   stroke: var(--orbital-line);
   stroke-width: 1;
-  stroke-dasharray: 2 8;
-  vector-effect: non-scaling-stroke;
-}.rail-orbit .rail-orbit-guide {
-  stroke: rgba(255, 138, 0, 0.1);
-  stroke-dasharray: none;
-}.rail-orbit circle {
-  fill: rgba(203, 185, 163, 0.34);
-}.rail-active-halo {
+}
+
+.rail-orbit-guide {
+  fill: none;
+  stroke: rgba(146, 147, 143, 0.05);
+  stroke-width: 1;
+  stroke-dasharray: 2 4;
+}
+
+.rail-orbit-dock {
+  fill: rgba(146, 147, 143, 0.2);
+  stroke: none;
+}
+
+.rail-active-halo {
   position: absolute;
-  left: var(--active-x, 5.4vw);
-  top: var(--active-y, 23vh);
-  z-index: 1;
-  width: 72px;
-  height: 72px;
-  border: 1px solid rgba(255, 138, 0, 0.72);
+  left: var(--active-x);
+  top: var(--active-y);
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-  background:
-    radial-gradient(circle at 42% 36%, rgba(255, 138, 0, 0.3), rgba(24, 14, 6, 0.9) 68%, rgba(11, 11, 11, 0.96));
-  box-shadow:
-    0 0 0 6px rgba(11, 11, 11, 0.9),
-    0 0 0 8px rgba(255, 138, 0, 0.09),
-    0 0 34px rgba(255, 138, 0, 0.34);
+  background: rgba(var(--brand-blue-rgb), 0.08);
+  border: 1px solid rgba(var(--brand-blue-rgb), 0.3);
   transform: translate(-50%, -50%);
   transition:
-    left var(--duration-slow) var(--ease-standard),
-    top var(--duration-slow) var(--ease-standard),
-    box-shadow var(--duration-normal) var(--ease-standard);
+    left 200ms cubic-bezier(0.2, 0, 0, 1),
+    top 200ms cubic-bezier(0.2, 0, 0, 1);
   pointer-events: none;
-}.dace-app .rail-nav {
+  z-index: 1;
+}
+
+.rail-nav {
   position: absolute;
-  inset: 0;
-  z-index: 2;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
-  padding: 0;
   pointer-events: none;
-}.dace-app .rail-nav-item,
-.dace-app .rail-details-btn {
+}
+
+.dace-app .rail-nav-item {
   position: absolute;
-  left: clamp(30px, calc(var(--node-x, 5.4) * 1vw), 154px);
-  top: calc(var(--node-y, 23) * 1vh);
-  z-index: 2;
+  left: var(--node-x);
+  top: var(--node-y);
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  gap: 0;
+  border-radius: 50%;
   display: grid;
   place-items: center;
-  width: 42px;
-  height: 42px;
-  margin: 0;
-  padding: 0;
-  border: 1px solid rgba(203, 185, 163, 0.17);
-  border-radius: 50%;
-  background: rgba(11, 11, 11, 0.9);
-  box-shadow: 0 0 0 5px rgba(11, 11, 11, 0.88);
-  color: var(--dace-muted);
+  justify-content: center;
+  align-items: center;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface-elevated);
+  color: var(--text-secondary);
+  box-shadow: none;
   transform: translate(-50%, -50%);
   transition:
-    color var(--duration-normal) var(--ease-standard),
-    border-color var(--duration-normal) var(--ease-standard),
-    background-color var(--duration-normal) var(--ease-standard),
-    box-shadow var(--duration-normal) var(--ease-standard);
+    color var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard),
+    background-color var(--duration-fast) var(--ease-standard);
   pointer-events: auto;
-}.dace-app .rail-nav-item:hover,
-.dace-app .rail-details-btn:hover {
-  color: var(--dace-ivory);
-  border-color: rgba(255, 138, 0, 0.5);
-  background: rgba(30, 22, 14, 0.94);
-}.dace-app .rail-nav-item.active,
-.dace-app .rail-details-btn.active {
-  color: var(--dace-amber);
-  border-color: transparent;
-  background: transparent;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.dace-app .rail-nav-item:hover {
+  color: var(--text-primary);
+  border-color: var(--border-medium);
+  background: var(--bg-surface-active);
+}
+
+.dace-app .rail-nav-item.active {
+  color: var(--accent-text);
+  border-color: rgba(var(--brand-blue-rgb), 0.45);
+  background: rgba(var(--brand-blue-rgb), 0.1);
   box-shadow: none;
-}.dace-app .rail-nav-item:active,
-.dace-app .rail-details-btn:active {
-  box-shadow: 0 0 0 4px rgba(255, 138, 0, 0.1);
-}.rail-nav-icon {
+}
+
+.dace-app .rail-nav-icon {
   display: grid;
   place-items: center;
+  width: auto;
+  height: auto;
   color: inherit;
-}.dace-app .rail-nav-label {
+}
+
+.rail-nav-label {
   display: none;
-}.rail-nav-item[data-tooltip]::after,
+}
+
+.rail-nav-item[data-tooltip]::after,
 .rail-details-btn[data-tooltip]::after {
   content: attr(data-tooltip);
   position: absolute;
-  left: calc(100% + 14px);
+  left: calc(100% + 12px);
   top: 50%;
-  z-index: 80;
+  z-index: var(--z-popover);
   transform: translate(-4px, -50%);
-  padding: 6px 10px;
-  border: 1px solid rgba(203, 185, 163, 0.18);
-  border-radius: 6px;
-  background: rgba(20, 20, 20, 0.98);
-  color: var(--dace-ivory);
-  font-family: var(--font-mono);
-  font-size: var(--type-mono);
-  letter-spacing: 0.06em;
+  padding: 4px 8px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xs);
+  background: var(--bg-surface-elevated);
+  color: var(--text-primary);
+  font-family: var(--font-interface);
+  font-size: 11px;
+  letter-spacing: 0;
   white-space: nowrap;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 140ms ease, transform 140ms ease;
-}.rail-nav-item[data-tooltip]:hover::after,
+  transition: opacity 120ms ease, transform 120ms ease;
+  box-shadow: var(--shadow-subtle);
+}
+
+.rail-nav-item[data-tooltip]:hover::after,
 .rail-nav-item[data-tooltip]:focus-visible::after,
 .rail-details-btn[data-tooltip]:hover::after,
 .rail-details-btn[data-tooltip]:focus-visible::after {
   opacity: 1;
   transform: translate(0, -50%);
-}.dace-app .rail-section {
+}
+
+.rail-footer {
   position: absolute;
-  left: clamp(30px, 4.6vw, 78px);
-  top: 64vh;
-  z-index: 2;
+  bottom: 14px;
+  left: 10px;
+  width: 28px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  width: auto;
-  padding: 0;
+  justify-content: center;
+  gap: 8px;
+  z-index: 10;
   pointer-events: auto;
-}.dace-app .rail-details-btn {
-  left: clamp(32px, 8.5vw, 142px);
-  top: 57.5vh;
-}/* --------------------------------------------------------------------------
-   Top region
-   -------------------------------------------------------------------------- */
-.dace-app .workspace-topbar {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 70;
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 20px;
-  height: var(--top-plane);
-  padding: 22px calc(var(--shell-right-gutter) + var(--window-control-space)) 0 calc(var(--shell-gutter) + 3px);
-  background: transparent;
-  border: none;
-  pointer-events: none;
-}/* The brand is inert canvas; only real controls take clicks so the drag plane
-   underneath can still own the rest of the title area. */
-.workspace-topbar > .topbar-brand {
-  pointer-events: none;
-}.workspace-topbar > .topbar-meta {
-  pointer-events: auto;
-}.topbar-brand {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  min-width: 0;
-}.topbar-brand-line {
-  display: flex;
-  align-items: center;
-  gap: 0;
-}.topbar-brand-name {
-  color: var(--dace-ivory);
-  font-family: var(--font-display);
-  font-size: 25px;
-  font-weight: 600;
-  letter-spacing: 0.19em;
-  line-height: 1;
-}.topbar-workspace-name {
-  margin-left: clamp(36px, 7.8vw, 132px);
-  color: rgba(181, 166, 151, 0.72);
-  font-family: var(--font-mono);
-  font-size: var(--type-mono);
-  font-weight: 400;
-  letter-spacing: 0.1em;
-  line-height: 1;
-  white-space: nowrap;
-  transform: translateY(-2px);
-}.topbar-brand-descriptor {
-  padding-left: 0;
-  color: rgba(203, 185, 163, 0.72);
-  font-family: var(--font-mono);
-  font-size: var(--type-mono);
-  letter-spacing: 0.04em;
-  line-height: 1.2;
-  white-space: nowrap;
-}.topbar-brand-divider {
-  display: none;
-}.topbar-version {
-  margin-right: 30px;
-  color: rgba(203, 185, 163, 0.5);
-  font-family: var(--font-mono);
-  font-size: 14px;
-  letter-spacing: 0.04em;
-  transform: translateY(2px);
-}.dace-app .topbar-meta {
-  display: flex;
-  align-items: center;
-  gap: 29px;
-  flex-shrink: 0;
-  margin-right: -36px;
-  padding-top: 0;
-}.dace-app .topbar-activity {
-  color: rgba(203, 185, 163, 0.48);
-  font-family: var(--font-mono);
-  font-size: var(--type-micro);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}.dace-app .topbar-icon-btn {
-  display: inline-grid;
+}
+
+.dace-app .rail-details-btn,
+.dace-app .rail-collapse-btn {
+  display: grid;
   place-items: center;
+  justify-content: center;
+  align-items: center;
   width: 28px;
   height: 28px;
   padding: 0;
-  border: 1px solid rgba(203, 185, 163, 0.12);
-  border-radius: 50%;
-  background: rgba(11, 11, 11, 0.58);
-  color: rgba(203, 185, 163, 0.62);
-  transition: color 140ms ease, border-color 140ms ease, background-color 140ms ease;
-}.dace-app .topbar-icon-btn:hover {
-  border-color: rgba(255, 138, 0, 0.5);
-  background: rgba(255, 138, 0, 0.06);
-  color: var(--dace-amber);
-}.dace-app .topbar-icon-btn kbd {
-  display: none;
-}/* --------------------------------------------------------------------------
-   Frameless window chrome
-   -------------------------------------------------------------------------- *//* Invisible drag plane: it owns the top strip but sits below every real
-   control, so buttons are never treated as window handles. */
-.window-drag-region {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 65;
-  height: var(--top-plane);
-  pointer-events: auto;
-}.window-controls {
-  position: fixed;
-  top: 20px;
-  right: var(--window-control-inset);
-  z-index: 500;
-  display: flex;
-  align-items: center;
-  gap: var(--window-control-gap);
-  pointer-events: auto;
-}.dace-app .window-control {
-  display: grid;
-  place-items: center;
-  width: 26px;
-  height: 26px;
-  padding: 0;
-  border: none;
-  border-radius: 5px;
-  background: transparent;
-  color: rgba(203, 185, 163, 0.52);
-  transition: color 150ms ease, background-color 150ms ease;
-}.dace-app .window-control:hover {
-  background: rgba(248, 237, 225, 0.06);
-  color: var(--dace-ivory);
-}.dace-app .window-control:active {
-  background: rgba(248, 237, 225, 0.09);
-}.dace-app .window-control-close:hover,
-.dace-app .window-control-close:active {
-  background: rgba(255, 92, 92, 0.1);
-  color: #ff8585;
+  gap: 0;
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface-elevated);
+  color: var(--text-muted);
+  box-shadow: none;
+  cursor: pointer;
+  transition: color 120ms ease, border-color 120ms ease, background 120ms ease;
+}
+
+.rail-details-btn:hover,
+.rail-collapse-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--border-medium);
+  background: var(--state-hover);
+}
+
+.rail-details-btn.active {
+  color: var(--accent-text);
+  border-color: rgba(var(--brand-blue-rgb), 0.4);
 }
 
 /* --------------------------------------------------------------------------
-   Responsive composition
+   Quiet Status Notice
    -------------------------------------------------------------------------- */
 
-@media (max-width: 1180px) {:root {
-    --shell-gutter: clamp(34px, 5vw, 72px);
-    --hero-indent: clamp(64px, 7vw, 100px);
-  }.topbar-brand-descriptor { display: none; }.dace-app .topbar-activity { display: none; }
+.quiet-notice {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: var(--z-toast);
+  padding: 6px 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface-elevated);
+  color: var(--text-primary);
+  font-family: var(--font-interface);
+  font-size: 12px;
+  box-shadow: var(--shadow-elevated);
+  pointer-events: none;
+  animation: quiet-notice-enter 160ms ease;
 }
 
-@media (max-width: 900px) {:root {
-    --shell-gutter: 28px;
-    --hero-indent: 68px;
-    --rail-plane: 116px;
-    --top-plane: 70px;
-  }.dace-app > .workspace-rail::before { left: -460px; }.rail-orbit { opacity: 0.5; }.dace-app .rail-nav-item,
-.dace-app .rail-details-btn { width: 36px; height: 36px; }.rail-active-halo { width: 56px; height: 56px; }.dace-app .rail-section { left: 26px; top: 66vh; }.topbar-version { display: none; }.dace-app .workspace-topbar { padding-top: 18px; }
+@keyframes quiet-notice-enter {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 6px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
 }
 
-@media (max-width: 680px) {:root {
-    --shell-gutter: 22px;
-    --hero-indent: 46px;
-    --window-control-space: 96px;
-    --window-control-gap: 10px;
-    --window-control-inset: 14px;
-  }.topbar-brand-mark { width: 20px; height: 20px; }.topbar-brand-name { font-size: 17px; }.rail-nav-item[data-tooltip]::after,
-.rail-details-btn[data-tooltip]::after { display: none; }
+/* --------------------------------------------------------------------------
+   Responsive Rules
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 1024px) {
+  .topbar-brand-descriptor {
+    display: none;
+  }
 }
 
-@media (prefers-reduced-motion: reduce) {.dace-app *,
-.dace-app *::before,
-.dace-app *::after {
+@media (max-width: 768px) {
+  .topbar-version {
+    display: none;
+  }
+  .rail-nav-item[data-tooltip]::after,
+  .rail-details-btn[data-tooltip]::after {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dace-app *,
+  .dace-app *::before,
+  .dace-app *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;

@@ -7,6 +7,7 @@ import { RecordListPanel } from "./RecordListPanel";
 import { KnowledgeContextPanel, extractDeskOutline, DeskOutlineItem } from "./KnowledgeContextPanel";
 import { useFocusSpace } from "../focus/FocusSpaceContext";
 import { useDismissable } from "../core/useDismissable";
+import { useSettings } from "../settings/SettingsContext";
 import type { KnowledgeDeskIntent } from "../core/appIntents.ts";
 import type { SaveParticipantRegistry } from "../core/saveRegistry.ts";
 
@@ -34,8 +35,15 @@ export const KnowledgeDesk: FC<KnowledgeDeskProps> = ({
   const [tags, setTags] = useState<TagItem[]>([]);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [isListOpen, setIsListOpen] = useState<boolean>(false);
+  const [isContextPanelOpen, setIsContextPanelOpen] = useState<boolean>(() => {
+    if (typeof window !== "undefined" && window.location.hash.includes("context=collapsed")) {
+      return false;
+    }
+    return true;
+  });
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const { settings } = useSettings();
 
   // Navigation History Stack for Relationship Back-Tracking
   const [navigationHistory, setNavigationHistory] = useState<string[]>([]);
@@ -280,17 +288,20 @@ export const KnowledgeDesk: FC<KnowledgeDeskProps> = ({
   // Delete active record after confirmation
   const handleConfirmDelete = async () => {
     if (!deleteConfirmId) return;
+    const deletedId = deleteConfirmId;
 
     try {
-      const success = await api.deleteRecord(deleteConfirmId);
+      const success = await api.deleteRecord(deletedId);
       if (success) {
+        window.dispatchEvent(new CustomEvent("dace:record-deleted", { detail: deletedId }));
         onShowNotice("Record deleted");
         setDeleteConfirmId(null);
+        setNavigationHistory((prev) => prev.filter((id) => id !== deletedId));
         const list = await loadRecords(selectedTag);
         await refreshTags();
 
         // Switch to adjacent record or clear
-        if (activeRecord?.id === deleteConfirmId) {
+        if (activeRecord?.id === deletedId) {
           if (list.length > 0) {
             const next = await api.getRecord(list[0].id);
             setActiveRecord(next);
@@ -301,7 +312,7 @@ export const KnowledgeDesk: FC<KnowledgeDeskProps> = ({
       }
     } catch (err) {
       console.error("[KnowledgeDesk] Failed to delete record:", err);
-      onShowNotice("Error deleting record from SQLite");
+      onShowNotice("Error deleting record from library");
     }
   };
 
@@ -353,6 +364,9 @@ export const KnowledgeDesk: FC<KnowledgeDeskProps> = ({
         const res = await pickAndImportAttachment(activeRecord?.id);
         if (res) {
           onShowNotice(`Imported "${res.attachment.file_name}" into managed storage.`);
+          if (settings.documents.openImportedDocuments) {
+            onOpenInReader?.(res.attachment.id, 1);
+          }
         }
       } catch (err: any) {
         onShowNotice(`Import failed: ${err?.message || err}`);
@@ -364,6 +378,8 @@ export const KnowledgeDesk: FC<KnowledgeDeskProps> = ({
     handleCreateNewRecord,
     activeRecord?.id,
     onShowNotice,
+    settings.documents.openImportedDocuments,
+    onOpenInReader,
   ]);
 
   return (
@@ -400,6 +416,8 @@ export const KnowledgeDesk: FC<KnowledgeDeskProps> = ({
               canNavigateBack={navigationHistory.length > 0}
               onNavigateBack={handleNavigateBack}
               previousRecordTitle={previousRecordTitle}
+              isContextOpen={isContextPanelOpen}
+              onToggleContext={() => setIsContextPanelOpen((prev) => !prev)}
             />
             <KnowledgeContextPanel
               record={activeRecord}
@@ -410,6 +428,7 @@ export const KnowledgeDesk: FC<KnowledgeDeskProps> = ({
               onOpenExcerptInReader={onOpenInReader}
               onJumpToLine={(line) => editorRef.current?.jumpToLine(line)}
               onOpenFullGraph={onOpenGraphView}
+              isOpen={isContextPanelOpen}
             />
           </div>
         ) : (
@@ -443,7 +462,7 @@ export const KnowledgeDesk: FC<KnowledgeDeskProps> = ({
           <div ref={deleteDialogRef} className="delete-confirm-dialog">
             <h3 className="confirm-title">Delete Knowledge Record?</h3>
             <p className="confirm-message">
-              This record will be permanently deleted from the SQLite database. This action cannot be undone.
+              This record will be permanently deleted from your library. This action cannot be undone.
             </p>
             <div className="confirm-actions">
               <button

@@ -40,8 +40,23 @@ export function useAdaptiveReaderLayout(
   const onChromeChangeRef = useRef(onChromeChange);
   onChromeChangeRef.current = onChromeChange;
 
-  const mode = settings.workspace.readerDefaultMode;
-  const savedRatio = settings.workspace.readerSplitRatio;
+  const [optimisticMode, setOptimisticMode] = useState<ReaderMode>(
+    () => settings.workspace.readerDefaultMode
+  );
+  const [optimisticRatio, setOptimisticRatio] = useState<number>(
+    () => settings.workspace.readerSplitRatio
+  );
+
+  useEffect(() => {
+    setOptimisticMode(settings.workspace.readerDefaultMode);
+  }, [settings.workspace.readerDefaultMode]);
+
+  useEffect(() => {
+    setOptimisticRatio(settings.workspace.readerSplitRatio);
+  }, [settings.workspace.readerSplitRatio]);
+
+  const mode = optimisticMode;
+  const savedRatio = optimisticRatio;
   const navCollapsed = settings.workspace.readerNavCollapsed;
   const headerCollapsed = settings.workspace.readerHeaderCollapsed;
 
@@ -111,6 +126,7 @@ export function useAdaptiveReaderLayout(
   const setMode = useCallback(
     (next: ReaderMode) => {
       if (!isReaderMode(next)) return;
+      setOptimisticMode(next);
       queuePatch({ readerDefaultMode: next });
     },
     [queuePatch]
@@ -118,7 +134,9 @@ export function useAdaptiveReaderLayout(
 
   const setRatio = useCallback(
     (next: number) => {
-      queuePatch({ readerSplitRatio: clampSplitRatio(next) });
+      const clamped = clampSplitRatio(next);
+      setOptimisticRatio(clamped);
+      queuePatch({ readerSplitRatio: clamped });
     },
     [queuePatch]
   );

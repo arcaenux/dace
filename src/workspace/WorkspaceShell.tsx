@@ -13,6 +13,11 @@ import {
   type WorkspaceIntentRequest,
 } from "../core/appIntents.ts";
 import { WorkspaceActivityId, OverlayType } from "../core/types";
+import {
+  activityFromHash,
+  hashForActivity,
+  isWorkspaceActivity,
+} from "./workspaceNavigation";
 import { buildCommandList } from "../core/commandRegistry";
 import { useKeyboardShortcuts } from "../core/useKeyboardShortcuts";
 import { useFocusSpace } from "../focus/FocusSpaceContext";
@@ -45,9 +50,29 @@ import {
   restoreOutcomeNotice,
   restoreStagedMessage,
 } from "../backup/restoreMessages.ts";
+import { useSettings } from "../settings/SettingsContext";
+import { SettingsView } from "../settings/SettingsView";
+import { TerminalView } from "../terminal/TerminalView";
+import type { DefaultActivity } from "../settings/types";
+
+const PERSISTABLE_ACTIVITIES: DefaultActivity[] = [
+  "workspace",
+  "knowledge-desk",
+  "reader",
+  "knowledge-graph",
+];
+
+function isPersistableActivity(activity: WorkspaceActivityId): activity is DefaultActivity {
+  return PERSISTABLE_ACTIVITIES.includes(activity as DefaultActivity);
+}
 
 export const WorkspaceShell: FC = () => {
-  const [activeActivity, setActiveActivity] = useState<WorkspaceActivityId>("workspace");
+  const [activeActivity, setActiveActivity] = useState<WorkspaceActivityId>(() => {
+    if (typeof window !== "undefined") {
+      return activityFromHash(window.location.hash) ?? "workspace";
+    }
+    return "workspace";
+  });
   const [selectedDeskRecordId, setSelectedDeskRecordId] = useState<string | null>(null);
   const [readerTarget, setReaderTarget] = useState<{ attachmentId: string; pageNumber: number } | null>(null);
   const [readerChrome, setReaderChrome] = useState<ReaderChromeState>({
@@ -64,6 +89,15 @@ export const WorkspaceShell: FC = () => {
   const [activeOverlay, setActiveOverlay] = useState<OverlayType>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [isPanelOpen, setIsPanelOpen] = useState<boolean>(false);
+  const [isRailCollapsed, setIsRailCollapsed] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      return (
+        localStorage.getItem("dace_nav_collapsed") === "true" ||
+        window.location.hash.includes("nav=collapsed")
+      );
+    }
+    return false;
+  });
   const noticeTimerRef = useRef<number | null>(null);
   const [isBackupRunning, setIsBackupRunning] = useState(false);
   const [restorePreview, setRestorePreview] = useState<RestorePreview | null>(null);
@@ -82,6 +116,26 @@ export const WorkspaceShell: FC = () => {
 
   const { isFocusSpace, enterFocusSpace, exitFocusSpace, toggleFocusSpace, fullscreenError } =
     useFocusSpace();
+  const {
+    settings,
+    loading: settingsLoading,
+    update: updateSettings,
+    refreshInfo: refreshSettingsInfo,
+  } = useSettings();
+  const initializedFromSettingsRef = useRef(false);
+  const initialHashActivityRef = useRef<WorkspaceActivityId | null>(
+    typeof window !== "undefined" ? activityFromHash(window.location.hash) : null
+  );
+
+  // Keep the URL hash in sync without adding a history entry or re-triggering
+  // the hashchange listener. An explicit hash still wins on startup.
+  const syncHash = useCallback((activity: WorkspaceActivityId) => {
+    if (typeof window === "undefined") return;
+    const nextHash = hashForActivity(activity);
+    if (window.location.hash !== nextHash) {
+      window.history.replaceState(window.history.state, "", nextHash);
+    }
+  }, []);
 
   // A workspace change dismisses transient drawers so two right-edge surfaces
   // (context panel and reader drawer) can never occupy the same space. Stale
@@ -93,7 +147,17 @@ export const WorkspaceShell: FC = () => {
     if (activity !== "knowledge-desk") setSelectedDeskRecordId(null);
     setIntentQueue((current) => pruneIntentsForActivity(current, activity));
     setActiveActivity(activity);
-  }, []);
+    syncHash(activity);
+  }, [syncHash]);
+
+  useEffect(() => {
+    const onHashChange = () => {
+      const activity = activityFromHash(window.location.hash);
+      if (activity) selectActivity(activity);
+    };
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, [selectActivity]);
 
   const requestIntent = useCallback(
     (request: WorkspaceIntentRequest) => {
@@ -125,6 +189,39 @@ export const WorkspaceShell: FC = () => {
       setReaderChrome({ navigation: "full", header: "full" });
     }
   }, [activeActivity]);
+
+  // Apply the persisted startup workspace once preferences have loaded, unless
+  // the URL explicitly named an activity. The hash is the user's direct intent.
+  useEffect(() => {
+    if (settingsLoading || initializedFromSettingsRef.current) return;
+    initializedFromSettingsRef.current = true;
+    if (initialHashActivityRef.current) return;
+    const initial =
+      settings.general.startupBehavior === "remember-last"
+        ? settings.general.lastActiveActivity
+        : settings.general.defaultActivity;
+    if (!isWorkspaceActivity(initial)) return;
+    setActiveActivity(initial);
+    syncHash(initial);
+  }, [
+    settingsLoading,
+    settings.general.defaultActivity,
+    settings.general.lastActiveActivity,
+    settings.general.startupBehavior,
+    syncHash,
+  ]);
+
+  // Keep the last workspace current without writing on every transient view.
+  useEffect(() => {
+    if (!initializedFromSettingsRef.current) return;
+    if (settings.general.startupBehavior !== "remember-last") return;
+    if (!isPersistableActivity(activeActivity)) return;
+    if (settings.general.lastActiveActivity === activeActivity) return;
+    void updateSettings((current) => ({
+      ...current,
+      general: { ...current.general, lastActiveActivity: activeActivity },
+    }));
+  }, [activeActivity, settings.general.lastActiveActivity, settings.general.startupBehavior, updateSettings]);
 
   const showNotice = useCallback((msg: string, durationMs = 3200) => {
     if (noticeTimerRef.current !== null) {
@@ -214,9 +311,12 @@ export const WorkspaceShell: FC = () => {
     setIsBackupRunning(true);
     showNotice("Preparing backup export…", 0);
     try {
-      const result = await exportBackup((progress) => {
-        showNotice(progress.message || "Exporting backup…", 0);
-      });
+      const result = await exportBackup(
+        (progress) => {
+          showNotice(progress.message || "Exporting backup…", 0);
+        },
+        settings.documents.defaultBackupDirectory
+      );
       const sizeLabel = formatBytes(result.archive_size);
       const name = result.archive_path.split(/[/\\]/).pop() || result.archive_path;
       showNotice(
@@ -232,8 +332,9 @@ export const WorkspaceShell: FC = () => {
       }
     } finally {
       setIsBackupRunning(false);
+      void refreshSettingsInfo();
     }
-  }, [isBackupRunning, showNotice]);
+  }, [isBackupRunning, settings.documents.defaultBackupDirectory, showNotice, refreshSettingsInfo]);
 
   const handleRestoreBackup = useCallback(async () => {
     if (isRestoreInspecting || isRestoreRunning) {
@@ -262,8 +363,9 @@ export const WorkspaceShell: FC = () => {
       }
     } finally {
       setIsRestoreInspecting(false);
+      void refreshSettingsInfo();
     }
-  }, [isBackupRunning, isRestoreInspecting, isRestoreRunning, showNotice]);
+  }, [isBackupRunning, isRestoreInspecting, isRestoreRunning, showNotice, refreshSettingsInfo]);
 
   useEffect(() => {
     const shellIntent = intentQueue.find(isShellIntent);
@@ -357,6 +459,16 @@ export const WorkspaceShell: FC = () => {
     requestIntent,
   ]);
 
+  const toggleRail = useCallback(() => {
+    setIsRailCollapsed((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem("dace_nav_collapsed", String(next));
+      } catch {}
+      return next;
+    });
+  }, []);
+
   useKeyboardShortcuts({
     activeOverlay,
     openOverlay,
@@ -368,6 +480,7 @@ export const WorkspaceShell: FC = () => {
     activeActivity,
     setActiveActivity: selectActivity,
     requestIntent,
+    onToggleNav: toggleRail,
   });
 
   const deskIntent = intentQueue.find(isTargetedKnowledgeDeskIntent) ?? null;
@@ -377,22 +490,6 @@ export const WorkspaceShell: FC = () => {
     <div
       className={`dace-app nova-app reader-nav-${readerChrome.navigation} reader-header-${readerChrome.header}`}
     >
-      <div className="stage-decoration" aria-hidden="true">
-        <span className="stage-decoration-ring" />
-        <span className="stage-decoration-rule" />
-      </div>
-
-      <WorkspaceRail
-        activeActivity={activeActivity}
-        isFocusSpace={isFocusSpace}
-        onSelectActivity={selectActivity}
-        onTogglePanel={() => setIsPanelOpen((current) => !current)}
-        isPanelOpen={isPanelOpen}
-        panelTriggerRef={panelTriggerRef}
-        hidden={readerChrome.navigation === "hidden"}
-        compact={readerChrome.navigation === "compact"}
-      />
-
       <WorkspaceTopBar
         activeActivity={activeActivity}
         isFocusSpace={isFocusSpace}
@@ -400,13 +497,29 @@ export const WorkspaceShell: FC = () => {
         onOpenCommands={() => openOverlay("command-palette")}
         onOpenShortcuts={() => openOverlay("shortcut-reference")}
         onSearch={() => requestIntent({ type: "search-records" })}
+        onToggleNav={toggleRail}
+        isNavCollapsed={isRailCollapsed}
         commandsTriggerRef={commandsTriggerRef}
         shortcutsTriggerRef={shortcutsTriggerRef}
       />
 
       <WindowControls />
 
-      <main className={`workspace-stage ${isFocusSpace ? "focus-active" : ""}`}>
+      <div className="workspace-shell-body">
+        <WorkspaceRail
+          activeActivity={activeActivity}
+          isFocusSpace={isFocusSpace}
+          onSelectActivity={selectActivity}
+          onTogglePanel={() => setIsPanelOpen((current) => !current)}
+          isPanelOpen={isPanelOpen}
+          panelTriggerRef={panelTriggerRef}
+          hidden={readerChrome.navigation === "hidden"}
+          compact={readerChrome.navigation === "compact" || settings.appearance.sidebarCollapsed}
+          isCollapsed={isRailCollapsed}
+          onToggleCollapse={toggleRail}
+        />
+
+        <main className={`workspace-stage ${isFocusSpace ? "focus-active" : ""}`}>
         <FocusSpaceView onOpenCommands={() => openOverlay("command-palette")}>
           <div className="central-workspace">
               {activeActivity === "workspace" && (
@@ -415,6 +528,7 @@ export const WorkspaceShell: FC = () => {
                   onOpenShortcuts={() => openOverlay("shortcut-reference")}
                   onEnterFocus={() => enterFocusSpace()}
                   onOpenKnowledgeDesk={() => selectActivity("knowledge-desk")}
+                  onNewRecord={() => requestIntent({ type: "new-record" })}
                   onOpenReader={() => selectActivity("reader")}
                   onOpenGraph={() => selectActivity("knowledge-graph")}
                   onOpenRecord={(recordId) => {
@@ -469,27 +583,15 @@ export const WorkspaceShell: FC = () => {
                 />
               )}
 
-              {activeActivity !== "workspace" &&
-                activeActivity !== "knowledge-desk" &&
-                activeActivity !== "reader" &&
-                activeActivity !== "knowledge-graph" && (
-                <div className="activity-placeholder">
-                  <span className="activity-badge-large">Planned Module</span>
-                  <h2 className="activity-title">
-                    {activeActivity.replace("-", " ").toUpperCase()}
-                  </h2>
-                  <p className="activity-desc">
-                    This capability is scheduled for subsequent milestone releases as specified in
-                    the Dace roadmap.
-                  </p>
-                  <button
-                    className="activity-back-btn"
-                    onClick={() => selectActivity("workspace")}
-                  >
-                    Return to Workspace
-                  </button>
-                </div>
+              {activeActivity === "settings" && (
+                <SettingsView
+                  onExportBackup={() => void handleExportBackup()}
+                  onRestoreBackup={() => void handleRestoreBackup()}
+                />
               )}
+
+              {activeActivity === "terminal" && <TerminalView onNotice={showNotice} />}
+
             </div>
           </FocusSpaceView>
 
@@ -506,14 +608,16 @@ export const WorkspaceShell: FC = () => {
                 </div>
                 <div style={{ fontWeight: 600, color: "var(--text-primary)", marginTop: "4px" }}>
                   {activeActivity === "workspace"
-                    ? "General Workspace"
+                    ? "Workspace Home"
                     : activeActivity === "knowledge-desk"
-                    ? "Knowledge Desk (SQLite Active)"
+                    ? "Knowledge Desk"
                     : activeActivity === "knowledge-graph"
-                    ? "Interactive Knowledge Graph (Cosmos Active)"
+                    ? "Knowledge Graph"
                     : activeActivity === "reader"
                     ? "Research Reader"
-                    : activeActivity}
+                    : activeActivity === "terminal"
+                    ? "Terminal"
+                    : "Settings"}
                 </div>
               </div>
 
@@ -532,6 +636,7 @@ export const WorkspaceShell: FC = () => {
             </div>
         </ContextualPanel>
       </main>
+      </div>
 
       <CommandPalette
         commands={commandList}

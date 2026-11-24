@@ -40,7 +40,7 @@
               box-shadow var(--duration-normal) var(--ease-standard);
 }.graph-search-input-wrapper:focus-within {
   border-color: rgba(118, 151, 198, 0.4);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 12px rgba(14, 165, 233, 0.15);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 12px rgba(var(--brand-blue-rgb), 0.15);
 }.graph-search-input-wrapper .search-icon {
   color: var(--text-muted);
   font-size: var(--font-size-sm);
@@ -175,7 +175,7 @@
   border: 1px solid rgba(118, 151, 198, 0.16);
   border-radius: var(--radius-xl);
   padding: var(--space-4);
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55), 0 0 24px rgba(14, 165, 233, 0.06);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55), 0 0 24px rgba(var(--brand-blue-rgb), 0.06);
   z-index: 25;
   animation: graphCardFadeIn var(--duration-normal) var(--ease-standard);
 }
@@ -199,9 +199,9 @@
   font-weight: 600;
   padding: 2px 7px;
   border-radius: 10px;
-  background: rgba(14, 165, 233, 0.12);
+  background: rgba(var(--brand-blue-rgb), 0.12);
   color: #38bdf8;
-  border: 1px solid rgba(14, 165, 233, 0.25);
+  border: 1px solid rgba(var(--brand-blue-rgb), 0.25);
 }.card-close-btn {
   background: transparent;
   border: none;
@@ -273,7 +273,7 @@
   background: rgba(118, 151, 198, 0.15);
   border-color: rgba(118, 151, 198, 0.3);
 }.chip-type {
-  color: var(--accent-primary);
+  color: var(--accent-text);
   font-weight: 500;
 }.card-actions {
   margin-top: var(--space-3);
@@ -308,7 +308,7 @@
   border-color: rgba(118, 151, 198, 0.3);
 }.edge-rel-badge {
   font-size: var(--font-size-xs);
-  color: var(--accent-primary);
+  color: var(--accent-text);
   font-weight: 500;
 }.edge-desc-text {
   font-family: var(--font-quotation);
@@ -318,7 +318,7 @@
   color: #cbd5e1;
   padding: 4px 8px;
   border-left: 2px solid rgba(56, 189, 248, 0.4);
-  background: rgba(14, 165, 233, 0.04);
+  background: rgba(var(--brand-blue-rgb), 0.04);
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   margin: var(--space-2) 0;
   line-height: var(--line-height-relaxed);

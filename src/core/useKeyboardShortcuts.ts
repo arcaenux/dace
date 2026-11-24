@@ -13,6 +13,7 @@ interface KeyboardShortcutsProps {
   activeActivity: WorkspaceActivityId;
   setActiveActivity: (act: WorkspaceActivityId) => void;
   requestIntent: (request: WorkspaceIntentRequest) => void;
+  onToggleNav?: () => void;
 }
 
 export function useKeyboardShortcuts({
@@ -26,6 +27,7 @@ export function useKeyboardShortcuts({
   activeActivity,
   setActiveActivity,
   requestIntent,
+  onToggleNav,
 }: KeyboardShortcutsProps) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -74,6 +76,13 @@ export function useKeyboardShortcuts({
         return;
       }
 
+      // 3.1. Ctrl+B (or Cmd+B): Toggle Navigation Rail
+      if (modifier && (e.key === "b" || e.key === "B") && !e.shiftKey && !e.altKey) {
+        e.preventDefault();
+        onToggleNav?.();
+        return;
+      }
+
       // 4. Ctrl+Shift+P: Shortcut Discovery reference
       if (modifier && e.shiftKey && (e.key === "p" || e.key === "P") && !e.altKey) {
         e.preventDefault();
@@ -82,6 +91,11 @@ export function useKeyboardShortcuts({
         } else {
           openOverlay("shortcut-reference");
         }
+        return;
+      }
+
+      // Do not trigger global workspace shortcuts behind an active modal overlay
+      if (activeOverlay !== null) {
         return;
       }
 
@@ -119,22 +133,22 @@ export function useKeyboardShortcuts({
 
       // 7.1. Alt+Shift+1 / 2 / 3: Reader layouts (globally advertised shortcuts)
       if (e.altKey && e.shiftKey && !modifier && !isInput) {
-        if (e.key === "1") {
+        if (e.code === "Digit1" || e.key === "1" || e.key === "!") {
           e.preventDefault();
           requestIntent({ type: "reader-mode", mode: "reading" });
           return;
-        } else if (e.key === "2") {
+        } else if (e.code === "Digit2" || e.key === "2" || e.key === "@") {
           e.preventDefault();
           requestIntent({ type: "reader-mode", mode: "research" });
           return;
-        } else if (e.key === "3") {
+        } else if (e.code === "Digit3" || e.key === "3" || e.key === "#") {
           e.preventDefault();
           requestIntent({ type: "reader-mode", mode: "writing" });
           return;
         }
       }
 
-      // 8. Alt+1 / Alt+2 / Alt+3 / Alt+4 / Alt+6 Navigation Shortcuts
+      // 8. Alt+1 / Alt+2 / Alt+3 / Alt+4 / Alt+5 Navigation Shortcuts
       if (e.altKey && !modifier && !e.shiftKey) {
         if (e.key === "1") {
           e.preventDefault();
@@ -151,6 +165,10 @@ export function useKeyboardShortcuts({
         } else if (e.key === "4") {
           e.preventDefault();
           setActiveActivity("reader");
+          return;
+        } else if (e.key === "5") {
+          e.preventDefault();
+          setActiveActivity("settings");
           return;
         } else if (e.key === "6") {
           e.preventDefault();
@@ -186,5 +204,6 @@ export function useKeyboardShortcuts({
     activeActivity,
     setActiveActivity,
     requestIntent,
+    onToggleNav,
   ]);
 }

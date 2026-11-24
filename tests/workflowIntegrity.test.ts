@@ -4,6 +4,10 @@ import fs from "node:fs";
 import path from "node:path";
 import { buildCommandList } from "../src/core/commandRegistry.ts";
 import type { WorkspaceIntentRequest } from "../src/core/appIntents.ts";
+import {
+  activityFromHash,
+  hashForActivity,
+} from "../src/workspace/workspaceNavigation.ts";
 
 function makeCommandContext(
   activeActivity: "workspace" | "knowledge-desk" | "reader" = "workspace",
@@ -65,8 +69,9 @@ test("2. Command descriptions are current and planned commands remain unavailabl
 
   const settings = commands.find((c) => c.id === "system:settings");
   assert.ok(settings, "Settings command should remain listed");
-  assert.strictEqual(settings?.available, false, "Settings must not be presented as implemented");
-  assert.ok(settings?.unavailabilityReason, "Planned Settings command should explain unavailability");
+  assert.strictEqual(settings?.available, true, "Settings must be presented as implemented");
+  assert.equal(settings?.shortcut, "Alt+5");
+  assert.match(settings?.description || "", /preferences/i);
 });
 
 test("3. Reader drawer linked-record navigation uses valid targets and no empty record ID", () => {
@@ -98,6 +103,30 @@ test("3. Reader drawer linked-record navigation uses valid targets and no empty 
     "Empty-state messaging for unlinked documents must remain present"
   );
 });
+
+test("4. Workspace hashes map to activities and win over persisted startup", () => {
+  assert.equal(activityFromHash("#reader"), "reader");
+  assert.equal(activityFromHash("#terminal"), "terminal");
+  assert.equal(activityFromHash("#not-a-workspace"), null);
+  assert.equal(hashForActivity("knowledge-desk"), "#knowledge-desk");
+
+  const shell = fs.readFileSync(path.resolve("src/workspace/WorkspaceShell.tsx"), "utf-8");
+  assert.match(shell, /initialHashActivityRef\.current\) return;/);
+  assert.match(shell, /history\.replaceState\(window\.history\.state, "", nextHash\)/);
+});
+
+test("5. Reader toolbar stays clickable when the global top bar is hidden", () => {
+  const css = fs.readFileSync(path.resolve("src/styles/reader-adaptive.css"), "utf-8");
+  assert.match(
+    css,
+    /\.dace-app\.reader-header-hidden \.reader-toolbar-wrap \{[^}]*z-index:\s*var\(--z-topbar\)/s
+  );
+  assert.match(
+    css,
+    /\.dace-app\.reader-header-hidden \.reader-toolbar-wrap \.reader-toolbar \{[^}]*padding-right:\s*calc\(var\(--window-control-space\) \+ 16px\)/s
+  );
+});
+
 test("6. Cross-view commands enqueue typed shell intents instead of custom events", () => {
   const requests: WorkspaceIntentRequest[] = [];
   const commands = buildCommandList(makeCommandContext("workspace", requests));
@@ -159,6 +188,7 @@ test("8. WorkspaceShell is the sole intent owner and target views consume by id"
   );
   assert.match(shell, /const consumeIntent = useCallback/);
   assert.equal((shell.match(/onConsumeIntent=\{consumeIntent\}/g) ?? []).length, 2);
+  assert.match(shell, /requestIntent,\s*\n\s*onToggleNav: toggleRail/);
   assert.match(shell, /onSearch=\{\(\) => requestIntent\(\{ type: "search-records" \}\)\}/);
   assert.ok(!shell.includes('window.addEventListener("dace:export-backup"'));
   assert.ok(!shell.includes('window.addEventListener("dace:restore-backup"'));
