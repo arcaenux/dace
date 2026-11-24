@@ -318,6 +318,35 @@ export const ResearchReaderView: FC<ResearchReaderViewProps> = ({
     note.removeExcerpt(id);
     setSelectedHighlightId((current) => (current === id ? null : current));
   }, [note.removeExcerpt]);
+  const handleDeleteDocument = useCallback(
+    async (attachmentId: string): Promise<boolean> => {
+      try {
+        const deleted = await attApi.deleteAttachment(attachmentId);
+        if (!deleted) {
+          onShowNotice("Could not delete document");
+          return false;
+        }
+        if (activeAttachment?.id === attachmentId) {
+          setActiveAttachment(null);
+          hydratedAttachmentRef.current = null;
+        }
+        window.dispatchEvent(new CustomEvent("dace:attachment-deleted", { detail: attachmentId }));
+        await loadDocuments();
+        onShowNotice("Document permanently deleted from library");
+        return true;
+      } catch (err: any) {
+        console.error("Failed to delete document:", err);
+        onShowNotice(`Delete failed: ${err?.message || err}`);
+        return false;
+      }
+    },
+    [activeAttachment?.id, loadDocuments, onShowNotice]
+  );
+  const handleDeleteNote = useCallback(async (): Promise<boolean> => {
+    const deleted = await note.deleteNote();
+    if (deleted) onShowNotice("Research note deleted");
+    return deleted;
+  }, [note.deleteNote, onShowNotice]);
   const handleHighlightUpdated = useCallback((updated: Highlight) => {
     setHighlights((current) =>
       current.map((item) => (item.id === updated.id ? updated : item))
@@ -562,7 +591,9 @@ export const ResearchReaderView: FC<ResearchReaderViewProps> = ({
                 onNoteContentChange={note.setContent}
                 onNoteTagsChange={note.setTags}
                 onSaveNote={() => void handleSaveNote()}
+                onDeleteNote={handleDeleteNote}
                 onInsertMarkdown={note.insertMarkdown}
+                onDeleteDocument={handleDeleteDocument}
               />
             </div>
           )}

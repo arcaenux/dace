@@ -417,7 +417,7 @@
   align-items: flex-start;
   gap: 22px;
   height: 62px;
-  padding: 13px 46px 0 84px;
+  padding: 13px 46px 0 46px;
   border-top: 1px solid #292929;
   background: #101010;
   color: var(--text-muted);
@@ -1008,9 +1008,9 @@
    -------------------------------------------------------------------------- */
 
 @media (max-width: 1280px) {
-  .dace-app .desk-toolbar { padding-right: 32px; padding-left: 40px; }
+  .dace-app .desk-toolbar { padding-right: 32px; padding-left: 32px; }
   .dace-app .editor-scroll-area { padding-right: 32px; padding-left: 64px; }
-  .dace-app .editor-status-bar { padding-right: 32px; padding-left: 64px; }
+  .dace-app .editor-status-bar { padding-right: 32px; padding-left: 32px; }
   .dace-app .desk-context-panel { flex-basis: 360px; width: 360px; }
   .dace-app .desk-context-tabs { padding-left: 36px; gap: 20px; }
   .dace-app .desk-context-body { padding-right: 36px; padding-left: 48px; }
@@ -1018,9 +1018,9 @@
 
 @media (max-width: 1040px) {
   .dace-app .desk-workspace { flex-direction: row; }
-  .dace-app .desk-toolbar { padding-right: 24px; padding-left: 28px; }
+  .dace-app .desk-toolbar { padding-right: 24px; padding-left: 24px; }
   .dace-app .editor-scroll-area { padding-right: 24px; padding-left: 44px; }
-  .dace-app .editor-status-bar { padding-right: 24px; padding-left: 44px; }
+  .dace-app .editor-status-bar { padding-right: 24px; padding-left: 24px; }
   .dace-app .desk-context-panel { flex-basis: 300px; width: 300px; }
   .dace-app .desk-context-tabs { padding: 0 18px 0 24px; gap: 14px; }
   .dace-app .desk-context-body { padding: 44px 22px 48px 30px; }
@@ -1028,11 +1028,11 @@
 }
 
 @media (max-width: 880px) {
-  .dace-app .desk-toolbar { padding-right: 18px; padding-left: 20px; }
+  .dace-app .desk-toolbar { padding-right: 18px; padding-left: 18px; }
   .dace-app .desk-toolbar-context,
   .dace-app .desk-save-status { display: none; }
   .dace-app .editor-scroll-area { padding-right: 18px; padding-left: 30px; }
-  .dace-app .editor-status-bar { padding-right: 18px; padding-left: 30px; gap: 12px; }
+  .dace-app .editor-status-bar { padding-right: 18px; padding-left: 18px; gap: 12px; }
   .dace-app .desk-context-panel { flex-basis: 260px; width: 260px; }
   .dace-app .desk-context-tabs { padding: 0 12px 0 16px; gap: 10px; }
   .dace-app .desk-context-tab { gap: 4px; font-size: 9px; }
@@ -1042,7 +1042,7 @@
 @media (max-width: 720px) {
   .dace-app .desk-context-panel { display: none; }
   .dace-app .editor-scroll-area { padding: 44px 22px 0; }
-  .dace-app .editor-status-bar { padding-right: 14px; padding-left: 22px; }
-  .dace-app .desk-toolbar { padding-right: 12px; padding-left: 14px; }
+  .dace-app .editor-status-bar { padding-right: 14px; padding-left: 14px; }
+  .dace-app .desk-toolbar { padding-right: 12px; padding-left: 12px; }
   .dace-app .desk-empty-state { padding: 70px 28px; }
 }

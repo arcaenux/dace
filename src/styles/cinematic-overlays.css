@@ -227,8 +227,7 @@
   animation: cinema-overlay-in 220ms var(--ease-enter) both;
 }/* --------------------------------------------------------------------------
    Focus-visible treatment: restrained and accessible
-   -------------------------------------------------------------------------- */
-.dace-app :is(button, a, [role="button"], [role="option"], [tabindex]:not([tabindex="-1"])):focus-visible {
+   -------------------------------------------------------------------------- */.dace-app :is(button, a, [role="button"], [role="option"], [tabindex]:not([tabindex="-1"])):focus-visible {
   outline: none;
   box-shadow: var(--state-focus-ring);
 }

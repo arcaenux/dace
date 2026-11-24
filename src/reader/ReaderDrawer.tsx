@@ -61,7 +61,9 @@ interface ReaderDrawerProps {
   onNoteContentChange: (content: string) => void;
   onNoteTagsChange: (tags: string[]) => void;
   onSaveNote: () => void;
+  onDeleteNote: () => Promise<boolean>;
   onInsertMarkdown: (prefix: string, suffix?: string) => void;
+  onDeleteDocument: (attachmentId: string) => Promise<boolean>;
 }
 
 interface NoteEditorProps {
@@ -78,6 +80,7 @@ interface NoteEditorProps {
   onNoteContentChange: (content: string) => void;
   onNoteTagsChange: (tags: string[]) => void;
   onSaveNote: () => void;
+  onDeleteNote: () => Promise<boolean>;
   onInsertMarkdown: (prefix: string, suffix?: string) => void;
   onJumpToPage: (page: number, attachmentId?: string) => void;
 }
@@ -131,9 +134,17 @@ const NoteEditor = memo(function NoteEditor({
   onNoteContentChange,
   onNoteTagsChange,
   onSaveNote,
+  onDeleteNote,
   onInsertMarkdown,
   onJumpToPage,
 }: NoteEditorProps) {
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
+
+  const handleDeleteNote = async () => {
+    const deleted = await onDeleteNote();
+    if (deleted) setIsConfirmingDelete(false);
+  };
+
   if (!hasNote) {
     return (
       <div className="reader-notes-view">
@@ -236,10 +247,34 @@ const NoteEditor = memo(function NoteEditor({
       />
 
       <div className="reader-note-footer">
-        <span>Markdown-style notes · autosaved to Knowledge Desk</span>
-        <button className="reader-tertiary-btn" onClick={onSaveNote}>
-          <Check size={12} /> Save now
-        </button>
+        {isConfirmingDelete ? (
+          <>
+            <span>Delete this note permanently?</span>
+            <div className="reader-inline-actions">
+              <button className="card-action-link danger" onClick={() => void handleDeleteNote()}>
+                Delete
+              </button>
+              <button className="card-action-link" onClick={() => setIsConfirmingDelete(false)}>
+                Cancel
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <span>Markdown-style notes · autosaved to Knowledge Desk</span>
+            <div className="reader-inline-actions">
+              <button
+                className="card-action-link danger"
+                onClick={() => setIsConfirmingDelete(true)}
+              >
+                Delete note
+              </button>
+              <button className="reader-tertiary-btn" onClick={onSaveNote}>
+                <Check size={12} /> Save now
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
@@ -260,6 +295,10 @@ const HighlightsPanel = memo(function HighlightsPanel({
   const [filterType, setFilterType] = useState<string>("all");
   const [editingHighlightId, setEditingHighlightId] = useState<string | null>(null);
   const [editNoteContent, setEditNoteContent] = useState<string>("");
+  const [deleteRequest, setDeleteRequest] = useState<{
+    id: string;
+    kind: "annotation" | "highlight";
+  } | null>(null);
   const handledAnnotationRequestRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -299,14 +338,25 @@ const HighlightsPanel = memo(function HighlightsPanel({
     }
   };
 
-  const handleDeleteHighlight = async (highlightId: string) => {
+  const handleConfirmDelete = async (highlight: Highlight) => {
+    if (!deleteRequest || deleteRequest.id !== highlight.id) return;
+    const kind = deleteRequest.kind;
     try {
-      await readerApi.deleteHighlight(highlightId);
-      onHighlightDeleted(highlightId);
-      onShowNotice("Highlight deleted");
+      if (kind === "annotation") {
+        await readerApi.deleteAnnotation(highlight.id);
+        onHighlightUpdated({ ...highlight, annotation: null });
+        setEditingHighlightId(null);
+        onShowNotice("Annotation removed");
+      } else {
+        await readerApi.deleteHighlight(highlight.id);
+        onHighlightDeleted(highlight.id);
+        onShowNotice("Highlight deleted");
+      }
     } catch (err: any) {
-      console.error("Failed to delete highlight:", err);
+      console.error(`Failed to delete ${kind}:`, err);
       onShowNotice(`Delete failed: ${err?.message || err}`);
+    } finally {
+      setDeleteRequest(null);
     }
   };
 
@@ -387,15 +437,43 @@ const HighlightsPanel = memo(function HighlightsPanel({
             )}
 
             <div className="card-actions" onClick={(event) => event.stopPropagation()}>
-              <button className="card-action-link" onClick={() => handleStartEditNote(highlight)}>
-                {highlight.annotation ? "Edit Note" : "+ Note"}
-              </button>
-              <button className="card-action-link" onClick={() => onOpenConnectModal(highlight)}>
-                Connect
-              </button>
-              <button className="card-action-link danger" onClick={() => handleDeleteHighlight(highlight.id)}>
-                Delete
-              </button>
+              {deleteRequest?.id === highlight.id ? (
+                <div className="reader-inline-actions">
+                  <span>Delete {deleteRequest.kind}?</span>
+                  <button
+                    className="card-action-link danger"
+                    onClick={() => void handleConfirmDelete(highlight)}
+                  >
+                    Confirm
+                  </button>
+                  <button className="card-action-link" onClick={() => setDeleteRequest(null)}>
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <button className="card-action-link" onClick={() => handleStartEditNote(highlight)}>
+                    {highlight.annotation ? "Edit Note" : "+ Note"}
+                  </button>
+                  {highlight.annotation && (
+                    <button
+                      className="card-action-link danger"
+                      onClick={() => setDeleteRequest({ id: highlight.id, kind: "annotation" })}
+                    >
+                      Delete note
+                    </button>
+                  )}
+                  <button className="card-action-link" onClick={() => onOpenConnectModal(highlight)}>
+                    Connect
+                  </button>
+                  <button
+                    className="card-action-link danger"
+                    onClick={() => setDeleteRequest({ id: highlight.id, kind: "highlight" })}
+                  >
+                    Delete highlight
+                  </button>
+                </>
+              )}
             </div>
           </div>
         ))
@@ -436,9 +514,12 @@ export const ReaderDrawer: FC<ReaderDrawerProps> = ({
   onNoteContentChange,
   onNoteTagsChange,
   onSaveNote,
+  onDeleteNote,
   onInsertMarkdown,
+  onDeleteDocument,
 }) => {
   const [linkedRecords, setLinkedRecords] = useState<Array<{ id: string; title: string }>>([]);
+  const [isConfirmingDocumentDelete, setIsConfirmingDocumentDelete] = useState(false);
   const [isLoadingLinkedRecords, setIsLoadingLinkedRecords] = useState(false);
   const contentScrollRef = useRef<HTMLDivElement>(null);
   const onScrollTopChangeRef = useRef(onScrollTopChange);
@@ -559,6 +640,7 @@ export const ReaderDrawer: FC<ReaderDrawerProps> = ({
               onNoteContentChange={onNoteContentChange}
               onNoteTagsChange={onNoteTagsChange}
               onSaveNote={onSaveNote}
+              onDeleteNote={onDeleteNote}
               onInsertMarkdown={onInsertMarkdown}
               onJumpToPage={onJumpToPage}
             />
@@ -690,6 +772,42 @@ export const ReaderDrawer: FC<ReaderDrawerProps> = ({
             <div className="reader-info-row">
               <span className="detail-meta-label">SHA-256</span>
               <code>{attachment.sha256_hash}</code>
+            </div>
+            <div className="reader-note-footer">
+              {isConfirmingDocumentDelete ? (
+                <>
+                  <span>
+                    Permanently delete from vault? All linked highlights and annotations will be removed.
+                  </span>
+                  <div className="reader-inline-actions">
+                    <button
+                      className="card-action-link danger"
+                      onClick={async () => {
+                        const deleted = await onDeleteDocument(attachment.id);
+                        if (deleted) setIsConfirmingDocumentDelete(false);
+                      }}
+                    >
+                      Delete file
+                    </button>
+                    <button
+                      className="card-action-link"
+                      onClick={() => setIsConfirmingDocumentDelete(false)}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <span>Manage this imported file</span>
+                  <button
+                    className="card-action-link danger"
+                    onClick={() => setIsConfirmingDocumentDelete(true)}
+                  >
+                    Delete file from vault
+                  </button>
+                </>
+              )}
             </div>
           </div>
         )}

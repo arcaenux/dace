@@ -45,6 +45,7 @@ interface ReaderNoteApi extends ReaderNoteState {
     documentTitle: string
   ) => Promise<"inserted" | "duplicate">;
   removeExcerpt: (excerptId: string) => void;
+  deleteNote: () => Promise<boolean>;
   flushSave: () => Promise<ReaderNoteSaveResult>;
   isDirty: () => boolean;
   isSaving: () => boolean;
@@ -410,6 +411,36 @@ export function useReaderNote(
     return lastResult;
   }, [clearTimer, saveNow]);
 
+  const deleteNote = useCallback(async (): Promise<boolean> => {
+    const recordId = stateRef.current.recordId;
+    if (!recordId) return false;
+
+    clearTimer();
+    // Let an already-running autosave finish before deleting the backing record.
+    // Pending-but-unsent changes are intentionally discarded.
+    while (inFlightRef.current) {
+      await inFlightRef.current;
+    }
+
+    try {
+      const deleted = await knowledgeApi.deleteRecord(recordId);
+      if (!deleted) {
+        onSaveErrorRef.current?.("Could not delete research note");
+        return false;
+      }
+
+      const attachmentId = noteAttachmentRef.current;
+      if (attachmentId) window.localStorage.removeItem(noteKey(attachmentId));
+      trackerRef.current.reset();
+      applyState(emptyState());
+      window.dispatchEvent(new CustomEvent("dace:record-deleted", { detail: recordId }));
+      return true;
+    } catch (err) {
+      onSaveErrorRef.current?.(`Could not delete research note: ${errorMessage(err)}`);
+      return false;
+    }
+  }, [applyState, clearTimer]);
+
   const isDirty = useCallback(() => trackerRef.current.hasPending, []);
   const isSaving = useCallback(() => inFlightRef.current !== null, []);
 
@@ -423,6 +454,7 @@ export function useReaderNote(
       startNote,
       insertExcerpt,
       removeExcerpt,
+      deleteNote,
       flushSave,
       isDirty,
       isSaving,
@@ -437,6 +469,7 @@ export function useReaderNote(
       startNote,
       insertExcerpt,
       removeExcerpt,
+      deleteNote,
       flushSave,
       isDirty,
       isSaving,

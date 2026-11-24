@@ -330,7 +330,7 @@
   max-width: none;
   min-height: 100%;
   margin: 0;
-  padding: var(--top-plane) clamp(28px, 6vw, 90px) 48px calc(var(--rail-plane) + clamp(28px, 6vw, 90px));
+  padding: var(--top-plane) clamp(28px, 6vw, 90px) 48px;
   border: none;
   border-radius: 0;
   background: transparent;
