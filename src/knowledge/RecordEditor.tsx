@@ -369,7 +369,7 @@ export const RecordEditor = forwardRef<RecordEditorHandle, RecordEditorProps>(fu
             data-dismiss-ignore
             onClick={onToggleRecordList}
             aria-expanded={isListOpen}
-            title={isListOpen ? "Hide records (Ctrl+B)" : "Browse records (Ctrl+B)"}
+            title={isListOpen ? "Hide records" : "Browse records"}
             aria-label={isListOpen ? "Hide records" : "Browse records"}
           >
             <PanelLeft size={15} strokeWidth={1.6} aria-hidden="true" />
