@@ -1,4 +1,5 @@
 import { FC, ReactNode } from "react";
+import { Command, LogOut, PanelLeft } from "lucide-react";
 import { useFocusSpace } from "./FocusSpaceContext";
 
 interface FocusSpaceViewProps {
@@ -29,29 +30,30 @@ export const FocusSpaceView: FC<FocusSpaceViewProps> = ({
           <button
             className="focus-exit-btn"
             onClick={onToggleRail}
-            title="Toggle curved sidebar (Ctrl+B)"
+            title={`${isRailOpen ? "Hide" : "Show"} curved sidebar (Ctrl+B)`}
+            aria-label={`${isRailOpen ? "Hide" : "Show"} curved sidebar (Ctrl+B)`}
+            aria-pressed={isRailOpen}
             data-dismiss-ignore
           >
-            <span>{isRailOpen ? "Hide sidebar" : "Show sidebar"}</span>
-            <kbd>Ctrl+B</kbd>
+            <PanelLeft size={14} aria-hidden="true" />
           </button>
           <button
             className="focus-exit-btn"
             onClick={onOpenCommands}
             title="Open Command Palette (Ctrl+K)"
+            aria-label="Open Command Palette (Ctrl+K)"
             data-dismiss-ignore
           >
-            <span>Commands</span>
-            <kbd>Ctrl+K</kbd>
+            <Command size={14} aria-hidden="true" />
           </button>
           <button
             className="focus-exit-btn"
             onClick={() => exitFocusSpace()}
             title="Exit Focus Space (F11 or Esc)"
+            aria-label="Exit Focus Space (F11 or Esc)"
             data-dismiss-ignore
           >
-            <span>Exit Focus</span>
-            <kbd>F11</kbd>
+            <LogOut size={14} aria-hidden="true" />
           </button>
         </div>
       )}
