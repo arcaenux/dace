@@ -284,20 +284,22 @@
   z-index: var(--z-floating);
   display: flex;
   align-items: center;
-  gap: 6px;
-  opacity: 0.35;
+  gap: 8px;
+  opacity: 0.55;
   transition: opacity var(--duration-normal);
 }
 .dace-app .focus-ambient-trigger:hover,
 .dace-app .focus-ambient-trigger:focus-within {
   opacity: 1;
 }
-.dace-app .focus-exit-btn {
+.dace-app .focus-ambient-trigger .focus-exit-btn {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  height: 28px;
-  padding: 0 10px;
+  justify-content: center;
+  gap: 0;
+  width: 30px;
+  height: 30px;
+  padding: 0;
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
   background: var(--bg-surface);
@@ -310,7 +312,8 @@
   backdrop-filter: none;
   cursor: pointer;
 }
-.dace-app .focus-exit-btn:hover {
+.dace-app .focus-ambient-trigger .focus-exit-btn:hover,
+.dace-app .focus-ambient-trigger .focus-exit-btn:focus-visible {
   border-color: rgba(var(--brand-blue-rgb), 0.5);
   color: var(--accent-text);
   background: rgba(var(--brand-blue-rgb), 0.08);
