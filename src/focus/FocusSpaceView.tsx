@@ -3,11 +3,15 @@ import { useFocusSpace } from "./FocusSpaceContext";
 
 interface FocusSpaceViewProps {
   onOpenCommands: () => void;
+  onToggleRail: () => void;
+  isRailOpen: boolean;
   children: ReactNode;
 }
 
 export const FocusSpaceView: FC<FocusSpaceViewProps> = ({
   onOpenCommands,
+  onToggleRail,
+  isRailOpen,
   children,
 }) => {
   const { isFocusSpace, exitFocusSpace } = useFocusSpace();
@@ -22,6 +26,15 @@ export const FocusSpaceView: FC<FocusSpaceViewProps> = ({
     >
       {isFocusSpace && (
         <div className="focus-ambient-trigger" aria-label="Focus Space Controls">
+          <button
+            className="focus-exit-btn"
+            onClick={onToggleRail}
+            title="Toggle curved sidebar (Ctrl+B)"
+            data-dismiss-ignore
+          >
+            <span>{isRailOpen ? "Hide sidebar" : "Show sidebar"}</span>
+            <kbd>Ctrl+B</kbd>
+          </button>
           <button
             className="focus-exit-btn"
             onClick={onOpenCommands}

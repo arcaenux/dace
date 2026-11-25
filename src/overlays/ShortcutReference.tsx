@@ -18,6 +18,7 @@ export const ShortcutReference: FC<ShortcutReferenceProps> = ({
     triggerRef,
     group: "workspace-overlay",
     autoFocus: true,
+    outsideClickGraceMs: 200,
   });
 
   if (!isOpen) return null;
@@ -39,6 +40,12 @@ export const ShortcutReference: FC<ShortcutReferenceProps> = ({
       keyCombo: "F11",
       description: "Toggle Focus Space",
       context: "Enter or exit distraction-free full-screen environment",
+      status: "active",
+    },
+    {
+      keyCombo: "Ctrl + B",
+      description: "Toggle Curved Sidebar",
+      context: "Open or hide the navigation rail over the active view, including Focus Space",
       status: "active",
     },
     {
@@ -91,8 +98,9 @@ export const ShortcutReference: FC<ShortcutReferenceProps> = ({
       role="dialog"
       aria-modal="true"
       aria-label="Keyboard Shortcuts and Actions"
+      onClick={onClose}
     >
-      <div className="shortcut-modal" ref={containerRef}>
+      <div className="shortcut-modal" ref={containerRef} onClick={(e) => e.stopPropagation()}>
         <div className="shortcut-modal-header">
           <div className="shortcut-modal-title">Shortcuts & Available Actions</div>
           <button
