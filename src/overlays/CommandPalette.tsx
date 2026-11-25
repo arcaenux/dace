@@ -24,6 +24,7 @@ export const CommandPalette: FC<CommandPaletteProps> = ({
   useDismissable(isOpen, onClose, containerRef, {
     triggerRef,
     group: "workspace-overlay",
+    outsideClickGraceMs: 200,
   });
 
   const filteredCommands = filterCommands(commands, query);
@@ -81,8 +82,9 @@ export const CommandPalette: FC<CommandPaletteProps> = ({
       role="dialog"
       aria-modal="true"
       aria-label="Command Palette"
+      onClick={onClose}
     >
-      <div className="command-palette" ref={containerRef}>
+      <div className="command-palette" ref={containerRef} onClick={(e) => e.stopPropagation()}>
         <div className="command-input-wrapper">
           <svg className="command-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="11" cy="11" r="8"></circle>

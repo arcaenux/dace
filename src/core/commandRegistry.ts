@@ -5,6 +5,7 @@ export interface CommandContext {
   activeActivity: WorkspaceActivityId;
   setActiveActivity: (activity: WorkspaceActivityId) => void;
   requestIntent: (request: WorkspaceIntentRequest) => void;
+  onToggleNav?: () => void;
   isFocusSpace: boolean;
   enterFocusSpace: () => Promise<void>;
   exitFocusSpace: () => Promise<void>;
@@ -129,6 +130,18 @@ export function buildCommandList(ctx: CommandContext): CommandItem[] {
       execute: async () => {
         ctx.closeOverlay();
         await ctx.toggleFocusSpace();
+      },
+    },
+    {
+      id: "nav:toggle-rail",
+      name: "Toggle Curved Sidebar",
+      description: "Open or hide the curved navigation rail over the active view",
+      category: "Navigation",
+      shortcut: "Ctrl+B",
+      available: Boolean(ctx.onToggleNav),
+      execute: () => {
+        ctx.onToggleNav?.();
+        ctx.closeOverlay();
       },
     },
     {

@@ -37,6 +37,7 @@ import { KnowledgeGraphView } from "../graph/KnowledgeGraphView";
 import { ResearchReaderView } from "../reader/ResearchReaderView";
 import { ReaderChromeState } from "../reader/readerLayout.ts";
 import { exportBackup, formatBytes } from "../backup/backupApi";
+import { WorkspaceErrorBoundary } from "../core/WorkspaceErrorBoundary";
 import {
   getRestoreResult,
   inspectBackupArchive,
@@ -98,6 +99,7 @@ export const WorkspaceShell: FC = () => {
     }
     return false;
   });
+  const [isRailOverlayOpen, setIsRailOverlayOpen] = useState(false);
   const noticeTimerRef = useRef<number | null>(null);
   const [isBackupRunning, setIsBackupRunning] = useState(false);
   const [restorePreview, setRestorePreview] = useState<RestorePreview | null>(null);
@@ -116,6 +118,12 @@ export const WorkspaceShell: FC = () => {
 
   const { isFocusSpace, enterFocusSpace, exitFocusSpace, toggleFocusSpace, fullscreenError } =
     useFocusSpace();
+  const isRailSuppressed = isFocusSpace || readerChrome.navigation === "hidden";
+
+  useEffect(() => {
+    if (!isRailSuppressed) setIsRailOverlayOpen(false);
+  }, [isRailSuppressed]);
+
   const {
     settings,
     loading: settingsLoading,
@@ -432,14 +440,29 @@ export const WorkspaceShell: FC = () => {
     };
   }, [showNotice]);
 
-  const closeOverlay = () => setActiveOverlay(null);
-  const openOverlay = (overlay: OverlayType) => setActiveOverlay(overlay);
+  const closeOverlay = useCallback(() => setActiveOverlay(null), []);
+  const openOverlay = useCallback((overlay: OverlayType) => setActiveOverlay(overlay), []);
+
+  const toggleRail = useCallback(() => {
+    if (isRailSuppressed) {
+      setIsRailOverlayOpen((prev) => !prev);
+      return;
+    }
+    setIsRailCollapsed((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem("dace_nav_collapsed", String(next));
+      } catch {}
+      return next;
+    });
+  }, [isRailSuppressed]);
 
   const commandList = useMemo(() => {
     return buildCommandList({
       activeActivity,
       setActiveActivity: selectActivity,
       requestIntent,
+      onToggleNav: toggleRail,
       isFocusSpace,
       enterFocusSpace,
       exitFocusSpace,
@@ -457,17 +480,8 @@ export const WorkspaceShell: FC = () => {
     showNotice,
     selectActivity,
     requestIntent,
+    toggleRail,
   ]);
-
-  const toggleRail = useCallback(() => {
-    setIsRailCollapsed((prev) => {
-      const next = !prev;
-      try {
-        localStorage.setItem("dace_nav_collapsed", String(next));
-      } catch {}
-      return next;
-    });
-  }, []);
 
   useKeyboardShortcuts({
     activeOverlay,
@@ -498,7 +512,7 @@ export const WorkspaceShell: FC = () => {
         onOpenShortcuts={() => openOverlay("shortcut-reference")}
         onSearch={() => requestIntent({ type: "search-records" })}
         onToggleNav={toggleRail}
-        isNavCollapsed={isRailCollapsed}
+        isNavCollapsed={isRailSuppressed ? !isRailOverlayOpen : isRailCollapsed}
         commandsTriggerRef={commandsTriggerRef}
         shortcutsTriggerRef={shortcutsTriggerRef}
       />
@@ -515,14 +529,20 @@ export const WorkspaceShell: FC = () => {
           panelTriggerRef={panelTriggerRef}
           hidden={readerChrome.navigation === "hidden"}
           compact={readerChrome.navigation === "compact" || settings.appearance.sidebarCollapsed}
-          isCollapsed={isRailCollapsed}
+          isCollapsed={isRailOverlayOpen ? false : isRailCollapsed}
           onToggleCollapse={toggleRail}
+          isOverlayOpen={isRailOverlayOpen}
         />
 
         <main className={`workspace-stage ${isFocusSpace ? "focus-active" : ""}`}>
-        <FocusSpaceView onOpenCommands={() => openOverlay("command-palette")}>
+        <FocusSpaceView
+          onOpenCommands={() => openOverlay("command-palette")}
+          onToggleRail={toggleRail}
+          isRailOpen={isRailOverlayOpen}
+        >
           <div className="central-workspace">
               {activeActivity === "workspace" && (
+                <WorkspaceErrorBoundary workspace="Workspace Home">
                 <WorkspaceIntro
                   onOpenCommands={() => openOverlay("command-palette")}
                   onOpenShortcuts={() => openOverlay("shortcut-reference")}
@@ -538,9 +558,11 @@ export const WorkspaceShell: FC = () => {
                   onExportBackup={handleExportBackup}
                   onRestoreBackup={handleRestoreBackup}
                 />
+                </WorkspaceErrorBoundary>
               )}
 
               {activeActivity === "knowledge-desk" && (
+                <WorkspaceErrorBoundary workspace="Knowledge Desk">
                 <KnowledgeDesk
                   onShowNotice={showNotice}
                   initialRecordId={selectedDeskRecordId}
@@ -553,9 +575,11 @@ export const WorkspaceShell: FC = () => {
                   }}
                   onOpenGraphView={() => selectActivity("knowledge-graph")}
                 />
+                </WorkspaceErrorBoundary>
               )}
 
               {activeActivity === "reader" && (
+                <WorkspaceErrorBoundary workspace="Research Reader">
                 <ResearchReaderView
                   initialAttachmentId={readerTarget?.attachmentId}
                   initialPage={readerTarget?.pageNumber}
@@ -571,9 +595,11 @@ export const WorkspaceShell: FC = () => {
                   onToggleFocus={() => void toggleFocusSpace()}
                   onChromeChange={handleReaderChromeChange}
                 />
+                </WorkspaceErrorBoundary>
               )}
 
               {activeActivity === "knowledge-graph" && (
+                <WorkspaceErrorBoundary workspace="Knowledge Graph">
                 <KnowledgeGraphView
                   onOpenRecordInDesk={(recordId) => {
                     setSelectedDeskRecordId(recordId);
@@ -581,16 +607,23 @@ export const WorkspaceShell: FC = () => {
                   }}
                   onShowNotice={showNotice}
                 />
+                </WorkspaceErrorBoundary>
               )}
 
               {activeActivity === "settings" && (
+                <WorkspaceErrorBoundary workspace="Settings">
                 <SettingsView
                   onExportBackup={() => void handleExportBackup()}
                   onRestoreBackup={() => void handleRestoreBackup()}
                 />
+                </WorkspaceErrorBoundary>
               )}
 
-              {activeActivity === "terminal" && <TerminalView onNotice={showNotice} />}
+              {activeActivity === "terminal" && (
+                <WorkspaceErrorBoundary workspace="Terminal">
+                  <TerminalView onNotice={showNotice} />
+                </WorkspaceErrorBoundary>
+              )}
 
             </div>
           </FocusSpaceView>
