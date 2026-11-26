@@ -24,12 +24,12 @@ test("1. Project branding and metadata consistently reference Dace", () => {
 
   // index.html
   const indexHtml = fs.readFileSync(path.resolve("index.html"), "utf-8");
-  assert.ok(indexHtml.includes("<title>Dace — A space for discovery</title>"));
+  assert.ok(indexHtml.includes("<title>Dace — Research workspace</title>"));
 
   // WorkspaceIntro
   const introTsx = fs.readFileSync(path.resolve("src/workspace/WorkspaceIntro.tsx"), "utf-8");
-  assert.ok(introTsx.includes("WELCOME TO DACE"));
-  assert.ok(introTsx.includes("A SPACE FOR DISCOVERY"));
+  assert.ok(introTsx.includes("DACE — RESEARCH WORKSPACE"));
+  assert.strictEqual(introTsx.includes("A SPACE FOR DISCOVERY"), false);
 
   // WorkspaceRail (branded navigation rail)
   const railTsx = fs.readFileSync(path.resolve("src/workspace/WorkspaceRail.tsx"), "utf-8");

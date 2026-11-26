@@ -44,7 +44,7 @@
   margin: 0;
   font-family: var(--font-label);
   font-size: var(--type-micro, 10px);
-  letter-spacing: 0.12em;
+  letter-spacing: var(--tracking-upper-label);
   text-transform: uppercase;
   color: var(--status-danger, #dc3c3c);
 }
@@ -116,7 +116,7 @@
   border-radius: 6px;
   background: rgba(0, 0, 0, 0.5);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--type-micro);
   line-height: 1.6;
   color: var(--text-muted);
   white-space: pre-wrap;

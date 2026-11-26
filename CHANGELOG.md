@@ -17,12 +17,13 @@ Dace uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Folded-ribbon Dace logo integrated into the top bar and application window
 - Multi-resolution Tauri app icons and web favicons regenerated from the new brand mark
 - Workspace breadcrumb navigation in the top bar (`DACE / <Workspace>`)
-- Dot-grid spatial reference background on the Knowledge Graph canvas
+- Quiet neutral Knowledge Graph canvas without decorative grid or ambient texture
 - `outsideClickGraceMs` on Command Palette and Shortcut Reference overlays to prevent spurious close on open
-- Modern motion layer with staggered entrances, tactile button feedback, ambient depth, and animated overlays that honour reduced-motion settings
+- Restrained motion layer with short opacity transitions, no ambient animation, and reduced-motion handling that makes nonessential motion instant
 - Command Palette and Shortcut Reference now use flex layouts with internally scrollable lists and corrected text tracking
 - Focus Space no longer exposes the frameless window drag strip or minimize/maximize controls that could swallow top-bar clicks
 - Speed Reader for selected passages, full text/Markdown documents, highlights, and the current PDF page, with keyboard controls, WPM/chunk preferences, and progress tracking (`Ctrl+Shift+R`)
+- Quiet UI regression suite covering typography floors, label tracking, anti-slop styling rules, and concrete product copy
 
 ### Changed
 - Typography: Aptos as the base for interface and reading text, with user-selectable device fonts; terminal keeps a monospace stack and follows monospace app-font choices
@@ -31,6 +32,7 @@ Dace uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Overlay backdrop z-index raised to `var(--z-backdrop)` (1000) so it renders above native window controls (z=500)
 - Quiet-notice toast z-index updated to `var(--z-toast)` (1200) to remain above open overlays
 - Speed Reader redesigned as a quiet reading instrument: flat solid surfaces, a stable focus point with ORP highlighting, explicit progress/time readout, restrained controls, and real modal semantics
+- Whole-app quiet UI pass: flat solid surfaces, hairline structure, one accent, compact radii, dense chrome, roomy documents, and concrete copy instead of generic discovery language
 
 ### Fixed
 - Modal backdrop clicks no longer fall through to window controls behind the overlay
@@ -45,6 +47,8 @@ Dace uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Brand logo is aligned consistently in the top bar and reader toolbar across every reader view
 - Speed Reader no longer dismisses itself from the toolbar click that opened it
 - Old logo backup removed from version control, with a regression guard against tracked copies
+- Typography floor raised to 11px with one 0.08em uppercase-label recipe, tabular metadata figures, and a measured 65ch reading column
+- Gradients, glass blur, glow, spring motion, hover lift, decorative hero art, and oversized radii removed across all workspaces and overlays
 
 ---
 

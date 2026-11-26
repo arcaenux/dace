@@ -32,8 +32,8 @@ export const ShortcutReference: FC<ShortcutReferenceProps> = ({
     },
     {
       keyCombo: "Ctrl + Shift + P",
-      description: "Shortcut Discovery & Actions",
-      context: "Open this reference card at any time",
+      description: "Keyboard shortcuts",
+      context: "Open this reference at any time",
       status: "active",
     },
     {

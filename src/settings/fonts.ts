@@ -2,8 +2,8 @@ export const DEFAULT_APP_FONT = "Aptos";
 export const DEFAULT_TEXT_FONT = "Aptos";
 
 export const FONT_FALLBACKS = {
-  app: '"Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-  text: 'Georgia, "Times New Roman", serif',
+  app: '"Segoe UI", system-ui, Roboto, "Helvetica Neue", Arial, sans-serif',
+  text: '"Segoe UI", system-ui, Roboto, "Helvetica Neue", Arial, sans-serif',
   mono: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace',
 } as const;
 
