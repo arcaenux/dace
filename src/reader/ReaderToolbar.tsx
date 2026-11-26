@@ -14,7 +14,7 @@ import {
   Columns2,
   FileText,
   Focus,
-  Highlighter,
+  Gauge,
   MoreHorizontal,
   PanelLeft,
   Plus,
@@ -23,6 +23,7 @@ import {
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
+import logoUrl from "../assets/brand/logo.png";
 import { AttachmentSummary } from "../attachments/types.ts";
 import { useDismissable } from "../core/useDismissable";
 import { ReaderMode } from "./readerLayout";
@@ -47,11 +48,13 @@ interface ReaderToolbarProps {
   annotationType: HighlightType | null;
   onAnnotationTypeChange: (type: HighlightType | null) => void;
   isFocusSpace: boolean;
+  showBrand?: boolean;
   onToggleFocus: () => void;
   showRestoreNavigation: boolean;
   onRestoreNavigation: () => void;
   onResetLayout: () => void;
   onSaveNote: () => void;
+  onSpeedRead: () => void;
   isNarrow: boolean;
 }
 
@@ -81,18 +84,17 @@ export const ReaderToolbar: FC<ReaderToolbarProps> = ({
   annotationType,
   onAnnotationTypeChange,
   isFocusSpace,
+  showBrand = false,
   onToggleFocus,
   showRestoreNavigation,
   onRestoreNavigation,
   onResetLayout,
   onSaveNote,
+  onSpeedRead,
   isNarrow,
 }) => {
-  const [isAnnotationOpen, setIsAnnotationOpen] = useState(false);
   const [isOverflowOpen, setIsOverflowOpen] = useState(false);
   const [pageDraft, setPageDraft] = useState(String(currentPage));
-  const annotationRef = useRef<HTMLDivElement>(null);
-  const annotationTriggerRef = useRef<HTMLButtonElement>(null);
   const overflowRef = useRef<HTMLDivElement>(null);
   const overflowTriggerRef = useRef<HTMLButtonElement>(null);
 
@@ -100,12 +102,6 @@ export const ReaderToolbar: FC<ReaderToolbarProps> = ({
     triggerRef: docPickerTriggerRef,
     group: "reader-popover",
   });
-  useDismissable(
-    isAnnotationOpen,
-    () => setIsAnnotationOpen(false),
-    annotationRef,
-    { triggerRef: annotationTriggerRef, group: "reader-popover" }
-  );
   useDismissable(isOverflowOpen, () => setIsOverflowOpen(false), overflowRef, {
     triggerRef: overflowTriggerRef,
     group: "reader-popover",
@@ -136,13 +132,27 @@ export const ReaderToolbar: FC<ReaderToolbarProps> = ({
   const clampZoom = (value: number) => Math.min(2.5, Math.max(0.6, +value.toFixed(2)));
 
   return (
-    <header className="reader-toolbar" aria-label="Research Reader controls">
-      <div className="reader-toolbar-group reader-toolbar-start">
-        {(isFocusSpace || showRestoreNavigation) && (
-          <span className="reader-toolbar-brand">DACE</span>
+    <header
+      className="reader-toolbar"
+      aria-label="Research Reader controls"
+      data-tauri-drag-region={!isFocusSpace ? "true" : "false"}
+    >
+      <div className="reader-toolbar-group reader-toolbar-start" data-tauri-drag-region="false">
+        {showBrand && (
+          <span className="reader-toolbar-brand">
+            <img
+              src={logoUrl}
+              alt=""
+              className="reader-toolbar-brand-logo"
+              width={18}
+              height={18}
+              aria-hidden="true"
+            />
+            <span>DACE</span>
+          </span>
         )}
 
-        <div className="reader-toolbar-picker" ref={docPickerRef}>
+        <div className="reader-toolbar-picker" ref={docPickerRef} data-tauri-drag-region="false">
           <button
             ref={docPickerTriggerRef}
             className="reader-compact-btn reader-doc-trigger"
@@ -151,6 +161,7 @@ export const ReaderToolbar: FC<ReaderToolbarProps> = ({
             aria-haspopup="listbox"
             title="Switch research document"
             data-dismiss-ignore
+            data-tauri-drag-region="false"
           >
             <FileText size={13} strokeWidth={1.8} />
             <span>{activeAttachment ? activeAttachment.file_name : "No document"}</span>
@@ -191,13 +202,14 @@ export const ReaderToolbar: FC<ReaderToolbarProps> = ({
         </div>
       </div>
 
-      <nav className="reader-mode-switch" aria-label="Reader layout">
+      <nav className="reader-mode-switch" aria-label="Reader layout" data-tauri-drag-region="false">
         <button
           className={`reader-mode-btn ${mode === "reading" ? "active" : ""}`}
           onClick={() => onModeChange("reading")}
           data-reader-mode="reading"
           title="Reading layout (Alt+Shift+1)"
           aria-pressed={mode === "reading"}
+          data-tauri-drag-region="false"
         >
           <BookOpen size={13} strokeWidth={1.8} />
           {!isNarrow && <span>Reading</span>}
@@ -208,6 +220,7 @@ export const ReaderToolbar: FC<ReaderToolbarProps> = ({
           data-reader-mode="research"
           title="Research layout (Alt+Shift+2)"
           aria-pressed={mode === "research"}
+          data-tauri-drag-region="false"
         >
           <Columns2 size={13} strokeWidth={1.8} />
           {!isNarrow && <span>Research</span>}
@@ -218,102 +231,80 @@ export const ReaderToolbar: FC<ReaderToolbarProps> = ({
           data-reader-mode="writing"
           title="Writing layout (Alt+Shift+3)"
           aria-pressed={mode === "writing"}
+          data-tauri-drag-region="false"
         >
           <FileText size={13} strokeWidth={1.8} />
           {!isNarrow && <span>Writing</span>}
         </button>
       </nav>
 
-      <div className="reader-toolbar-group reader-toolbar-end">
+      <div className="reader-toolbar-group reader-toolbar-end" data-tauri-drag-region="false">
         {activeAttachment && (
-          <div className="reader-page-nav" aria-label="Page navigation">
-            <button
-              className="reader-icon-btn"
-              onClick={() => onPageChange(Math.max(1, currentPage - 1))}
-              disabled={currentPage <= 1}
-              title="Previous page"
-            >
-              <ChevronLeft size={14} />
-            </button>
-            <span className="reader-page-field">
-              <input
-                value={pageDraft}
-                onChange={(event) => setPageDraft(event.target.value)}
-                onBlur={commitPageDraft}
-                onKeyDown={handlePageKey}
-                inputMode="numeric"
-                aria-label="Current page"
-              />
-              <span>/ {totalPages}</span>
-            </span>
-            <button
-              className="reader-icon-btn"
-              onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
-              disabled={currentPage >= totalPages}
-              title="Next page"
-            >
-              <ChevronRight size={14} />
-            </button>
-          </div>
-        )}
-
-        <div className="reader-zoom" aria-label="Zoom controls">
-          <button
-            className="reader-icon-btn"
-            onClick={() => onZoomChange(clampZoom(zoom - 0.15))}
-            title="Zoom out"
-          >
-            <ZoomOut size={14} />
-          </button>
-          <span>{Math.round(zoom * 100)}%</span>
-          <button
-            className="reader-icon-btn"
-            onClick={() => onZoomChange(clampZoom(zoom + 0.15))}
-            title="Zoom in"
-          >
-            <ZoomIn size={14} />
-          </button>
-        </div>
-
-        <div className="reader-toolbar-popover-wrap" ref={annotationRef}>
-          <button
-            ref={annotationTriggerRef}
-            className={`reader-icon-btn ${annotationType ? "active" : ""}`}
-            onClick={() => setIsAnnotationOpen((value) => !value)}
-            title="Annotation tools"
-            aria-expanded={isAnnotationOpen}
-            data-dismiss-ignore
-          >
-            <Highlighter size={14} />
-          </button>
-          {isAnnotationOpen && (
-            <div className="reader-popover reader-annotation-popover">
-              <div className="reader-popover-title">Annotation tool</div>
+          <>
+            <div className="reader-page-nav" aria-label="Page navigation">
               <button
-                className={`reader-popover-item ${annotationType === null ? "active" : ""}`}
-                onClick={() => {
-                  onAnnotationTypeChange(null);
-                  setIsAnnotationOpen(false);
-                }}
+                className="reader-icon-btn"
+                onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+                disabled={currentPage <= 1}
+                title="Previous page"
+                data-tauri-drag-region="false"
               >
-                Select text
+                <ChevronLeft size={14} />
               </button>
-              {HIGHLIGHT_TYPES.map((type) => (
-                <button
-                  key={type.value}
-                  className={`reader-popover-item ${annotationType === type.value ? "active" : ""}`}
-                  onClick={() => {
-                    onAnnotationTypeChange(type.value);
-                    setIsAnnotationOpen(false);
-                  }}
-                >
-                  <span className={`hl-dot ${type.value}`} />
-                  {type.label}
-                </button>
-              ))}
+              <span className="reader-page-field">
+                <input
+                  value={pageDraft}
+                  onChange={(event) => setPageDraft(event.target.value)}
+                  onBlur={commitPageDraft}
+                  onKeyDown={handlePageKey}
+                  inputMode="numeric"
+                  aria-label="Current page"
+                  data-tauri-drag-region="false"
+                />
+                <span>/ {totalPages}</span>
+              </span>
+              <button
+                className="reader-icon-btn"
+                onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+                disabled={currentPage >= totalPages}
+                title="Next page"
+                data-tauri-drag-region="false"
+              >
+                <ChevronRight size={14} />
+              </button>
             </div>
-          )}
-        </div>
+
+            <div className="reader-zoom" aria-label="Zoom controls">
+              <button
+                className="reader-icon-btn"
+                onClick={() => onZoomChange(clampZoom(zoom - 0.15))}
+                title="Zoom out"
+                data-tauri-drag-region="false"
+              >
+                <ZoomOut size={14} />
+              </button>
+              <span>{Math.round(zoom * 100)}%</span>
+              <button
+                className="reader-icon-btn"
+                onClick={() => onZoomChange(clampZoom(zoom + 0.15))}
+                title="Zoom in"
+                data-tauri-drag-region="false"
+              >
+                <ZoomIn size={14} />
+              </button>
+            </div>
+
+            <button
+              className="reader-icon-btn"
+              onClick={onSpeedRead}
+              title="Speed Read (Ctrl+Shift+R)"
+              aria-label="Speed Read"
+              data-tauri-drag-region="false"
+            >
+              <Gauge size={14} />
+            </button>
+          </>
+        )}
 
         {showRestoreNavigation && (
           <button
@@ -321,6 +312,7 @@ export const ReaderToolbar: FC<ReaderToolbarProps> = ({
             onClick={onRestoreNavigation}
             title="Restore navigation"
             aria-label="Restore navigation"
+            data-tauri-drag-region="false"
           >
             <PanelLeft size={14} />
           </button>
@@ -331,64 +323,72 @@ export const ReaderToolbar: FC<ReaderToolbarProps> = ({
           onClick={onToggleFocus}
           title={isFocusSpace ? "Exit focus mode (F11)" : "Enter focus mode (F11)"}
           aria-label={isFocusSpace ? "Exit focus mode" : "Enter focus mode"}
+          data-tauri-drag-region="false"
         >
           <Focus size={14} />
         </button>
 
-        <div className="reader-toolbar-popover-wrap" ref={overflowRef}>
-          <button
-            ref={overflowTriggerRef}
-            className="reader-icon-btn"
-            onClick={() => setIsOverflowOpen((value) => !value)}
-            title="More reader actions"
-            aria-expanded={isOverflowOpen}
-            data-dismiss-ignore
-          >
-            <MoreHorizontal size={15} />
-          </button>
-          {isOverflowOpen && (
-            <div className="reader-popover reader-overflow-popover">
-              <button
-                className="reader-popover-action"
-                onClick={() => {
-                  onImport();
-                  setIsOverflowOpen(false);
-                }}
-              >
-                <Plus size={13} /> Import document
-              </button>
-              <button
-                className="reader-popover-action"
-                onClick={() => {
-                  onSaveNote();
-                  setIsOverflowOpen(false);
-                }}
-              >
-                <Save size={13} /> Save note
-              </button>
-              <button
-                className="reader-popover-action"
-                onClick={() => {
-                  onResetLayout();
-                  setIsOverflowOpen(false);
-                }}
-              >
-                <RotateCcw size={13} /> Reset split
-              </button>
-              {showRestoreNavigation && (
+        {activeAttachment && (
+          <div className="reader-toolbar-popover-wrap" ref={overflowRef} data-tauri-drag-region="false">
+            <button
+              ref={overflowTriggerRef}
+              className="reader-icon-btn"
+              onClick={() => setIsOverflowOpen((value) => !value)}
+              title="More reader actions"
+              aria-expanded={isOverflowOpen}
+              data-dismiss-ignore
+              data-tauri-drag-region="false"
+            >
+              <MoreHorizontal size={15} />
+            </button>
+            {isOverflowOpen && (
+              <div className="reader-popover reader-overflow-popover">
                 <button
                   className="reader-popover-action"
                   onClick={() => {
-                    onRestoreNavigation();
+                    onSaveNote();
                     setIsOverflowOpen(false);
                   }}
                 >
-                  <PanelLeft size={13} /> Restore navigation
+                  <Save size={13} /> Save note
                 </button>
-              )}
-            </div>
-          )}
-        </div>
+                <button
+                  className="reader-popover-action"
+                  onClick={() => {
+                    onResetLayout();
+                    setIsOverflowOpen(false);
+                  }}
+                >
+                  <RotateCcw size={13} /> Reset split
+                </button>
+                <div className="reader-popover-divider" />
+                <div className="reader-popover-title">Default highlight</div>
+                <button
+                  className={`reader-popover-item ${annotationType === null ? "active" : ""}`}
+                  onClick={() => {
+                    onAnnotationTypeChange(null);
+                    setIsOverflowOpen(false);
+                  }}
+                >
+                  Select text
+                </button>
+                {HIGHLIGHT_TYPES.map((type) => (
+                  <button
+                    key={type.value}
+                    className={`reader-popover-item ${annotationType === type.value ? "active" : ""}`}
+                    onClick={() => {
+                      onAnnotationTypeChange(type.value);
+                      setIsOverflowOpen(false);
+                    }}
+                  >
+                    <span className={`hl-dot ${type.value}`} />
+                    {type.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </header>
   );

@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { FitAddon } from "@xterm/addon-fit";
 import { Terminal } from "@xterm/xterm";
 import "@xterm/xterm/css/xterm.css";
+import { useSettings } from "../settings/SettingsContext";
+import { terminalFontStack } from "../settings/fonts";
 import {
   base64ToBytes,
   closeTerminalSession,
@@ -35,6 +37,7 @@ function errorMessage(error: unknown): string {
 }
 
 export function TerminalView({ onNotice }: TerminalViewProps) {
+  const { settings } = useSettings();
   const [environment, setEnvironment] = useState<TerminalEnvironment | null>(null);
   const [sessions, setSessions] = useState<SessionView[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -42,6 +45,7 @@ export function TerminalView({ onNotice }: TerminalViewProps) {
   const [busy, setBusy] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResult, setSearchResult] = useState<string | null>(null);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [shellChoice, setShellChoice] = useState("");
 
   const terminalsRef = useRef(new Map<string, Terminal>());
@@ -51,10 +55,23 @@ export function TerminalView({ onNotice }: TerminalViewProps) {
   const activeIdRef = useRef<string | null>(null);
   const environmentRef = useRef<TerminalEnvironment | null>(null);
   const endedIdsRef = useRef<Set<string>>(new Set());
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     endedIdsRef.current = new Set(sessions.filter((s) => s.ended).map((s) => s.sessionId));
   }, [sessions]);
+
+  useEffect(() => {
+    const family = terminalFontStack(settings.appearance.appFont);
+    for (const [sessionId, terminal] of terminalsRef.current) {
+      terminal.options.fontFamily = family;
+      try {
+        fitsRef.current.get(sessionId)?.fit();
+      } catch {
+        // Hidden terminals are fitted again when their container becomes visible.
+      }
+    }
+  }, [settings.appearance.appFont]);
 
   const report = useCallback(
     (message: string) => {
@@ -72,7 +89,7 @@ export function TerminalView({ onNotice }: TerminalViewProps) {
         convertEol: false,
         cursorBlink: true,
         cursorStyle: "bar",
-        fontFamily: '"IBM Plex Mono", Consolas, "Courier New", monospace',
+        fontFamily: terminalFontStack(settings.appearance.appFont),
         fontSize: 13,
         lineHeight: 1.35,
         scrollback: 5000,
@@ -135,7 +152,7 @@ export function TerminalView({ onNotice }: TerminalViewProps) {
       for (const bytes of pending) terminal.write(bytes);
       pendingRef.current.delete(sessionId);
     },
-    [report]
+    [report, settings.appearance.appFont]
   );
 
   const attachContainer = useCallback(
@@ -385,10 +402,6 @@ export function TerminalView({ onNotice }: TerminalViewProps) {
   return (
     <div className="terminal-view">
       <header className="terminal-header">
-        <div className="terminal-title">
-          <span className="terminal-eyebrow">Native Terminal</span>
-          <strong>Dace Terminal</strong>
-        </div>
         <div className="terminal-tabs" role="tablist" aria-label="Terminal sessions">
           {sessions.map((session, index) => (
             <button
@@ -445,40 +458,69 @@ export function TerminalView({ onNotice }: TerminalViewProps) {
             onClick={() => activeId && void closeSession(activeId)}
             disabled={!activeSession}
           >
-            Close session
+            Close
           </button>
         </div>
       </header>
 
       <div className="terminal-context">
-        <span>
-          <small>Shell</small> {activeSession?.shellLabel ?? "—"}
-        </span>
         <span className="terminal-cwd" title={activeSession?.workingDirectory ?? ""}>
-          <small>Directory</small> {activeSession?.workingDirectory ?? "—"}
+          {activeSession?.workingDirectory ?? "—"}
         </span>
-        <span>
-          <small>Status</small> {activeSession?.ended ? activeSession.exitMessage ?? "exited" : "running"}
+        <span className="terminal-status-pill">
+          {activeSession ? (activeSession.ended ? activeSession.exitMessage ?? "exited" : "running") : "idle"}
         </span>
-        <div className="terminal-search">
-          <input
-            type="search"
-            value={searchQuery}
-            placeholder="Find in scrollback"
-            aria-label="Find in terminal scrollback"
-            onChange={(event) => {
-              setSearchQuery(event.target.value);
-              setSearchResult(null);
+        {isSearchOpen || searchQuery || searchResult ? (
+          <div className="terminal-search">
+            <input
+              ref={searchInputRef}
+              type="search"
+              value={searchQuery}
+              placeholder="Find in scrollback"
+              aria-label="Find in terminal scrollback"
+              onChange={(event) => {
+                setSearchQuery(event.target.value);
+                setSearchResult(null);
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") handleSearch();
+                if (event.key === "Escape") {
+                  setSearchQuery("");
+                  setSearchResult(null);
+                  setIsSearchOpen(false);
+                }
+              }}
+            />
+            <button type="button" onClick={handleSearch} disabled={!activeSession}>
+              Find
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setSearchQuery("");
+                setSearchResult(null);
+                setIsSearchOpen(false);
+              }}
+              aria-label="Close scrollback search"
+              title="Close search"
+            >
+              ×
+            </button>
+            {searchResult && <small>{searchResult}</small>}
+          </div>
+        ) : (
+          <button
+            type="button"
+            className="terminal-search-toggle"
+            onClick={() => {
+              setIsSearchOpen(true);
+              requestAnimationFrame(() => searchInputRef.current?.focus());
             }}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") handleSearch();
-            }}
-          />
-          <button type="button" onClick={handleSearch} disabled={!activeSession}>
+            disabled={!activeSession}
+          >
             Find
           </button>
-          {searchResult && <small>{searchResult}</small>}
-        </div>
+        )}
       </div>
 
       {error && (
@@ -518,7 +560,7 @@ export function TerminalView({ onNotice }: TerminalViewProps) {
       </div>
 
       <footer className="terminal-footer">
-        <span>Ctrl+Shift+C copy · Ctrl+Shift+V paste · Ctrl+C interrupt</span>
+        <span className="terminal-footer-hints">Ctrl+Shift+C copy · Ctrl+Shift+V paste · Ctrl+C interrupt</span>
         <button type="button" onClick={focusActiveTerminal} disabled={!activeSession || activeSession.ended}>
           Focus terminal input
         </button>

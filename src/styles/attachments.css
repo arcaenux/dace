@@ -28,7 +28,7 @@
   letter-spacing: var(--letter-spacing-editorial);
   color: var(--text-primary);
 }.attachments-counter {
-  font-family: var(--font-mono);
+  font-family: var(--font-label);
   font-size: 11px;
   color: var(--text-muted);
   background: var(--bg-surface-elevated);
@@ -87,7 +87,7 @@
   align-items: center;
   justify-content: space-between;
 }.file-type-pill {
-  font-family: var(--font-mono);
+  font-family: var(--font-label);
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.05em;
@@ -137,6 +137,9 @@
 }.icon-action-btn:hover {
   background: rgba(255, 255, 255, 0.06);
   color: var(--text-primary);
+}.icon-action-btn.danger:hover {
+  background: rgba(var(--status-danger-rgb), 0.16);
+  color: var(--status-danger);
 }.attachment-filename {
   font-family: var(--font-editorial);
   font-size: var(--font-size-base);
@@ -171,6 +174,11 @@
   padding-top: 6px;
   border-top: 1px solid rgba(255, 255, 255, 0.04);
   text-align: right;
+}.attachment-footer-links {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
 }.purge-file-link {
   background: transparent;
   border: none;
@@ -226,7 +234,7 @@
   gap: var(--space-3);
   overflow: hidden;
 }.preview-badge {
-  font-family: var(--font-mono);
+  font-family: var(--font-label);
   font-size: 10px;
   font-weight: 600;
   padding: 2px 6px;
@@ -315,7 +323,7 @@
 .text-viewer-wrapper {
   padding: var(--space-6) var(--space-8);
 }.text-plain-surface {
-  font-family: var(--font-mono);
+  font-family: var(--font-text);
   font-size: var(--font-size-sm);
   line-height: 1.6;
   color: var(--text-primary);

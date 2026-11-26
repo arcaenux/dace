@@ -11,6 +11,8 @@ test("1. Default settings contain only meaningful, valid values", () => {
   assert.equal(settings.general.startupBehavior, "remember-last");
   assert.equal(settings.appearance.textScale, 1);
   assert.equal(settings.appearance.density, "comfortable");
+  assert.equal(settings.appearance.appFont, "Aptos");
+  assert.equal(settings.appearance.textFont, "Aptos");
   assert.equal(settings.workspace.readerDefaultMode, "research");
   assert.equal(settings.editor.autosaveDelayMs, 1200);
   assert.equal(settings.documents.defaultBackupDirectory, null);
@@ -57,4 +59,18 @@ test("5. Equality compares the full settings tree", () => {
   assert.equal(settingsEqual(a, b), true);
   b.appearance.reducedMotion = true;
   assert.equal(settingsEqual(a, b), false);
+});
+
+test("6. Device font preferences are retained and sanitised", () => {
+  const chosen = normalizeSettings({
+    appearance: { appFont: "  Segoe UI  ", textFont: "Georgia" },
+  });
+  assert.equal(chosen.appearance.appFont, "Segoe UI");
+  assert.equal(chosen.appearance.textFont, "Georgia");
+
+  const unsafe = normalizeSettings({
+    appearance: { appFont: 'Aptos"; color: red', textFont: "   " },
+  });
+  assert.equal(unsafe.appearance.appFont, "Aptos color red");
+  assert.equal(unsafe.appearance.textFont, "Aptos");
 });

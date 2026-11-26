@@ -30,6 +30,8 @@ rfd = "0.18.0"
 portable-pty = "0.9.0"
 base64 = "0.22"
 
+[target.'cfg(windows)'.dependencies]
+winreg = "0.56"
 
 # Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration
 [profile.release]

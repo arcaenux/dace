@@ -234,6 +234,25 @@ impl AttachmentRepository {
         Ok(rows > 0)
     }
 
+    /// Resolve what a permanent delete would remove before touching the database or disk.
+    /// Returns the storage_path and whether no other attachment row shares that file.
+    pub fn deletion_target(
+        conn: &Connection,
+        attachment_id: &str,
+    ) -> Result<(String, bool), String> {
+        let attachment = Self::get_attachment(conn, attachment_id)?
+            .ok_or_else(|| format!("Attachment {} not found", attachment_id))?;
+        let remaining_count: i64 = conn
+            .query_row(
+                "SELECT COUNT(*) FROM attachments WHERE storage_path = ?1 AND id <> ?2",
+                params![attachment.storage_path, attachment_id],
+                |row| row.get(0),
+            )
+            .unwrap_or(0);
+
+        Ok((attachment.storage_path, remaining_count == 0))
+    }
+
     /// Permanently deletes an attachment record.
     /// Returns the storage_path and a flag indicating whether this was the last attachment row using that storage path.
     pub fn delete_attachment(

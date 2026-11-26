@@ -259,13 +259,16 @@ pub fn delete_attachment(
     attachment_id: String,
 ) -> Result<bool, String> {
     let conn = db.conn.lock().map_err(|e| format!("Mutex lock error: {}", e))?;
+    // Remove the managed file first so a failed physical delete leaves the
+    // library row intact and retryable instead of orphaning the file on disk.
     let (relative_path, can_delete_physical) =
-        AttachmentRepository::delete_attachment(&conn, &attachment_id)?;
+        AttachmentRepository::deletion_target(&conn, &attachment_id)?;
 
     if can_delete_physical {
-        let _ = storage.delete_file(&relative_path);
+        storage.delete_file(&relative_path)?;
     }
 
+    AttachmentRepository::delete_attachment(&conn, &attachment_id)?;
     Ok(true)
 }
 

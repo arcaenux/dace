@@ -148,13 +148,11 @@ const NoteEditor = memo(function NoteEditor({
   if (!hasNote) {
     return (
       <div className="reader-notes-view">
-        <div className="reader-note-empty">
-          <div className="reader-note-empty-mark">DACE</div>
-          <h2>No note for this document yet</h2>
-          <p>
-            Start a research note, then use <strong>Add to notes</strong> on any selected passage to bring
-            exact source text here with its page reference.
-          </p>
+        <div className="reader-note-empty-compact">
+          <div className="reader-note-empty-copy">
+            <h2>Research note</h2>
+            <p>Start a note to capture synthesis and linked source excerpts.</p>
+          </div>
           <button className="reader-primary-btn" onClick={onStartNote}>
             Start note
           </button>

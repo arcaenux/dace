@@ -35,6 +35,7 @@ export const RecordRelationshipsPanel: FC<RecordRelationshipsPanelProps> = ({
   const [selectedRelationType, setSelectedRelationType] = useState<RelationType>("builds_on");
   const [relationshipDescription, setRelationshipDescription] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
 
   // Load relationships for the current record
@@ -119,15 +120,21 @@ export const RecordRelationshipsPanel: FC<RecordRelationshipsPanelProps> = ({
 
   // Delete relationship
   const handleDeleteRelationship = async (relId: string, relTitle: string) => {
+    if (pendingDeleteId === relId) return;
+    setPendingDeleteId(relId);
     try {
       const ok = await api.deleteRelationship(relId);
-      if (ok) {
-        onShowNotice(`Removed connection with '${relTitle}'`);
-        await loadRelationships();
-      }
+      onShowNotice(
+        ok
+          ? `Removed connection with '${relTitle}'`
+          : "Connection could not be removed — it may already be gone."
+      );
+      await loadRelationships();
     } catch (err) {
       console.error("[RecordRelationshipsPanel] Failed to delete relationship:", err);
       onShowNotice("Failed to delete relationship");
+    } finally {
+      setPendingDeleteId(null);
     }
   };
 
@@ -319,6 +326,7 @@ export const RecordRelationshipsPanel: FC<RecordRelationshipsPanelProps> = ({
                               onClick={() =>
                                 handleDeleteRelationship(rel.id, rel.target_title)
                               }
+                              disabled={pendingDeleteId === rel.id}
                               title="Delete relationship"
                               aria-label="Delete relationship"
                             >
@@ -364,6 +372,7 @@ export const RecordRelationshipsPanel: FC<RecordRelationshipsPanelProps> = ({
                               onClick={() =>
                                 handleDeleteRelationship(rel.id, rel.source_title)
                               }
+                              disabled={pendingDeleteId === rel.id}
                               title="Delete relationship"
                               aria-label="Delete relationship"
                             >

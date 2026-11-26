@@ -73,6 +73,12 @@ export const ShortcutReference: FC<ShortcutReferenceProps> = ({
       status: "active",
     },
     {
+      keyCombo: "Ctrl + Shift + R",
+      description: "Speed Read",
+      context: "Open the focused speed reader on the active document or selected passage",
+      status: "active",
+    },
+    {
       keyCombo: "Alt + 1 / 2 / 3 / 4 / 5 / 6",
       description: "Switch Activity",
       context: "Alt+1 Workspace, Alt+2 Desk, Alt+3 Graph, Alt+4 Reader, Alt+5 Settings, Alt+6 Terminal",
@@ -107,7 +113,6 @@ export const ShortcutReference: FC<ShortcutReferenceProps> = ({
             className="panel-close-btn"
             onClick={onClose}
             aria-label="Close shortcuts"
-            data-overlay-initial-focus
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -116,7 +121,11 @@ export const ShortcutReference: FC<ShortcutReferenceProps> = ({
           </button>
         </div>
 
-        <div className="shortcut-modal-body">
+        <div
+          className="shortcut-modal-body"
+          tabIndex={0}
+          data-overlay-initial-focus=""
+        >
           {shortcuts.map((item, idx) => (
             <div key={idx} className="shortcut-row">
               <div className="shortcut-desc-wrap">
@@ -131,7 +140,7 @@ export const ShortcutReference: FC<ShortcutReferenceProps> = ({
         </div>
 
         <div className="command-palette-footer">
-          <span>Press <kbd style={{ padding: "1px 4px", background: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>Esc</kbd> to return to workspace</span>
+          <span>Press <kbd className="shortcut-esc-key">Esc</kbd> to return to workspace</span>
           <span>Dace v0.1.0</span>
         </div>
       </div>

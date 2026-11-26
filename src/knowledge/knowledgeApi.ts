@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
-import { isTauriEnvironment } from "../focus/tauriWindow";
-import {
+import { isTauriEnvironment } from "../focus/tauriWindow.ts";
+import type {
   CreateRecordPayload,
   CreateRelationshipPayload,
   GraphEdge,
@@ -12,7 +12,7 @@ import {
   RecordRelationshipsResponse,
   TagItem,
   UpdateRecordPayload,
-} from "./types";
+} from "./types.ts";
 
 // In-memory fallback storage for standard browser dev testing when Tauri IPC is unavailable
 let fallbackRecords: KnowledgeRecord[] = [];

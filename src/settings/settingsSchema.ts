@@ -6,6 +6,7 @@ import type {
   ReaderModeSetting,
   StartupBehavior,
 } from "./types";
+import { DEFAULT_APP_FONT, DEFAULT_TEXT_FONT, sanitizeFontFamily } from "./fonts.ts";
 
 export const SETTINGS_FALLBACK_KEY = "dace.settings.fallback.v1";
 
@@ -32,6 +33,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
     textScale: 1,
     reducedMotion: false,
     sidebarCollapsed: false,
+    appFont: DEFAULT_APP_FONT,
+    textFont: DEFAULT_TEXT_FONT,
   },
   workspace: {
     readerDefaultMode: "research",
@@ -128,6 +131,8 @@ export function normalizeSettings(input: unknown): AppSettings {
         typeof appearance.sidebarCollapsed === "boolean"
           ? appearance.sidebarCollapsed
           : defaults.appearance.sidebarCollapsed,
+      appFont: sanitizeFontFamily(appearance.appFont, defaults.appearance.appFont),
+      textFont: sanitizeFontFamily(appearance.textFont, defaults.appearance.textFont),
     },
     workspace: {
       readerDefaultMode: pick(

@@ -1,5 +1,5 @@
 import { FC, RefObject } from "react";
-import { Command, Keyboard, PanelLeft, Search } from "lucide-react";
+import { Command, Keyboard, Search } from "lucide-react";
 import logoUrl from "../assets/brand/logo.png";
 import { WorkspaceActivityId } from "../core/types.ts";
 
@@ -10,8 +10,6 @@ interface WorkspaceTopBarProps {
   onOpenCommands: () => void;
   onOpenShortcuts: () => void;
   onSearch: () => void;
-  onToggleNav?: () => void;
-  isNavCollapsed?: boolean;
   commandsTriggerRef?: RefObject<HTMLButtonElement | null>;
   shortcutsTriggerRef?: RefObject<HTMLButtonElement | null>;
 }
@@ -32,30 +30,17 @@ export const WorkspaceTopBar: FC<WorkspaceTopBarProps> = ({
   onOpenCommands,
   onOpenShortcuts,
   onSearch,
-  onToggleNav,
-  isNavCollapsed = false,
   commandsTriggerRef,
   shortcutsTriggerRef,
 }) => {
   if (isFocusSpace || hidden) return null;
 
   return (
-    <div className="workspace-topbar" role="banner" data-tauri-drag-region>
+    <div className="workspace-topbar" role="banner">
       <div className="topbar-left" data-tauri-drag-region>
-        <button
-          type="button"
-          className={`topbar-nav-toggle ${isNavCollapsed ? "is-collapsed" : ""}`}
-          onClick={onToggleNav}
-          aria-label={isNavCollapsed ? "Expand navigation (Ctrl+B)" : "Collapse navigation (Ctrl+B)"}
-          title="Toggle navigation (Ctrl+B)"
-          data-dismiss-ignore
-        >
-          <PanelLeft size={16} strokeWidth={1.6} aria-hidden="true" />
-        </button>
-
-        <div className="topbar-brand" data-tauri-drag-region>
-          <div className="topbar-brand-line" data-tauri-drag-region>
-            <img src={logoUrl} alt="" className="topbar-brand-logo" width={18} height={18} aria-hidden="true" />
+        <div className="topbar-brand">
+          <div className="topbar-brand-line">
+            <img src={logoUrl} alt="" className="topbar-brand-logo" width={24} height={24} aria-hidden="true" />
             <span className="topbar-brand-name">DACE</span>
             {activeActivity !== "workspace" && (
               <>
@@ -70,7 +55,7 @@ export const WorkspaceTopBar: FC<WorkspaceTopBarProps> = ({
         </div>
       </div>
 
-      <div className="topbar-meta">
+      <div className="topbar-meta" data-tauri-drag-region="false">
         <button
           type="button"
           className="topbar-icon-btn topbar-icon-btn-quiet"
@@ -78,6 +63,7 @@ export const WorkspaceTopBar: FC<WorkspaceTopBarProps> = ({
           aria-label="Search records"
           title="Search records (Ctrl+Shift+F)"
           data-dismiss-ignore
+          data-tauri-drag-region="false"
         >
           <Search size={14} strokeWidth={1.6} aria-hidden="true" />
         </button>
@@ -90,6 +76,7 @@ export const WorkspaceTopBar: FC<WorkspaceTopBarProps> = ({
           aria-label="Open command palette"
           title="Search and command (Ctrl+K)"
           data-dismiss-ignore
+          data-tauri-drag-region="false"
         >
           <Command size={13} strokeWidth={1.6} aria-hidden="true" />
           <span>Commands</span>
@@ -103,6 +90,7 @@ export const WorkspaceTopBar: FC<WorkspaceTopBarProps> = ({
           aria-label="Keyboard shortcuts"
           title="Keyboard shortcuts (Ctrl+Shift+P)"
           data-dismiss-ignore
+          data-tauri-drag-region="false"
         >
           <Keyboard size={14} strokeWidth={1.6} aria-hidden="true" />
         </button>
