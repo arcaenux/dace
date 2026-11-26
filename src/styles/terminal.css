@@ -62,20 +62,20 @@
 
 .terminal-actions select,
 .terminal-search input {
-  padding: 4px 8px;
+  padding: 5px 10px;
   border: 1px solid var(--border-dim);
-  border-radius: 3px;
-  background: var(--bg-surface-elevated);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
   color: var(--text-primary);
   font-family: var(--font-interface);
   font-size: var(--type-small);
 }
 
 .terminal-view button {
-  padding: 4px 9px;
+  padding: 5px 12px;
   border: 1px solid var(--border-dim);
-  border-radius: 3px;
-  background: var(--bg-surface-elevated);
+  border-radius: var(--radius-pill);
+  background: var(--bg-surface);
   color: var(--text-primary);
   font-family: var(--font-interface);
   font-size: var(--type-small);

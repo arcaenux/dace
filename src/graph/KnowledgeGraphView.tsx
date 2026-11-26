@@ -181,7 +181,7 @@ export const KnowledgeGraphView: FC<KnowledgeGraphViewProps> = ({
     ctx.translate(width / 2 + pan.x, height / 2 + pan.y);
     ctx.scale(zoom, zoom);
 
-    // 2. Crisp, restrained world-space dot grid (Heptabase-inspired spatial reference)
+    // 2. Crisp, restrained world-space dot grid
     if (zoom > 0.35) {
       const gridStep = 48;
       const halfW = width / (2 * zoom);
@@ -190,7 +190,7 @@ export const KnowledgeGraphView: FC<KnowledgeGraphViewProps> = ({
       const maxX = Math.ceil((-pan.x / zoom + halfW) / gridStep) * gridStep;
       const minY = Math.floor((-pan.y / zoom - halfH) / gridStep) * gridStep;
       const maxY = Math.ceil((-pan.y / zoom + halfH) / gridStep) * gridStep;
-      ctx.fillStyle = "rgba(148, 163, 184, 0.08)";
+      ctx.fillStyle = `rgba(${palette.neutral500Rgb}, 0.16)`;
       for (let gx = minX; gx <= maxX; gx += gridStep) {
         for (let gy = minY; gy <= maxY; gy += gridStep) {
           ctx.fillRect(gx - 0.75, gy - 0.75, 1.5, 1.5);
@@ -413,7 +413,16 @@ export const KnowledgeGraphView: FC<KnowledgeGraphViewProps> = ({
     if (!simulationRef.current.isSettled()) {
       animFrameIdRef.current = requestAnimationFrame(render);
     }
-  }, [pan, zoom, selectedNodeId, selectedEdgeId, hoveredNodeId, neighborSet, settings.appearance.appFont]);
+  }, [
+    pan,
+    zoom,
+    selectedNodeId,
+    selectedEdgeId,
+    hoveredNodeId,
+    neighborSet,
+    settings.appearance.appFont,
+    settings.appearance.colorMode,
+  ]);
 
   // Trigger animation loop whenever state changes
   useEffect(() => {

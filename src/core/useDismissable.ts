@@ -114,6 +114,10 @@ export function useDismissable(
     const previouslyFocused =
       document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const openedAt = performance.now();
+    // React flushes effects for discrete events synchronously, so a surface
+    // opened by a click registers this listener while that same click is
+    // still bubbling. That click must never count as "outside".
+    const openingEvent = typeof window !== "undefined" ? window.event : undefined;
     let focusFrame: number | null = null;
 
     if (autoFocus) {
@@ -140,8 +144,13 @@ export function useDismissable(
       if (!closeOnOutsideClick || event.defaultPrevented || event.button !== 0) return;
       if (outsideClickGraceMs > 0 && performance.now() - openedAt < outsideClickGraceMs) return;
 
+      if (openingEvent && event === openingEvent) return;
+
       const target = event.target;
       if (!(target instanceof Node)) return;
+      // A control removed by its own click (a menu item that closes its menu
+      // and opens a dialog) is not an outside click.
+      if (!target.isConnected) return;
       const path = typeof event.composedPath === "function" ? event.composedPath() : [];
 
       if (isWithin(target, path, surfaceRef?.current)) return;

@@ -20,7 +20,7 @@ export interface CommandItem {
   id: string;
   name: string;
   description?: string;
-  category: "Navigation" | "Focus Space" | "Workspace" | "System";
+  category: "Navigation" | "Focus Space" | "Workspace" | "Appearance" | "System";
   shortcut?: string;
   available: boolean;
   unavailabilityReason?: string;

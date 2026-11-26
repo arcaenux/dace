@@ -52,7 +52,7 @@ body,
   display: block;
   width: 34px;
   height: 34px;
-  background: url("../assets/brand/logo.png") center / contain no-repeat;
+  background: var(--brand-logo-url) center / contain no-repeat;
   border: none;
   border-radius: 0;
   box-shadow: none;
@@ -258,7 +258,7 @@ body,
 .delete-confirm-box {
   border: 1px dashed var(--border-medium);
   border-radius: var(--radius-lg);
-  background: rgba(20, 20, 20, 0.5);
+  background: var(--bg-surface-elevated);
   color: var(--text-muted);
   animation: dace-rise var(--duration-normal) var(--ease-enter) both;
 }.dace-empty-state {
@@ -614,7 +614,7 @@ body,
   box-shadow: var(--shadow-subtle);
 }.record-panel-header {
   border-bottom: 1px solid var(--border-subtle);
-  background: rgba(20, 20, 20, 0.86);
+  background: var(--bg-surface-elevated);
 }.record-panel-title,
 .relationships-title,
 .section-label {
@@ -854,27 +854,27 @@ body,
 .record-attachments-section {
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
 }.attachments-header {
   border-bottom: 1px solid var(--border-subtle);
-  background: rgba(11, 11, 11, 0.5);
+  background: transparent;
 }.attachments-heading,
 .attachment-filename,
 .preview-filename,
 .details-title {
-  font-family: var(--font-display);
+  font-family: var(--font-interface);
   font-weight: 500;
   color: var(--text-primary);
 }.attachment-card,
 .generic-format-card,
 .pdf-fallback-card {
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  background: linear-gradient(155deg, rgba(30, 30, 30, 0.72), rgba(15, 15, 15, 0.9));
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface);
   color: var(--text-secondary);
 }.attachment-card:hover {
   border-color: rgba(var(--brand-blue-rgb), 0.45);
-  box-shadow: var(--glow-accent);
+  box-shadow: var(--shadow-soft-drop);
 }.attachment-meta-row,
 .file-size,
 .file-date,
@@ -885,7 +885,7 @@ body,
 }.drag-drop-banner {
   border: 1px dashed rgba(var(--brand-blue-rgb), 0.45);
   border-radius: var(--radius-md);
-  background: rgba(var(--brand-blue-rgb), 0.05);
+  background: var(--accent-subtle);
   color: var(--text-secondary);
 }.file-missing-badge { color: var(--status-danger); }.icon-action-btn,
 .hash-copy-btn,
@@ -894,14 +894,14 @@ body,
 }.icon-action-btn:hover,
 .hash-copy-btn:hover { color: var(--accent-text); }.preview-modal-container,
 .attachment-details-modal {
-  border: 1px solid var(--border-medium);
-  border-radius: var(--radius-lg);
-  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  background: var(--bg-surface);
   box-shadow: var(--shadow-elevated);
 }.preview-header,
 .details-header {
   border-bottom: 1px solid var(--border-subtle);
-  background: rgba(11, 11, 11, 0.6);
+  background: var(--bg-surface-elevated);
 }.preview-content-surface,
 .text-plain-surface,
 .markdown-rendered-prose {

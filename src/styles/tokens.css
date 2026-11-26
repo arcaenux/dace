@@ -1,34 +1,31 @@
 /* ==========================================================================
    Dace — Design Foundation Tokens
-   Dace Blue is the original brand identity. The blue primitives below are
-   sampled from the supplied folded-ribbon mark (dominant #197BFA).
+   Quiet editorial print aesthetic + Dace Blue accent + Light & Dark modes.
 
    Token architecture:
-   1. Brand + neutral + status primitives (raw values)
-   2. Theme/appearance role tokens (semantic aliases)
+   1. Editorial & Dace Blue primitives (palette, atmospheric orbs, semantic)
+   2. Surface, ink, hairline and accent role tokens (light default & dark mode)
    3. Compatibility aliases for existing components
-   4. Typography, spacing, elevation and motion scales
+   4. Typography (Waldenburg Light 300 display + Inter UI/body + mono)
+   5. Spacing, layout, z-index, radius and motion scales
 
    Root hooks:
-   - data-theme="dace-blue"     selects a colour theme (default is Dace Blue)
-   - data-appearance="dark|light" selects an appearance (default is dark)
-   No selector or persisted preference is implemented in this milestone.
+   - data-appearance="light|dark" selects the active appearance (default: light)
    ========================================================================== */
 
 :root,
-:root[data-theme="dace-blue"],
-:root[data-appearance="dark"] {
-  color-scheme: dark;
+:root[data-appearance="light"] {
+  color-scheme: light;
 
   /* ------------------------------------------------------------------
-     1. Brand primitives — sampled from the supplied mark
+     1. Brand Blue accent primitives
      ------------------------------------------------------------------ */
   --brand-blue-rgb: 25, 123, 250;
   --brand-blue: rgb(var(--brand-blue-rgb));
-  --brand-blue-hover-rgb: 59, 140, 255;
+  --brand-blue-hover-rgb: 10, 95, 216;
   --brand-blue-hover: rgb(var(--brand-blue-hover-rgb));
-  --brand-blue-text: #5AA6FF;
-  --brand-blue-strong-rgb: 10, 95, 216;
+  --brand-blue-text: #0A5FD8;
+  --brand-blue-strong-rgb: 8, 76, 178;
   --brand-blue-strong: rgb(var(--brand-blue-strong-rgb));
   --brand-blue-contrast: #FFFFFF;
   --brand-blue-05: rgba(var(--brand-blue-rgb), 0.05);
@@ -45,117 +42,140 @@
   --brand-blue-60: rgba(var(--brand-blue-rgb), 0.6);
 
   /* ------------------------------------------------------------------
-     1b. Restrained cool-neutral primitives
+     1b. Editorial neutral & stone primitives + atmospheric gradient stops
      ------------------------------------------------------------------ */
+  --canvas: #F5F5F5;
+  --canvas-soft: #FAFAFA;
+  --canvas-deep: #0C0A09;
+  --surface-card: #FFFFFF;
+  --surface-strong: #F0EFED;
+  --surface-dark: #0C0A09;
+  --surface-dark-elevated: #1C1917;
+
+  --ink: #0C0A09;
+  --body-ink: #4E4E4E;
+  --body-strong: #292524;
+  --muted-ink: #777169;
+  --muted-soft: #A8A29E;
+
+  --hairline: #E7E5E4;
+  --hairline-soft: #F0EFED;
+  --hairline-strong: #D6D3D1;
+
+  --gradient-mint: #A7E5D3;
+  --gradient-peach: #F4C5A8;
+  --gradient-lavender: #C8B8E0;
+  --gradient-sky: #A8C8E8;
+  --gradient-rose: #E8B8C4;
+
   --neutral-0: #FFFFFF;
-  --neutral-50: #F7F9FC;
-  --neutral-100: #EFF3F9;
-  --neutral-200: #E2E8F2;
-  --neutral-300: #C4CDDB;
-  --neutral-300-rgb: 196, 205, 219;
-  --neutral-400: #98A3B5;
-  --neutral-500-rgb: 107, 119, 140;
-  --neutral-500: #6B778C;
-  --neutral-600: #3B475B;
-  --neutral-700: #2A3548;
-  --neutral-750: #202A3B;
-  --neutral-800: #1A2231;
-  --neutral-850: #151C29;
-  --neutral-900: #111722;
-  --neutral-950: #0B0F17;
+  --neutral-50: #FAFAFA;
+  --neutral-100: #F5F5F5;
+  --neutral-200: #F0EFED;
+  --neutral-300: #E7E5E4;
+  --neutral-300-rgb: 87, 83, 78;
+  --neutral-400: #D6D3D1;
+  --neutral-500-rgb: 120, 113, 108;
+  --neutral-500: #777169;
+  --neutral-600: #4E4E4E;
+  --neutral-700: #292524;
+  --neutral-750: #24211F;
+  --neutral-800: #1C1917;
+  --neutral-850: #161412;
+  --neutral-900: #141210;
+  --neutral-950: #0C0A09;
 
   /* ------------------------------------------------------------------
-     1c. Accessible status primitives (dark-appearance values)
+     1c. Semantic status tokens (light appearance)
      ------------------------------------------------------------------ */
-  --status-info: #5AA6FF;
-  --status-success: #4ADE80;
-  --status-warning: #FBBF24;
-  --status-danger: #FF6B6B;
-  --status-success-rgb: 74, 222, 128;
-  --status-warning-rgb: 251, 191, 36;
-  --status-danger-rgb: 255, 107, 107;
-  --status-danger-contrast: #140D06;
+  --status-info: #0A5FD8;
+  --status-success: #16A34A;
+  --status-warning: #B45309;
+  --status-danger: #DC2626;
+  --status-success-rgb: 22, 163, 74;
+  --status-warning-rgb: 180, 83, 9;
+  --status-danger-rgb: 220, 38, 38;
+  --status-danger-contrast: #FFFFFF;
 
   /* ------------------------------------------------------------------
-     2. Surface, text and border roles
+     2. Surface, text and border roles (light editorial default)
      ------------------------------------------------------------------ */
-  --bg-app: var(--neutral-950);
-  --bg-surface: var(--neutral-900);
-  --bg-surface-elevated: var(--neutral-850);
-  --bg-surface-active: var(--neutral-800);
-  --bg-surface-subtle: rgba(255, 255, 255, 0.04);
-  --bg-selection: var(--brand-blue-20);
-  --bg-app-rgb: 11, 15, 23;
-  --bg-surface-rgb: 17, 23, 34;
-  --bg-surface-elevated-rgb: 21, 28, 41;
+  --bg-app: var(--canvas);
+  --bg-surface: var(--surface-card);
+  --bg-surface-elevated: var(--canvas-soft);
+  --bg-surface-active: var(--surface-strong);
+  --bg-surface-subtle: rgba(12, 10, 9, 0.03);
+  --bg-selection: rgba(var(--brand-blue-rgb), 0.16);
+  --bg-app-rgb: 245, 245, 245;
+  --bg-surface-rgb: 255, 255, 255;
+  --bg-surface-elevated-rgb: 240, 239, 237;
 
-  --text-primary: var(--neutral-200);
-  --text-normal: var(--neutral-200);
-  --text-secondary: var(--neutral-300);
-  --text-muted: var(--neutral-400);
-  --text-dim: #8794A8;
-  --text-bright: var(--neutral-0);
+  --text-primary: var(--body-strong);
+  --text-normal: var(--body-strong);
+  --text-secondary: var(--body-ink);
+  --text-muted: var(--muted-ink);
+  --text-dim: var(--muted-soft);
+  --text-bright: var(--ink);
 
-  --border-subtle: #243044;
-  --border-medium: #34415A;
-  --border-active: var(--brand-blue-45);
-  --border-dim: var(--border-subtle);
+  --border-subtle: var(--hairline);
+  --border-medium: var(--hairline-strong);
+  --border-active: rgba(10, 95, 216, 0.48);
+  --border-dim: var(--hairline);
   --border-hairline: 1px solid var(--border-subtle);
-  --border-focus: 1px solid var(--brand-blue-60);
+  --border-focus: 1px solid rgba(10, 95, 216, 0.65);
 
   --accent-primary: var(--brand-blue);
   --accent-hover: var(--brand-blue-hover);
   --accent-text: var(--brand-blue-text);
   --accent-secondary: var(--brand-blue-strong);
-  --accent-muted: var(--brand-blue-14);
+  --accent-muted: var(--brand-blue-12);
   --accent-subtle: var(--brand-blue-07);
   --accent-contrast: var(--brand-blue-contrast);
-  --accent-on-brand: #140D06;
+  --accent-on-brand: #FFFFFF;
 
-  /* Reserved note/interaction hues — kept distinct from the brand blue. */
-  --accent-pink: #E879A6;
-  --accent-pink-muted: rgba(232, 121, 166, 0.12);
-  --accent-violet: #A78BFA;
-  --accent-violet-muted: rgba(167, 139, 250, 0.12);
+  /* Reserved note/interaction hues — kept distinct from brand blue. */
+  --accent-pink: #BE185D;
+  --accent-pink-muted: rgba(190, 24, 93, 0.09);
+  --accent-violet: #6D28D9;
+  --accent-violet-muted: rgba(109, 40, 217, 0.09);
   --accent-yellow: var(--status-warning);
-  --accent-yellow-muted: rgba(var(--status-warning-rgb), 0.12);
+  --accent-yellow-muted: rgba(var(--status-warning-rgb), 0.1);
 
-  --badge-bg: rgba(255, 255, 255, 0.05);
-  --badge-text: var(--neutral-400);
-  --overlay-backdrop: rgba(3, 7, 18, 0.78);
+  --badge-bg: var(--surface-strong);
+  --badge-text: var(--body-strong);
+  --overlay-backdrop: rgba(12, 10, 9, 0.28);
 
   /* ------------------------------------------------------------------
      3. Interaction, focus and status roles
      ------------------------------------------------------------------ */
-  --state-hover: rgba(226, 232, 242, 0.06);
-  --state-active: rgba(226, 232, 242, 0.1);
-  --state-selected: var(--brand-blue-12);
+  --state-hover: rgba(12, 10, 9, 0.045);
+  --state-active: rgba(12, 10, 9, 0.08);
+  --state-selected: rgba(var(--brand-blue-rgb), 0.1);
   --state-disabled: 0.4;
   --state-focus-ring: 0 0 0 2px var(--bg-app), 0 0 0 3px var(--brand-blue-55);
   --input-focus-border: var(--brand-blue-text);
-  --input-focus-ring: 0 0 0 1px var(--brand-blue-28);
+  --input-focus-ring: 0 0 0 1px rgba(10, 95, 216, 0.24);
 
   --danger: var(--status-danger);
-  --danger-border: rgba(var(--status-danger-rgb), 0.45);
-  --danger-subtle: rgba(var(--status-danger-rgb), 0.1);
+  --danger-border: rgba(var(--status-danger-rgb), 0.4);
+  --danger-subtle: rgba(var(--status-danger-rgb), 0.09);
 
-  /* Research highlights — subdued, legible tints over dark surfaces. */
-  --hl-important-bg: var(--brand-blue-12);
-  --hl-important-border: var(--brand-blue-50);
-  --hl-important-text: #9CC7FF;
-  --hl-question-bg: var(--accent-violet-muted);
-  --hl-question-border: rgba(167, 139, 250, 0.45);
-  --hl-question-text: #CFC3FF;
-  --hl-insight-bg: rgba(var(--status-success-rgb), 0.12);
+  /* Research highlights — crisp, legible editorial tints on paper */
+  --hl-important-bg: rgba(var(--brand-blue-rgb), 0.14);
+  --hl-important-border: var(--brand-blue-text);
+  --hl-important-text: #0A5FD8;
+  --hl-question-bg: rgba(109, 40, 217, 0.11);
+  --hl-question-border: rgba(109, 40, 217, 0.45);
+  --hl-question-text: #5B21B6;
+  --hl-insight-bg: rgba(var(--status-success-rgb), 0.11);
   --hl-insight-border: rgba(var(--status-success-rgb), 0.45);
-  --hl-insight-text: #A7F3C4;
-  --hl-definition-bg: rgba(var(--status-warning-rgb), 0.11);
-  --hl-definition-border: rgba(var(--status-warning-rgb), 0.4);
-  --hl-definition-text: #FDE3A7;
+  --hl-insight-text: #15803D;
+  --hl-definition-bg: rgba(var(--status-warning-rgb), 0.12);
+  --hl-definition-border: rgba(var(--status-warning-rgb), 0.45);
+  --hl-definition-text: #92400E;
 
   /* ------------------------------------------------------------------
-     4. Compatibility aliases — deprecated; existing components keep working.
-        New code should use the semantic roles above.
+     4. Compatibility aliases & elevation
      ------------------------------------------------------------------ */
   --dace-black: var(--bg-app);
   --dace-surface: var(--bg-surface);
@@ -174,10 +194,12 @@
 
   --brand-symbol-radius: 4px;
   --brand-symbol-shadow: none;
-  --brand-symbol-color: var(--neutral-400);
+  --brand-symbol-color: var(--muted-ink);
+  --brand-logo-url: url("../assets/brand/logo-light.png");
 
-  --shadow-subtle: 0 1px 3px rgba(2, 6, 23, 0.4);
-  --shadow-elevated: 0 12px 32px rgba(2, 6, 23, 0.62), 0 1px 3px rgba(2, 6, 23, 0.4);
+  --shadow-subtle: 0 1px 2px rgba(12, 10, 9, 0.04);
+  --shadow-soft-drop: 0 4px 16px rgba(12, 10, 9, 0.04);
+  --shadow-elevated: 0 12px 32px rgba(12, 10, 9, 0.1), 0 1px 3px rgba(12, 10, 9, 0.05);
   --glow-accent: none;
   --glow-soft: none;
   --glow-pink: none;
@@ -185,14 +207,11 @@
   --ambient-veil: none;
 
   /* ------------------------------------------------------------------
-     5. Typography — Aptos base with user-selectable device fonts
-
-     SettingsContext writes --dace-app-font and --dace-text-font from the
-     persisted Appearance preferences. All semantic tokens resolve through
-     those two hooks so every surface follows the same selection.
+     5. Typography — Waldenburg Light (300) display + Inter body/UI
      ------------------------------------------------------------------ */
-  --dace-app-font: "Aptos", "Segoe UI", system-ui, Roboto, "Helvetica Neue", Arial, sans-serif;
-  --dace-text-font: "Aptos", "Segoe UI", system-ui, sans-serif;
+  --dace-display-font: "Waldenburg", "EB Garamond", "Georgia", "Times New Roman", serif;
+  --dace-app-font: "Inter", "Aptos", "Segoe UI", system-ui, Roboto, "Helvetica Neue", Arial, sans-serif;
+  --dace-text-font: "Inter", "Aptos", "Segoe UI", system-ui, sans-serif;
 
   --font-app: var(--dace-app-font);
   --font-text: var(--dace-text-font);
@@ -200,54 +219,56 @@
 
   --font-interface: var(--font-app);
   --font-sans: var(--font-app);
-  --font-display: var(--font-app);
+  --font-display: var(--dace-display-font);
   --font-label: var(--font-app);
   --font-editorial: var(--font-text);
-  --font-quotation: var(--font-text);
+  --font-quotation: var(--font-display);
   --font-mono: var(--font-code);
 
-  --letter-spacing-display: -0.02em;
-  --letter-spacing-editorial: -0.01em;
-  --letter-spacing-interface: -0.005em;
+  --letter-spacing-display: -0.025em;
+  --letter-spacing-editorial: -0.015em;
+  --letter-spacing-interface: 0.005em;
+  --letter-spacing-body: 0.01em;
   --letter-spacing-quote: 0;
   --letter-spacing-caps: var(--tracking-upper-label);
   --letter-spacing-overline: var(--tracking-upper-label);
   --tracking-upper-label: 0.08em;
-  --tracking-body: 0;
+  --tracking-body: 0.01em;
 
+  --font-weight-display: 300;
   --font-weight-regular: 400;
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
   --font-weight-bold: 700;
-  --font-weight-heading: 500;
+  --font-weight-heading: 300;
 
   --font-size-xs: 0.75rem;
   --font-size-sm: 0.8125rem;
-  --font-size-base: 0.875rem;
-  --font-size-md: 0.9375rem;
+  --font-size-base: 0.9375rem;
+  --font-size-md: 1rem;
   --font-size-lg: 1.125rem;
-  --font-size-xl: 1.25rem;
-  --font-size-2xl: 1.5rem;
-  --font-size-3xl: 2rem;
-  --font-size-4xl: 2.75rem;
+  --font-size-xl: 1.5rem;
+  --font-size-2xl: 2rem;
+  --font-size-3xl: 2.25rem;
+  --font-size-4xl: 3rem;
 
   --type-micro: 11px;
   --type-mono: 11px;
-  --type-small: 12px;
-  --type-body: 13px;
+  --type-small: 13px;
+  --type-body: 15px;
   --type-lede: 16px;
-  --type-section: 18px;
+  --type-section: 22px;
   --type-clock: 32px;
-  --type-display: clamp(30px, 3.4vw, 44px);
+  --type-display: clamp(32px, 3.6vw, 48px);
 
-  --line-height-tight: 1.25;
+  --line-height-tight: 1.15;
   --line-height-normal: 1.5;
   --line-height-relaxed: 1.625;
   --leading-prose: 1.625;
   --measure-reading: 65ch;
 
   /* ------------------------------------------------------------------
-     6. Spacing and layout
+     6. Spacing, layout, z-index and shape tokens
      ------------------------------------------------------------------ */
   --space-1: 0.25rem;
   --space-2: 0.5rem;
@@ -270,8 +291,8 @@
   --layout-gutter: clamp(16px, 2.5vw, 32px);
   --layout-panel: 340px;
 
-  --control-height-sm: 28px;
-  --control-height-md: 34px;
+  --control-height-sm: 30px;
+  --control-height-md: 36px;
   --control-height-lg: 40px;
 
   --z-stage: 1;
@@ -285,13 +306,16 @@
   --z-dropdown: 1100;
   --z-popover: 1150;
   --z-toast: 1200;
-  --radius-xs: 3px;
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
-  --radius-xl: 10px;
-  --radius-pill: 999px;
-  --radius-full: 50%;
+
+  --radius-none: 0px;
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-xxl: 24px;
+  --radius-pill: 9999px;
+  --radius-full: 9999px;
 
   /* ------------------------------------------------------------------
      7. Motion — purposeful, short, lightweight
@@ -307,77 +331,96 @@
 }
 
 /* -------------------------------------------------------------------------
-   Future light appearance hook. Inactive until data-appearance="light" is
-   set by a future, separately reviewed milestone.
+   Neutral Graphite Dark Appearance (data-appearance="dark")
+   Anchored on neutral graphite (#0a0a0b / #1b1b1e / #27272a) + Dace Blue — no warm cast
    ------------------------------------------------------------------------- */
-:root[data-appearance="light"] {
-  color-scheme: light;
+:root[data-appearance="dark"] {
+  color-scheme: dark;
 
-  --brand-blue-rgb: 10, 95, 216;
-  --brand-blue-hover-rgb: 8, 80, 188;
-  --brand-blue-text: #0A5FD8;
-  --brand-blue-strong-rgb: 6, 71, 168;
+  --brand-blue-rgb: 25, 123, 250;
+  --brand-blue: rgb(var(--brand-blue-rgb));
+  --brand-blue-hover-rgb: 59, 140, 255;
+  --brand-blue-hover: rgb(var(--brand-blue-hover-rgb));
+  --brand-blue-text: #5AA6FF;
+  --brand-blue-strong-rgb: 10, 95, 216;
   --brand-blue-strong: rgb(var(--brand-blue-strong-rgb));
   --brand-blue-contrast: #FFFFFF;
   --accent-on-brand: #FFFFFF;
 
-  --bg-app: var(--neutral-50);
-  --bg-surface: var(--neutral-0);
-  --bg-surface-elevated: var(--neutral-100);
-  --bg-surface-active: var(--neutral-200);
-  --bg-surface-subtle: rgba(15, 23, 42, 0.035);
-  --bg-selection: rgba(10, 95, 216, 0.14);
-  --bg-app-rgb: 247, 249, 252;
-  --bg-surface-rgb: 255, 255, 255;
-  --bg-surface-elevated-rgb: 239, 243, 249;
+  --canvas: #0A0A0B;
+  --canvas-soft: #121214;
+  --surface-card: #141416;
+  --surface-strong: #1B1B1E;
 
-  --text-primary: var(--neutral-900);
-  --text-normal: var(--neutral-900);
-  --text-secondary: #334155;
-  --text-muted: #64748B;
-  --text-dim: #94A3B8;
-  --text-bright: var(--neutral-950);
+  --neutral-300-rgb: 212, 212, 216;
+  --neutral-500-rgb: 161, 161, 170;
 
-  --border-subtle: #D7DEEA;
-  --border-medium: #BCC7D8;
-  --border-active: rgba(10, 95, 216, 0.42);
-  --border-dim: var(--border-subtle);
-  --border-focus: 1px solid rgba(10, 95, 216, 0.58);
+  --bg-app: #0A0A0B;
+  --bg-surface: #121214;
+  --bg-surface-elevated: #1B1B1E;
+  --bg-surface-active: #27272A;
+  --bg-surface-subtle: rgba(255, 255, 255, 0.04);
+  --bg-selection: rgba(var(--brand-blue-rgb), 0.24);
+  --bg-app-rgb: 10, 10, 11;
+  --bg-surface-rgb: 18, 18, 20;
+  --bg-surface-elevated-rgb: 27, 27, 30;
 
-  --badge-bg: rgba(15, 23, 42, 0.05);
-  --badge-text: #475569;
-  --overlay-backdrop: rgba(15, 23, 42, 0.34);
+  --text-primary: #F4F4F5;
+  --text-normal: #E4E4E7;
+  --text-secondary: #D4D4D8;
+  --text-muted: #A1A1AA;
+  --text-dim: #71717A;
+  --text-bright: #FFFFFF;
 
-  --state-hover: rgba(15, 23, 42, 0.05);
-  --state-active: rgba(15, 23, 42, 0.09);
-  --state-selected: rgba(10, 95, 216, 0.1);
-  --state-focus-ring: 0 0 0 2px var(--bg-app), 0 0 0 3px rgba(10, 95, 216, 0.5);
-  --input-focus-border: #0A5FD8;
-  --input-focus-ring: 0 0 0 1px rgba(10, 95, 216, 0.22);
+  --border-subtle: #27272A;
+  --border-medium: #3A3A40;
+  --border-active: rgba(var(--brand-blue-rgb), 0.48);
+  --border-dim: #27272A;
+  --border-focus: 1px solid rgba(var(--brand-blue-rgb), 0.65);
 
-  --status-info: #0A5FD8;
-  --status-success: #047857;
-  --status-warning: #B45309;
-  --status-danger: #B42318;
-  --status-success-rgb: 4, 120, 87;
-  --status-warning-rgb: 180, 83, 9;
-  --status-danger-rgb: 180, 35, 24;
-  --status-danger-contrast: #FFFFFF;
+  --badge-bg: rgba(255, 255, 255, 0.06);
+  --badge-text: #D4D4D8;
+  --overlay-backdrop: rgba(10, 10, 11, 0.76);
 
-  --accent-pink: #BE185D;
-  --accent-pink-muted: rgba(190, 24, 93, 0.1);
-  --accent-violet: #6D28D9;
-  --accent-violet-muted: rgba(109, 40, 217, 0.1);
+  --state-hover: rgba(244, 244, 245, 0.06);
+  --state-active: rgba(244, 244, 245, 0.1);
+  --state-selected: rgba(var(--brand-blue-rgb), 0.14);
+  --state-focus-ring: 0 0 0 2px var(--bg-app), 0 0 0 3px var(--brand-blue-55);
+  --input-focus-border: var(--brand-blue-text);
+  --input-focus-ring: 0 0 0 1px var(--brand-blue-28);
 
-  --hl-important-text: #0A5FD8;
-  --hl-question-border: rgba(109, 40, 217, 0.38);
-  --hl-question-text: #5B21B6;
-  --hl-insight-text: #047857;
-  --hl-definition-text: #92400E;
+  --status-info: #5AA6FF;
+  --status-success: #4ADE80;
+  --status-warning: #FBBF24;
+  --status-danger: #F87171;
+  --status-success-rgb: 74, 222, 128;
+  --status-warning-rgb: 251, 191, 36;
+  --status-danger-rgb: 248, 113, 113;
+  --status-danger-contrast: #140D06;
 
-  --brand-symbol-color: #64748B;
-  --shadow-subtle: 0 1px 3px rgba(15, 23, 42, 0.1);
-  --shadow-elevated: 0 12px 32px rgba(15, 23, 42, 0.16), 0 1px 3px rgba(15, 23, 42, 0.1);
+  --accent-pink: #E879A6;
+  --accent-pink-muted: rgba(232, 121, 166, 0.12);
+  --accent-violet: #A78BFA;
+  --accent-violet-muted: rgba(167, 139, 250, 0.12);
+
+  --hl-important-bg: rgba(var(--brand-blue-rgb), 0.15);
+  --hl-important-border: rgba(var(--brand-blue-rgb), 0.55);
+  --hl-important-text: #9CC7FF;
+  --hl-question-bg: rgba(167, 139, 250, 0.14);
+  --hl-question-border: rgba(167, 139, 250, 0.45);
+  --hl-question-text: #CFC3FF;
+  --hl-insight-bg: rgba(var(--status-success-rgb), 0.13);
+  --hl-insight-border: rgba(var(--status-success-rgb), 0.45);
+  --hl-insight-text: #A7F3C4;
+  --hl-definition-bg: rgba(var(--status-warning-rgb), 0.12);
+  --hl-definition-border: rgba(var(--status-warning-rgb), 0.42);
+  --hl-definition-text: #FDE3A7;
+
+  --brand-symbol-color: #A1A1AA;
+  --brand-logo-url: url("../assets/brand/logo.png");
+  --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.35);
+  --shadow-soft-drop: 0 4px 16px rgba(0, 0, 0, 0.36);
+  --shadow-elevated: 0 14px 36px rgba(0, 0, 0, 0.58), 0 1px 3px rgba(0, 0, 0, 0.38);
 }
 
 @media (prefers-reduced-motion: reduce) {

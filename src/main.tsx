@@ -12,8 +12,13 @@ try {
     "theme-dull",
     "theme-transitioning"
   );
+  const rawSettings = window.localStorage.getItem("dace.settings.fallback.v1");
+  const parsed = rawSettings ? JSON.parse(rawSettings) : null;
+  const initialMode =
+    parsed?.appearance?.colorMode === "dark" ? "dark" : "light";
+  document.documentElement.dataset.appearance = initialMode;
 } catch {
-  // Storage may be unavailable; stale classes have no visual effect.
+  document.documentElement.dataset.appearance = "light";
 }
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(

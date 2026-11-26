@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { FitAddon } from "@xterm/addon-fit";
-import { Terminal } from "@xterm/xterm";
+import { Terminal, type ITheme } from "@xterm/xterm";
 import "@xterm/xterm/css/xterm.css";
 import { useSettings } from "../settings/SettingsContext";
 import { terminalFontStack } from "../settings/fonts";
+import type { ColorMode } from "../settings/types";
 import {
   base64ToBytes,
   closeTerminalSession,
@@ -26,6 +27,57 @@ interface SessionView extends TerminalSessionInfo {
 
 interface TerminalViewProps {
   onNotice?: (message: string) => void;
+}
+
+function getTerminalTheme(colorMode: ColorMode): ITheme {
+  if (colorMode === "light") {
+    return {
+      background: "#FFFFFF",
+      foreground: "#292524",
+      cursor: "#0A5FD8",
+      cursorAccent: "#FFFFFF",
+      selectionBackground: "rgba(25, 123, 250, 0.2)",
+      black: "#292524",
+      red: "#B91C1C",
+      green: "#15803D",
+      yellow: "#A16207",
+      blue: "#0A5FD8",
+      magenta: "#7E22CE",
+      cyan: "#0E7490",
+      white: "#E7E5E4",
+      brightBlack: "#777169",
+      brightRed: "#DC2626",
+      brightGreen: "#16A34A",
+      brightYellow: "#CA8A04",
+      brightBlue: "#197BFA",
+      brightMagenta: "#9333EA",
+      brightCyan: "#0891B2",
+      brightWhite: "#FFFFFF",
+    };
+  }
+  return {
+    background: "#0C0A09",
+    foreground: "#F5F5F4",
+    cursor: "#5AA6FF",
+    cursorAccent: "#0C0A09",
+    selectionBackground: "rgba(25, 123, 250, 0.26)",
+    black: "#0C0A09",
+    red: "#F87171",
+    green: "#4ADE80",
+    yellow: "#FBBF24",
+    blue: "#5AA6FF",
+    magenta: "#A78BFA",
+    cyan: "#5CE1E6",
+    white: "#E7E5E4",
+    brightBlack: "#78716C",
+    brightRed: "#FCA5A5",
+    brightGreen: "#86EFAC",
+    brightYellow: "#FDE68A",
+    brightBlue: "#93C5FD",
+    brightMagenta: "#C4B5FD",
+    brightCyan: "#A5F3FC",
+    brightWhite: "#FFFFFF",
+  };
 }
 
 function errorMessage(error: unknown): string {
@@ -63,15 +115,17 @@ export function TerminalView({ onNotice }: TerminalViewProps) {
 
   useEffect(() => {
     const family = terminalFontStack(settings.appearance.appFont);
+    const theme = getTerminalTheme(settings.appearance.colorMode);
     for (const [sessionId, terminal] of terminalsRef.current) {
       terminal.options.fontFamily = family;
+      terminal.options.theme = theme;
       try {
         fitsRef.current.get(sessionId)?.fit();
       } catch {
         // Hidden terminals are fitted again when their container becomes visible.
       }
     }
-  }, [settings.appearance.appFont]);
+  }, [settings.appearance.appFont, settings.appearance.colorMode]);
 
   const report = useCallback(
     (message: string) => {
@@ -93,29 +147,7 @@ export function TerminalView({ onNotice }: TerminalViewProps) {
         fontSize: 13,
         lineHeight: 1.35,
         scrollback: 5000,
-        theme: {
-          background: "#0B0F17",
-          foreground: "#E2E8F2",
-          cursor: "#5AA6FF",
-          cursorAccent: "#0B0F17",
-          selectionBackground: "rgba(25, 123, 250, 0.24)",
-          black: "#0B0F17",
-          red: "#FF6B6B",
-          green: "#4ADE80",
-          yellow: "#FBBF24",
-          blue: "#5AA6FF",
-          magenta: "#A78BFA",
-          cyan: "#5CE1E6",
-          white: "#E2E8F2",
-          brightBlack: "#64748B",
-          brightRed: "#FF8787",
-          brightGreen: "#86EFAC",
-          brightYellow: "#FDE68A",
-          brightBlue: "#93C5FD",
-          brightMagenta: "#C4B5FD",
-          brightCyan: "#A5F3FC",
-          brightWhite: "#FFFFFF",
-        },
+        theme: getTerminalTheme(settings.appearance.colorMode),
       });
       const fit = new FitAddon();
       terminal.loadAddon(fit);
@@ -152,7 +184,7 @@ export function TerminalView({ onNotice }: TerminalViewProps) {
       for (const bytes of pending) terminal.write(bytes);
       pendingRef.current.delete(sessionId);
     },
-    [report, settings.appearance.appFont]
+    [report, settings.appearance.appFont, settings.appearance.colorMode]
   );
 
   const attachContainer = useCallback(

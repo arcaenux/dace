@@ -9,10 +9,11 @@ import {
 test("1. Default settings contain only meaningful, valid values", () => {
   const settings = cloneDefaultSettings();
   assert.equal(settings.general.startupBehavior, "remember-last");
+  assert.equal(settings.appearance.colorMode, "light");
   assert.equal(settings.appearance.textScale, 1);
   assert.equal(settings.appearance.density, "comfortable");
-  assert.equal(settings.appearance.appFont, "Aptos");
-  assert.equal(settings.appearance.textFont, "Aptos");
+  assert.equal(settings.appearance.appFont, "Inter");
+  assert.equal(settings.appearance.textFont, "Inter");
   assert.equal(settings.workspace.readerDefaultMode, "research");
   assert.equal(settings.editor.autosaveDelayMs, 1200);
   assert.equal(settings.documents.defaultBackupDirectory, null);
@@ -21,13 +22,14 @@ test("1. Default settings contain only meaningful, valid values", () => {
 test("2. Invalid values fall back individually without discarding valid settings", () => {
   const normalized = normalizeSettings({
     general: { startupBehavior: "explode", defaultActivity: "reader", confirmDestructiveActions: false },
-    appearance: { density: "dull", textScale: 4, reducedMotion: true },
+    appearance: { colorMode: "neon", density: "dull", textScale: 4, reducedMotion: true },
     editor: { autosaveDelayMs: 1 },
   });
 
   assert.equal(normalized.general.startupBehavior, "remember-last");
   assert.equal(normalized.general.defaultActivity, "reader");
   assert.equal(normalized.general.confirmDestructiveActions, false);
+  assert.equal(normalized.appearance.colorMode, "light");
   assert.equal(normalized.appearance.density, "comfortable");
   assert.equal(normalized.appearance.textScale, 1.25);
   assert.equal(normalized.appearance.reducedMotion, true);
@@ -69,8 +71,8 @@ test("6. Device font preferences are retained and sanitised", () => {
   assert.equal(chosen.appearance.textFont, "Georgia");
 
   const unsafe = normalizeSettings({
-    appearance: { appFont: 'Aptos"; color: red', textFont: "   " },
+    appearance: { appFont: 'Inter"; color: red', textFont: "   " },
   });
-  assert.equal(unsafe.appearance.appFont, "Aptos color red");
-  assert.equal(unsafe.appearance.textFont, "Aptos");
+  assert.equal(unsafe.appearance.appFont, "Inter color red");
+  assert.equal(unsafe.appearance.textFont, "Inter");
 });
