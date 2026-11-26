@@ -88,7 +88,7 @@
   justify-content: space-between;
 }.file-type-pill {
   font-family: var(--font-label);
-  font-size: 10px;
+  font-size: var(--type-micro);
   font-weight: 600;
   letter-spacing: 0.05em;
   padding: 1px 6px;
@@ -114,7 +114,7 @@
   color: #94a3b8;
   border: 1px solid rgba(148, 163, 184, 0.25);
 }.file-missing-badge {
-  font-size: 10px;
+  font-size: var(--type-micro);
   padding: 1px 5px;
   border-radius: 3px;
   background: rgba(var(--status-danger-rgb), 0.15);
@@ -194,14 +194,14 @@
   gap: 4px;
   text-align: left;
 }.confirm-warn-text {
-  font-size: 10px;
+  font-size: var(--type-micro);
   color: var(--status-danger);
 }.confirm-btns {
   display: flex;
   gap: 4px;
 }.confirm-btns .desk-btn {
   padding: 2px 6px;
-  font-size: 10px;
+  font-size: var(--type-micro);
 }.desk-btn.danger-confirm {
   background: rgba(var(--status-danger-rgb), 0.2);
   border-color: rgba(var(--status-danger-rgb), 0.4);
@@ -235,7 +235,7 @@
   overflow: hidden;
 }.preview-badge {
   font-family: var(--font-label);
-  font-size: 10px;
+  font-size: var(--type-micro);
   font-weight: 600;
   padding: 2px 6px;
   border-radius: 4px;

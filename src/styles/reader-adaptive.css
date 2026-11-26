@@ -250,7 +250,7 @@ body.reader-is-resizing .dace-app * {
   color: var(--text-muted);
   font-family: var(--font-label);
   font-size: var(--type-micro);
-  letter-spacing: 0.1em;
+  letter-spacing: var(--tracking-upper-label);
   text-transform: uppercase;
   cursor: pointer;
   transition: color 150ms ease, background-color 150ms ease;
@@ -327,7 +327,7 @@ body.reader-is-resizing .dace-app * {
   color: var(--text-muted);
   font-family: var(--font-label);
   font-size: var(--type-micro);
-  letter-spacing: 0.14em;
+  letter-spacing: var(--tracking-upper-label);
   text-transform: uppercase;
 }
 .dace-app .reader-popover-item,
@@ -581,7 +581,7 @@ body.reader-is-resizing .dace-app * {
   color: var(--text-muted);
   font-family: var(--font-label);
   font-size: var(--type-micro);
-  letter-spacing: 0.1em;
+  letter-spacing: var(--tracking-upper-label);
   text-transform: uppercase;
   cursor: pointer;
 }
@@ -607,7 +607,7 @@ body.reader-is-resizing .dace-app * {
   color: var(--text-muted);
   font-family: var(--font-label);
   font-size: var(--type-micro);
-  letter-spacing: 0.16em;
+  letter-spacing: var(--tracking-upper-label);
   text-transform: uppercase;
 }
 .dace-app .reader-section-heading {
@@ -949,7 +949,7 @@ body.reader-is-resizing .dace-app * {
   overflow-wrap: anywhere;
   color: var(--text-muted);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--type-micro);
   line-height: 1.5;
 }
 
@@ -993,7 +993,7 @@ body.reader-is-resizing .dace-app * {
   color: var(--reader-accent-text);
   font-family: var(--font-label);
   font-size: var(--type-micro);
-  letter-spacing: 0.1em;
+  letter-spacing: var(--tracking-upper-label);
   text-transform: uppercase;
   box-shadow: 0 12px 34px rgba(0, 0, 0, 0.5);
   cursor: pointer;

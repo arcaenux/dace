@@ -76,7 +76,7 @@
   border-left: 1px solid rgba(var(--neutral-300-rgb), 0.1);
   box-shadow: -24px 0 60px rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(20px);
-}.dace-app .reader-drawer-tabs { background: rgba(11, 11, 11, 0.6); border-bottom: 1px solid rgba(var(--neutral-300-rgb), 0.1); }.dace-app .drawer-tab { font-family: var(--font-label); font-size: var(--type-micro); letter-spacing: 0.14em; }.dace-app .drawer-tab.active { color: var(--accent-text); border-bottom-color: var(--accent-primary); }.dace-app .drawer-close-btn {
+}.dace-app .reader-drawer-tabs { background: rgba(11, 11, 11, 0.6); border-bottom: 1px solid rgba(var(--neutral-300-rgb), 0.1); }.dace-app .drawer-tab { font-family: var(--font-label); font-size: var(--type-micro); letter-spacing: var(--tracking-upper-label); }.dace-app .drawer-tab.active { color: var(--accent-text); border-bottom-color: var(--accent-primary); }.dace-app .drawer-close-btn {
   flex: 0 0 36px;
   display: inline-grid;
   place-items: center;
@@ -254,7 +254,7 @@
   color: var(--accent-text);
   font-family: var(--font-label);
   font-size: var(--type-micro);
-  letter-spacing: 0.14em;
+  letter-spacing: var(--tracking-upper-label);
   text-transform: uppercase;
 }.dace-app .graph-contextual-card .card-title {
   font-family: var(--font-display);
@@ -262,7 +262,7 @@
   font-weight: 500;
   letter-spacing: -0.02em;
   color: var(--text-primary);
-}.dace-app .graph-contextual-card .card-preview { font-size: var(--type-small); line-height: 1.6; color: var(--text-secondary); }.dace-app .connections-heading { font-family: var(--font-label); font-size: var(--type-micro); letter-spacing: 0.1em; color: var(--text-muted); }.dace-app .connected-chip {
+}.dace-app .graph-contextual-card .card-preview { font-size: var(--type-small); line-height: 1.6; color: var(--text-secondary); }.dace-app .connections-heading { font-family: var(--font-label); font-size: var(--type-micro); letter-spacing: var(--tracking-upper-label); color: var(--text-muted); }.dace-app .connected-chip {
   border: 1px solid rgba(var(--neutral-300-rgb), 0.14);
   border-radius: 4px;
   background: rgba(20, 20, 20, 0.7);

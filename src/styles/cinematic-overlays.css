@@ -73,8 +73,8 @@
   background: rgba(20, 20, 20, 0.7);
   color: var(--text-muted);
   font-family: var(--font-label);
-  font-size: 8px;
-  letter-spacing: 0.1em;
+  font-size: var(--type-micro);
+  letter-spacing: var(--tracking-upper-label);
 }.dace-app .command-badge.unavailable {
   color: rgba(var(--neutral-300-rgb), 0.4);
   background: rgba(138, 138, 138, 0.06);
@@ -142,7 +142,7 @@
   color: var(--status-warning);
   font-size: var(--type-body);
   line-height: 1.6;
-}.dace-app .restore-summary-row { border-bottom: 1px solid rgba(var(--neutral-300-rgb), 0.08); }.dace-app .restore-summary-row dt { font-family: var(--font-label); font-size: var(--type-micro); letter-spacing: 0.1em; color: var(--text-muted); }.dace-app .restore-summary-row dd { font-size: var(--type-body); color: var(--text-primary); }.dace-app .restore-progress { font-family: var(--font-label); font-size: var(--type-mono); letter-spacing: 0.05em; color: var(--accent-text); }.dace-app .restore-error { font-size: var(--type-small); line-height: 1.5; color: var(--status-danger); }.dace-app .restore-confirm-btn {
+}.dace-app .restore-summary-row { border-bottom: 1px solid rgba(var(--neutral-300-rgb), 0.08); }.dace-app .restore-summary-row dt { font-family: var(--font-label); font-size: var(--type-micro); letter-spacing: var(--tracking-upper-label); color: var(--text-muted); }.dace-app .restore-summary-row dd { font-size: var(--type-body); color: var(--text-primary); }.dace-app .restore-progress { font-family: var(--font-label); font-size: var(--type-mono); letter-spacing: 0.05em; color: var(--accent-text); }.dace-app .restore-error { font-size: var(--type-small); line-height: 1.5; color: var(--status-danger); }.dace-app .restore-confirm-btn {
   border: 1px solid rgba(var(--status-danger-rgb), 0.55);
   border-radius: 7px;
   background: transparent;
@@ -176,7 +176,7 @@
 }.dace-app .panel-title {
   font-family: var(--font-label);
   font-size: var(--type-micro);
-  letter-spacing: 0.18em;
+  letter-spacing: var(--tracking-upper-label);
   color: var(--text-secondary);
   text-transform: uppercase;
 }.dace-app .panel-close-btn { color: var(--text-muted); border-radius: 5px; transition: color var(--duration-fast), background-color var(--duration-fast); }.dace-app .panel-close-btn:hover { color: var(--accent-text); background: rgba(var(--brand-blue-rgb), 0.08); }.dace-app .panel-content { padding: 24px 22px; }/* --------------------------------------------------------------------------
@@ -331,7 +331,7 @@
 
 .dace-app .command-badge {
   flex: 0 0 auto;
-  font-size: 9px;
+  font-size: var(--type-micro);
   letter-spacing: 0.04em;
   white-space: nowrap;
 }
