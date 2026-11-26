@@ -50,7 +50,7 @@ export const WorkspaceTopBar: FC<WorkspaceTopBarProps> = ({
             )}
           </div>
           {activeActivity === "workspace" && (
-            <span className="topbar-brand-descriptor">A space for discovery.</span>
+            <span className="topbar-brand-descriptor">Research workspace</span>
           )}
         </div>
       </div>

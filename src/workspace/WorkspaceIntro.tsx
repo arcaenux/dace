@@ -103,7 +103,7 @@ export const WorkspaceIntro: FC<WorkspaceIntroProps> = ({
 
   return (
     <div className="home-workspace">
-      <span className="sr-only">WELCOME TO DACE — A SPACE FOR DISCOVERY</span>
+      <span className="sr-only">DACE — RESEARCH WORKSPACE</span>
 
       <div className="home-container">
         {/* Header Section */}
