@@ -1,0 +1,274 @@
+/* ==========================================================================
+   Dace — Quiet UI layer
+   Final authoritative pass. The application should read as a precision
+   instrument: solid neutral surfaces, hairline structure, one accent, dense
+   chrome, roomy documents, and no decorative motion.
+   Imported last so it overrides the legacy cinematic layers.
+   ========================================================================== */
+
+:root {
+  font-synthesis: none;
+}
+
+/* Flat materials: no glass, no glow, no halation. ------------------------- */
+.dace-app,
+.dace-app *,
+.dace-app *::before,
+.dace-app *::after {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  text-shadow: none !important;
+}
+
+.dace-app .workspace-stage,
+.dace-app .cinematic-hero,
+.dace-app .entry-card::before,
+.dace-app .home-empty-constellation,
+.dace-app .knowledge-graph-container,
+.dace-app .reader-viewport,
+.dace-app .command-palette,
+.dace-app .shortcut-modal,
+.dace-app .delete-confirm-dialog,
+.dace-app .restore-modal,
+.dace-app .preview-modal-container,
+.dace-app .attachment-details-modal,
+.dace-app .workspace-error-card,
+.dace-app .graph-contextual-card,
+.dace-app .graph-search-results,
+.dace-app .graph-controls,
+.dace-app .quiet-notice {
+  background-image: none !important;
+}
+
+.dace-app .workspace-stage,
+.dace-app .knowledge-graph-container,
+.dace-app .reader-viewport {
+  background-color: var(--bg-app) !important;
+}
+
+.dace-app .command-palette,
+.dace-app .shortcut-modal,
+.dace-app .delete-confirm-dialog,
+.dace-app .restore-modal,
+.dace-app .preview-modal-container,
+.dace-app .attachment-details-modal,
+.dace-app .workspace-error-card,
+.dace-app .graph-contextual-card,
+.dace-app .graph-search-results,
+.dace-app .graph-controls,
+.dace-app .contextual-panel,
+.dace-app .desk-context-panel,
+.dace-app .reader-command-center,
+.dace-app .command-badge,
+.dace-app .shortcut-keys,
+.dace-app .shortcut-modal-header,
+.dace-app .panel-header {
+  background-color: var(--bg-surface-elevated) !important;
+}
+
+.dace-app .quiet-notice {
+  background-color: var(--bg-surface) !important;
+}
+
+.dace-app .hero-artwork,
+.dace-app .hero-starfield,
+.dace-app .hero-ambient,
+.dace-app .hero-vignette,
+.dace-app .hero-orbit,
+.dace-app .hero-corner,
+.dace-app .hero-signal,
+.dace-app .empty-constellation-icon {
+  display: none !important;
+}
+
+.dace-app .cinematic-hero {
+  min-height: 360px;
+  border: var(--border-hairline);
+  border-radius: var(--radius-md) !important;
+  background: var(--bg-surface) !important;
+  box-shadow: none !important;
+}
+
+.dace-app .topbar-brand-logo,
+.dace-app .empty-constellation-icon {
+  filter: none !important;
+}
+
+.dace-app .status-dot.green,
+.dace-app .status-dot.pulsing,
+.dace-app .status-dot.pulse {
+  box-shadow: none !important;
+}
+
+/* Elevation: hairline + one surface step, never resting shadows. ---------- */
+.dace-app .command-palette,
+.dace-app .shortcut-modal,
+.dace-app .delete-confirm-dialog,
+.dace-app .restore-modal,
+.dace-app .preview-modal-container,
+.dace-app .attachment-details-modal,
+.dace-app .workspace-error-card,
+.dace-app .graph-contextual-card,
+.dace-app .graph-search-results,
+.dace-app .graph-controls,
+.dace-app .contextual-panel,
+.dace-app .desk-context-panel,
+.dace-app .reader-command-center,
+.dace-app .quiet-notice,
+.dace-app .entry-card,
+.dace-app .continue-card,
+.dace-app .record-card-item,
+.dace-app .attachment-card {
+  box-shadow: none !important;
+}
+
+.dace-app .command-palette,
+.dace-app .shortcut-modal,
+.dace-app .delete-confirm-dialog,
+.dace-app .restore-modal,
+.dace-app .preview-modal-container,
+.dace-app .attachment-details-modal,
+.dace-app .workspace-error-card,
+.dace-app .graph-contextual-card,
+.dace-app .graph-search-results,
+.dace-app .quiet-notice {
+  border: var(--border-hairline) !important;
+  border-radius: var(--radius-md) !important;
+}
+
+/* Motion: state changes only. No springs, lifts, pulses, or entrances. ---- */
+.dace-app .workspace-topbar,
+.dace-app .cinematic-home,
+.dace-app .dace-empty-state,
+.dace-app .record-card-item,
+.dace-app .attachment-card,
+.dace-app .settings-field,
+.dace-app .overlay-backdrop,
+.dace-app .command-palette,
+.dace-app .shortcut-modal,
+.dace-app .restore-modal,
+.dace-app .delete-confirm-dialog,
+.dace-app .preview-modal-container,
+.dace-app .attachment-details-modal,
+.dace-app .contextual-panel.open,
+.dace-app .desk-context-panel.open,
+.dace-app .graph-contextual-card,
+.dace-app .desk-empty-state,
+.dace-app .quiet-notice,
+.dace-app .hero-artwork,
+.dace-app .hero-orbit,
+.dace-app .hero-signal,
+.dace-app .status-dot.pulsing,
+.dace-app .status-dot.pulse {
+  animation: none !important;
+}
+
+.dace-app button:not(:disabled),
+.dace-app select:not(:disabled),
+.dace-app .record-card-item,
+.dace-app .attachment-card,
+.dace-app .settings-field,
+.dace-app .drawer-tab {
+  transition-property: border-color, background-color, color !important;
+  transition-duration: var(--duration-fast) !important;
+  transition-timing-function: var(--ease-standard) !important;
+}
+
+.dace-app .topbar-brand-logo,
+.dace-app .entry-card:hover,
+.dace-app .continue-card:hover,
+.dace-app .record-card-item:hover,
+.dace-app .attachment-card:hover,
+.dace-app .settings-field:hover,
+.dace-app .drawer-tab:hover,
+.dace-app .graph-control-btn:hover:not(:disabled),
+.dace-app .home-workspace-card:hover .home-ws-arrow,
+.dace-app button:not(:disabled):active {
+  transform: none !important;
+}
+
+/* Rail icons are positioned with a transform; preserve their geometry. */
+.dace-app button.rail-nav-item:active {
+  transform: translate(-50%, -50%) !important;
+}
+
+.dace-app .topbar-icon-btn:hover:not(:disabled),
+.dace-app .desk-btn:hover:not(:disabled),
+.dace-app .graph-control-btn:hover:not(:disabled),
+.dace-app .settings-content button:hover:not(:disabled),
+.dace-app .record-card-item:hover,
+.dace-app .attachment-card:hover,
+.dace-app .entry-card:hover,
+.dace-app .continue-card:hover {
+  box-shadow: none !important;
+}
+
+/* Typography: one recipe per role, tabular metadata, measured prose. ------ */
+.dace-app :is(
+    time,
+    [data-metric],
+    [data-count],
+    .home-record-time,
+    .desk-word-count,
+    .tag-count,
+    .relationships-count-badge,
+    .attachments-counter,
+    .file-size,
+    .preview-meta-size,
+    .speed-read-number,
+    .speed-read-stat-value,
+    .restore-progress
+  ) {
+  font-variant-numeric: tabular-nums lining-nums slashed-zero;
+}
+
+.dace-app .markdown-reader-content {
+  max-width: var(--measure-reading);
+  margin-inline: auto;
+  font-size: 16px;
+  line-height: var(--leading-prose);
+  font-variant-numeric: proportional-nums;
+}
+
+.dace-app .confirm-message,
+.dace-app .home-tagline,
+.dace-app .empty-sub {
+  line-height: var(--line-height-normal);
+}
+
+.dace-app :is(button, input, select, textarea) {
+  font-family: var(--font-interface);
+}
+
+/* Focus is a crisp outline, not a glow. ---------------------------------- */
+.dace-app :is(
+    button,
+    a,
+    input,
+    select,
+    textarea,
+    [role="button"],
+    [role="option"],
+    [tabindex]:not([tabindex="-1"])
+  ):focus-visible {
+  outline: 2px solid var(--brand-blue-text) !important;
+  outline-offset: 2px !important;
+  box-shadow: none !important;
+}
+
+/* Reduced motion means no motion, not merely shorter delays. ------------- */
+@media (prefers-reduced-motion: reduce) {
+  .dace-app *,
+  .dace-app *::before,
+  .dace-app *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+html[data-reduced-motion="true"] .dace-app *,
+html[data-reduced-motion="true"] .dace-app *::before,
+html[data-reduced-motion="true"] .dace-app *::after {
+  animation: none !important;
+  transition: none !important;
+}

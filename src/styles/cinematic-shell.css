@@ -212,7 +212,7 @@ body,
   border-radius: var(--radius-xs);
   background: rgba(0, 0, 0, 0.25);
   color: var(--text-muted);
-  font-size: 10px;
+  font-size: var(--type-micro);
 }
 
 .dace-app .topbar-icon-btn-quiet {

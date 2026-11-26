@@ -79,7 +79,7 @@ select {
   color: var(--accent-text);
   font-family: var(--font-label);
   font-size: var(--type-micro);
-  letter-spacing: 0.2em;
+  letter-spacing: var(--tracking-upper-label);
   text-transform: uppercase;
 }.activity-title {
   color: var(--text-primary);
@@ -104,7 +104,7 @@ select {
   color: var(--accent-text);
   font-family: var(--font-label);
   font-size: var(--type-micro);
-  letter-spacing: 0.12em;
+  letter-spacing: var(--tracking-upper-label);
   text-transform: uppercase;
   transition: background-color 160ms ease, box-shadow 160ms ease;
 }.activity-back-btn:hover {
@@ -180,7 +180,7 @@ select {
   color: var(--text-secondary);
   font-family: var(--font-label);
   font-size: var(--type-micro);
-  letter-spacing: 0.12em;
+  letter-spacing: var(--tracking-upper-label);
   text-transform: uppercase;
   backdrop-filter: blur(12px);
 }.focus-exit-btn:hover {
@@ -249,7 +249,7 @@ select {
   color: var(--text-muted);
   font-family: var(--font-label);
   font-size: var(--type-micro);
-  letter-spacing: 0.1em;
+  letter-spacing: var(--tracking-upper-label);
   text-transform: uppercase;
 }.restore-summary-row dd {
   color: var(--text-primary);
