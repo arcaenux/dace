@@ -34,6 +34,7 @@ export const FocusSpaceView: FC<FocusSpaceViewProps> = ({
             aria-label={`${isRailOpen ? "Hide" : "Show"} curved sidebar (Ctrl+B)`}
             aria-pressed={isRailOpen}
             data-dismiss-ignore
+            data-tauri-drag-region="false"
           >
             <PanelLeft size={14} aria-hidden="true" />
           </button>
@@ -43,6 +44,7 @@ export const FocusSpaceView: FC<FocusSpaceViewProps> = ({
             title="Open Command Palette (Ctrl+K)"
             aria-label="Open Command Palette (Ctrl+K)"
             data-dismiss-ignore
+            data-tauri-drag-region="false"
           >
             <Command size={14} aria-hidden="true" />
           </button>
@@ -52,6 +54,7 @@ export const FocusSpaceView: FC<FocusSpaceViewProps> = ({
             title="Exit Focus Space (F11 or Esc)"
             aria-label="Exit Focus Space (F11 or Esc)"
             data-dismiss-ignore
+            data-tauri-drag-region="false"
           >
             <LogOut size={14} aria-hidden="true" />
           </button>

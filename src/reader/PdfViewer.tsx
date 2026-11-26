@@ -22,6 +22,7 @@ import {
   resolveOutlinePageNumbers,
   type PassageRect,
 } from "./readerSelection.ts";
+import { pdfItemsToText } from "./speedRead.ts";
 
 // Configure workerSrc — this deliberately preserves the existing worker setup.
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
@@ -51,6 +52,8 @@ interface PdfViewerProps {
   selectedHighlightId?: string | null;
   initialScrollTop?: number;
   onScrollTopChange?: (top: number) => void;
+  onPageTextLoaded?: (text: string, page: number) => void;
+  onSpeedRead?: (text: string) => void;
 }
 
 interface SelectionCapture {
@@ -84,6 +87,8 @@ const PdfViewerComponent: FC<PdfViewerProps> = ({
   selectedHighlightId = null,
   initialScrollTop = 0,
   onScrollTopChange,
+  onPageTextLoaded,
+  onSpeedRead,
 }) => {
   const [pdfDoc, setPdfDoc] = useState<pdfjsLib.PDFDocumentProxy | null>(null);
   const [basePageWidth, setBasePageWidth] = useState<number>(0);
@@ -120,6 +125,8 @@ const PdfViewerComponent: FC<PdfViewerProps> = ({
     onZoomChange,
     onFitWidthChange,
     onScrollTopChange,
+    onPageTextLoaded,
+    onSpeedRead,
   });
   callbacksRef.current = {
     onPageChange,
@@ -134,6 +141,8 @@ const PdfViewerComponent: FC<PdfViewerProps> = ({
     onZoomChange,
     onFitWidthChange,
     onScrollTopChange,
+    onPageTextLoaded,
+    onSpeedRead,
   };
 
   zoomRef.current = zoom;
@@ -254,6 +263,11 @@ const PdfViewerComponent: FC<PdfViewerProps> = ({
         const textContent = await activePage.getTextContent();
         if (cancelled) return;
 
+        callbacksRef.current.onPageTextLoaded?.(
+          pdfItemsToText(textContent.items as Array<{ str?: string; hasEOL?: boolean }>),
+          pageNumber
+        );
+
         if (textContent.items.length === 0) {
           setIsScanned(true);
         } else {
@@ -291,7 +305,11 @@ const PdfViewerComponent: FC<PdfViewerProps> = ({
 
     const applyFit = () => {
       if (document.body.classList.contains("reader-is-resizing")) return;
-      const available = element.clientWidth - 56;
+      const styles = window.getComputedStyle(element);
+      const horizontalPadding =
+        (Number.parseFloat(styles.paddingLeft) || 0) +
+        (Number.parseFloat(styles.paddingRight) || 0);
+      const available = element.clientWidth - horizontalPadding - 16;
       if (available <= 0) return;
       const next = Math.min(2.5, Math.max(0.6, +(available / basePageWidth).toFixed(2)));
       if (Math.abs(next - zoomRef.current) > 0.02) callbacksRef.current.onZoomChange(next);
@@ -596,6 +614,7 @@ const PdfViewerComponent: FC<PdfViewerProps> = ({
             onAddToNotes={handleAddToNotesSelection}
             onExcerpt={handleCreateExcerptSelection}
             onConnectExcerpt={handleConnectSelection}
+            onSpeedRead={() => callbacksRef.current.onSpeedRead?.(selectionRange.text)}
             onClose={clearSelection}
             preferredType={annotationType}
           />

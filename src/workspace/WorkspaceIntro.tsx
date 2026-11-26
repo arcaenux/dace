@@ -7,7 +7,6 @@ import {
   Focus,
   Network,
   Plus,
-  Search,
 } from "lucide-react";
 import * as knowledgeApi from "../knowledge/knowledgeApi";
 import { KnowledgeRecordSummary } from "../knowledge/types";
@@ -43,7 +42,6 @@ const formatRelativeTime = (timestamp?: string): string => {
 };
 
 export const WorkspaceIntro: FC<WorkspaceIntroProps> = ({
-  onOpenCommands,
   onEnterFocus,
   onOpenKnowledgeDesk,
   onNewRecord,
@@ -84,21 +82,18 @@ export const WorkspaceIntro: FC<WorkspaceIntroProps> = ({
       {
         id: "desk",
         title: "Knowledge Desk",
-        desc: "Distraction-free record editor with tag taxonomy and link graphs",
         icon: BookOpen,
         action: onOpenKnowledgeDesk,
       },
       {
         id: "reader",
         title: "Research Reader",
-        desc: "Adaptive PDF reader with precision excerpts and notes",
         icon: FileText,
         action: onOpenReader,
       },
       {
         id: "graph",
         title: "Knowledge Graph",
-        desc: "Explore relationships and concept clusters in interactive space",
         icon: Network,
         action: onOpenGraph,
       },
@@ -132,17 +127,6 @@ export const WorkspaceIntro: FC<WorkspaceIntroProps> = ({
             <button
               type="button"
               className="home-btn home-btn-subtle"
-              onClick={onOpenCommands}
-              title="Search and run commands (Ctrl+K)"
-            >
-              <Search size={14} strokeWidth={1.6} aria-hidden="true" />
-              <span>Search</span>
-              <kbd>Ctrl K</kbd>
-            </button>
-
-            <button
-              type="button"
-              className="home-btn home-btn-subtle"
               onClick={onEnterFocus}
               title="Enter distraction-free Focus Space (F11)"
             >
@@ -171,15 +155,15 @@ export const WorkspaceIntro: FC<WorkspaceIntroProps> = ({
             </div>
 
             {recent.length === 0 ? (
-              <div className="home-empty-card">
-                <FileText size={20} strokeWidth={1.5} className="home-empty-icon" />
+              <div className="home-empty-quiet">
                 <p className="home-empty-text">No records yet. Start capturing your thoughts and research.</p>
                 <button
                   type="button"
-                  className="home-btn home-btn-primary"
+                  className="home-section-link"
                   onClick={onNewRecord || onOpenKnowledgeDesk}
                 >
-                  Create first record
+                  <span>Start writing</span>
+                  <ArrowRight size={12} aria-hidden="true" />
                 </button>
               </div>
             ) : (
@@ -242,7 +226,6 @@ export const WorkspaceIntro: FC<WorkspaceIntroProps> = ({
                         <span className="home-ws-title">{ws.title}</span>
                         <ArrowRight size={13} className="home-ws-arrow" aria-hidden="true" />
                       </div>
-                      <p className="home-ws-desc">{ws.desc}</p>
                     </div>
                   </button>
                 );

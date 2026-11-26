@@ -14,6 +14,8 @@ import { getRelationMeta } from "../knowledge/relationshipConstants";
 import * as api from "../knowledge/knowledgeApi";
 import { GraphSimulation, SimNode, SimLink } from "./graphSimulation";
 import { useDismissable } from "../core/useDismissable";
+import { useSettings } from "../settings/SettingsContext";
+import { FONT_FALLBACKS, fontStack, readFontStack } from "../settings/fonts";
 
 interface KnowledgeGraphViewProps {
   onOpenRecordInDesk: (recordId: string) => void;
@@ -56,6 +58,7 @@ export const KnowledgeGraphView: FC<KnowledgeGraphViewProps> = ({
   embedded = false,
   focusRecordId = null,
 }) => {
+  const { settings } = useSettings();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -149,6 +152,8 @@ export const KnowledgeGraphView: FC<KnowledgeGraphViewProps> = ({
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     const palette = readGraphPalette();
+    const appFont = fontStack(settings.appearance.appFont, "app");
+    const monoFont = readFontStack("--font-mono", FONT_FALLBACKS.mono);
 
     // High-DPI resolution scaling
     const dpr = window.devicePixelRatio || 1;
@@ -263,7 +268,7 @@ export const KnowledgeGraphView: FC<KnowledgeGraphViewProps> = ({
         const labelText = meta.label;
 
         ctx.save();
-        ctx.font = `500 ${Math.max(9 / zoom, 8)}px "IBM Plex Mono", monospace`;
+        ctx.font = `500 ${Math.max(9 / zoom, 8)}px ${monoFont}`;
         const textMetrics = ctx.measureText(labelText);
         const padX = 6 / zoom;
         const pillW = textMetrics.width + padX * 2;
@@ -362,8 +367,8 @@ export const KnowledgeGraphView: FC<KnowledgeGraphViewProps> = ({
         const baseFontSize = Math.max(11 / zoom, 9);
         const fontSize = isSelected ? baseFontSize * 1.15 : baseFontSize;
 
-        // Node titles use the primary interface typeface with restrained emphasis.
-        ctx.font = `${isSelected ? 600 : 500} ${fontSize}px "Space Grotesk", "IBM Plex Mono", sans-serif`;
+        // Node titles use the selected app typeface with restrained emphasis.
+        ctx.font = `${isSelected ? 600 : 500} ${fontSize}px ${appFont}`;
 
         const label = node.title || "Untitled Concept";
         const textMetrics = ctx.measureText(label);
@@ -408,7 +413,7 @@ export const KnowledgeGraphView: FC<KnowledgeGraphViewProps> = ({
     if (!simulationRef.current.isSettled()) {
       animFrameIdRef.current = requestAnimationFrame(render);
     }
-  }, [pan, zoom, selectedNodeId, selectedEdgeId, hoveredNodeId, neighborSet]);
+  }, [pan, zoom, selectedNodeId, selectedEdgeId, hoveredNodeId, neighborSet, settings.appearance.appFont]);
 
   // Trigger animation loop whenever state changes
   useEffect(() => {

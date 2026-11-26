@@ -72,7 +72,7 @@
   border-radius: 3px;
   background: rgba(20, 20, 20, 0.7);
   color: var(--text-muted);
-  font-family: var(--font-mono);
+  font-family: var(--font-label);
   font-size: 8px;
   letter-spacing: 0.1em;
 }.dace-app .command-badge.unavailable {
@@ -87,7 +87,7 @@
   padding: 12px 22px;
   border-top: 1px solid rgba(var(--neutral-300-rgb), 0.1);
   background: rgba(11, 11, 11, 0.7);
-  font-family: var(--font-mono);
+  font-family: var(--font-label);
   font-size: var(--type-micro);
   letter-spacing: 0.06em;
   color: var(--text-muted);
@@ -127,7 +127,7 @@
   padding: 12px 24px 20px;
   max-height: min(480px, 58vh);
   gap: 0;
-}.dace-app .shortcut-row { padding: 11px 0; border-bottom: 1px solid rgba(var(--neutral-300-rgb), 0.08); }.dace-app .shortcut-desc { font-family: var(--font-interface); font-size: var(--type-body); color: var(--text-primary); }.dace-app .shortcut-context { font-family: var(--font-mono); font-size: var(--type-micro); letter-spacing: 0.06em; color: var(--text-muted); }.dace-app .shortcut-keys {
+}.dace-app .shortcut-row { padding: 11px 0; border-bottom: 1px solid rgba(var(--neutral-300-rgb), 0.08); }.dace-app .shortcut-desc { font-family: var(--font-interface); font-size: var(--type-body); color: var(--text-primary); }.dace-app .shortcut-context { font-family: var(--font-label); font-size: var(--type-micro); letter-spacing: 0.06em; color: var(--text-muted); }.dace-app .shortcut-keys {
   padding: 4px 8px;
   border: 1px solid rgba(var(--neutral-300-rgb), 0.18);
   border-radius: 5px;
@@ -142,12 +142,12 @@
   color: var(--status-warning);
   font-size: var(--type-body);
   line-height: 1.6;
-}.dace-app .restore-summary-row { border-bottom: 1px solid rgba(var(--neutral-300-rgb), 0.08); }.dace-app .restore-summary-row dt { font-family: var(--font-mono); font-size: var(--type-micro); letter-spacing: 0.1em; color: var(--text-muted); }.dace-app .restore-summary-row dd { font-size: var(--type-body); color: var(--text-primary); }.dace-app .restore-progress { font-family: var(--font-mono); font-size: var(--type-mono); letter-spacing: 0.05em; color: var(--accent-text); }.dace-app .restore-error { font-size: var(--type-small); line-height: 1.5; color: var(--status-danger); }.dace-app .restore-confirm-btn {
+}.dace-app .restore-summary-row { border-bottom: 1px solid rgba(var(--neutral-300-rgb), 0.08); }.dace-app .restore-summary-row dt { font-family: var(--font-label); font-size: var(--type-micro); letter-spacing: 0.1em; color: var(--text-muted); }.dace-app .restore-summary-row dd { font-size: var(--type-body); color: var(--text-primary); }.dace-app .restore-progress { font-family: var(--font-label); font-size: var(--type-mono); letter-spacing: 0.05em; color: var(--accent-text); }.dace-app .restore-error { font-size: var(--type-small); line-height: 1.5; color: var(--status-danger); }.dace-app .restore-confirm-btn {
   border: 1px solid rgba(var(--status-danger-rgb), 0.55);
   border-radius: 7px;
   background: transparent;
   color: var(--status-danger);
-  font-family: var(--font-mono);
+  font-family: var(--font-label);
   font-size: var(--type-mono);
   letter-spacing: 0.08em;
   box-shadow: none;
@@ -156,7 +156,7 @@
   border-radius: 7px;
   background: rgba(20, 20, 20, 0.7);
   color: var(--text-secondary);
-  font-family: var(--font-mono);
+  font-family: var(--font-label);
   font-size: var(--type-mono);
   letter-spacing: 0.08em;
 }.dace-app .primary-outline-btn:hover { border-color: rgba(var(--brand-blue-rgb), 0.45); color: var(--accent-text); }/* --------------------------------------------------------------------------
@@ -174,7 +174,7 @@
   border-bottom: 1px solid rgba(var(--neutral-300-rgb), 0.1);
   background: rgba(20, 20, 20, 0.42);
 }.dace-app .panel-title {
-  font-family: var(--font-mono);
+  font-family: var(--font-label);
   font-size: var(--type-micro);
   letter-spacing: 0.18em;
   color: var(--text-secondary);
@@ -220,7 +220,7 @@
   background: rgba(11, 11, 11, 0.94);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), 0 0 18px rgba(var(--brand-blue-rgb), 0.05);
   color: var(--text-secondary);
-  font-family: var(--font-mono);
+  font-family: var(--font-label);
   font-size: var(--type-mono);
   letter-spacing: 0.04em;
   backdrop-filter: blur(14px);
@@ -236,6 +236,216 @@
   outline: none;
   border-color: var(--input-focus-border);
   box-shadow: var(--input-focus-ring);
+}
+
+/* --------------------------------------------------------------------------
+   Overlay layout — readable rows and real internal scrolling
+   -------------------------------------------------------------------------- */
+.dace-app .command-palette,
+.dace-app .shortcut-modal {
+  display: flex;
+  flex-direction: column;
+}
+
+.dace-app .command-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 0 0 auto;
+}
+
+.dace-app .command-search-icon {
+  flex: 0 0 auto;
+}
+
+.dace-app .command-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  outline: none;
+  font-family: var(--font-label);
+  font-size: 16px;
+  letter-spacing: 0;
+}
+
+.dace-app .command-input::placeholder {
+  letter-spacing: 0;
+}
+
+.dace-app .command-palette-kbd,
+.dace-app .command-shortcut {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+}
+
+.dace-app .command-results {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: min(460px, 54vh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.dace-app .command-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex: 0 0 auto;
+  cursor: pointer;
+}
+
+.dace-app .command-item-main {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.dace-app .command-item-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-family: var(--font-label);
+  letter-spacing: 0;
+}
+
+.dace-app .command-item-name > span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dace-app .command-item-desc {
+  font-family: var(--font-label);
+  letter-spacing: 0;
+}
+
+.dace-app .command-badge {
+  flex: 0 0 auto;
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.dace-app .command-empty {
+  font-family: var(--font-label);
+  letter-spacing: 0;
+}
+
+.dace-app .command-palette-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 0 0 auto;
+  gap: 12px;
+  letter-spacing: 0.02em;
+}
+
+.dace-app .footer-hints {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.dace-app .footer-hint-item {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.dace-app .footer-hint-item kbd {
+  letter-spacing: 0;
+}
+
+.dace-app .shortcut-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex: 0 0 auto;
+}
+
+.dace-app .shortcut-modal-title {
+  font-family: var(--font-label);
+  letter-spacing: 0;
+}
+
+.dace-app .shortcut-modal-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: min(480px, 58vh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.dace-app .shortcut-modal-body:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 1px var(--input-focus-border);
+}
+
+.dace-app .shortcut-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex: 0 0 auto;
+}
+
+.dace-app .shortcut-desc-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.dace-app .shortcut-desc {
+  font-family: var(--font-label);
+  font-size: var(--type-body);
+  line-height: 1.4;
+  letter-spacing: 0;
+}
+
+.dace-app .shortcut-context {
+  font-family: var(--font-label);
+  font-size: var(--type-small);
+  line-height: 1.45;
+  letter-spacing: 0;
+}
+
+.dace-app .shortcut-keys {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  font-family: var(--font-code);
+  font-size: var(--type-mono);
+  letter-spacing: 0.02em;
+}
+
+.dace-app .shortcut-modal .command-palette-footer {
+  font-family: var(--font-label);
+  font-size: var(--type-small);
+  letter-spacing: 0;
+}
+
+.dace-app .shortcut-esc-key {
+  padding: 1px 5px;
+  border: 1px solid var(--border-medium);
+  border-radius: 4px;
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  font-family: var(--font-code);
+  font-size: var(--type-micro);
 }
 
 @media (max-width: 720px) {.dace-app .command-palette { margin-top: 8vh; }.dace-app .command-input { font-size: 16px; }.dace-app .footer-hints { gap: 10px; }.dace-app .footer-hint-item:last-child { display: none; }.dace-app .delete-confirm-dialog { padding: 22px; }

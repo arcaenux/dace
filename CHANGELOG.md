@@ -11,6 +11,7 @@ Dace uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 - Settings view with persistent preferences for typography, layout, startup behaviour, and backup paths
+- App font and text font preferences populated from fonts installed on the device via a native font-enumeration command
 - Workspace navigation utility (`workspaceNavigation.ts`) with URL-hash routing
 - Settings system test suite (5 tests covering defaults, validation, clamping, and equality)
 - Folded-ribbon Dace logo integrated into the top bar and application window
@@ -18,18 +19,32 @@ Dace uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Workspace breadcrumb navigation in the top bar (`DACE / <Workspace>`)
 - Dot-grid spatial reference background on the Knowledge Graph canvas
 - `outsideClickGraceMs` on Command Palette and Shortcut Reference overlays to prevent spurious close on open
+- Modern motion layer with staggered entrances, tactile button feedback, ambient depth, and animated overlays that honour reduced-motion settings
+- Command Palette and Shortcut Reference now use flex layouts with internally scrollable lists and corrected text tracking
+- Focus Space no longer exposes the frameless window drag strip or minimize/maximize controls that could swallow top-bar clicks
+- Speed Reader for selected passages, full text/Markdown documents, highlights, and the current PDF page, with keyboard controls, WPM/chunk preferences, and progress tracking (`Ctrl+Shift+R`)
 
 ### Changed
-- Typography: Manrope for UI/display, Newsreader for editorial study notes, IBM Plex Mono for technical output and shortcuts
+- Typography: Aptos as the base for interface and reading text, with user-selectable device fonts; terminal keeps a monospace stack and follows monospace app-font choices
 - Command Palette and Shortcut Reference now dismiss when clicking the dark backdrop area
 - `closeOverlay` and `openOverlay` are now stable `useCallback` references, stopping unnecessary `commandList` rebuilds every render
 - Overlay backdrop z-index raised to `var(--z-backdrop)` (1000) so it renders above native window controls (z=500)
 - Quiet-notice toast z-index updated to `var(--z-toast)` (1200) to remain above open overlays
+- Speed Reader redesigned as a quiet reading instrument: flat solid surfaces, a stable focus point with ORP highlighting, explicit progress/time readout, restrained controls, and real modal semantics
 
 ### Fixed
 - Modal backdrop clicks no longer fall through to window controls behind the overlay
 - Command palette actions called stale `closeOverlay` closure — now resolved via stable `useCallback`
 - Opening a modal then immediately clicking outside no longer triggers a spurious dismiss (grace period added)
+- Delete actions now report failures and reliably remove Knowledge Desk records, reader notes, relationships, attachments/files, and stale record selections
+- Reader writing mode now shows a return bar to its source document
+- Sidebar rail nav icons no longer slide or scale on hover/press
+- Speed Reader timing scales WPM by chunk size and global shortcuts no longer fire behind modal surfaces
+- A failed physical attachment delete now preserves the library row so the operation remains retryable
+- Reader layouts keep the top bar and navigation rail stable; compact rail icons and focus halo stay aligned with the dock
+- Brand logo is aligned consistently in the top bar and reader toolbar across every reader view
+- Speed Reader no longer dismisses itself from the toolbar click that opened it
+- Old logo backup removed from version control, with a regression guard against tracked copies
 
 ---
 

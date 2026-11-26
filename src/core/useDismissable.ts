@@ -17,10 +17,13 @@ interface DismissableOptions {
   closeOnEscape?: boolean;
   /** Avoid dismissing a popover from the click that created it (e.g. text selection). */
   outsideClickGraceMs?: number;
+  /** Block global workspace shortcuts while this surface is open. */
+  blocksShortcuts?: boolean;
 }
 
 interface SurfaceRegistration {
   dismiss: () => void;
+  blocksShortcuts: boolean;
 }
 
 const FOCUSABLE_SELECTOR = [
@@ -33,6 +36,12 @@ const FOCUSABLE_SELECTOR = [
 ].join(",");
 
 const activeSurfaces = new Map<string, Set<SurfaceRegistration>>();
+const blockingSurfaces = new Set<SurfaceRegistration>();
+
+/** True while a modal surface has opted out of global workspace shortcuts. */
+export function areShortcutsBlocked(): boolean {
+  return blockingSurfaces.size > 0;
+}
 
 function isWithin(
   target: Node,
@@ -77,6 +86,7 @@ export function useDismissable(
     closeOnOutsideClick = true,
     closeOnEscape = true,
     outsideClickGraceMs = 0,
+    blocksShortcuts = false,
   } = options;
 
   const ignoredRefsRef = useRef(ignoredRefs);
@@ -87,7 +97,9 @@ export function useDismissable(
 
     const registration: SurfaceRegistration = {
       dismiss: () => dismissRef.current(),
+      blocksShortcuts,
     };
+    if (blocksShortcuts) blockingSurfaces.add(registration);
 
     let siblings: Set<SurfaceRegistration> | null = null;
     if (group) {
@@ -148,6 +160,7 @@ export function useDismissable(
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
       document.removeEventListener("click", handleClick);
+      if (blocksShortcuts) blockingSurfaces.delete(registration);
       if (focusFrame !== null) cancelAnimationFrame(focusFrame);
 
       if (siblings) {
@@ -175,5 +188,6 @@ export function useDismissable(
     closeOnOutsideClick,
     closeOnEscape,
     outsideClickGraceMs,
+    blocksShortcuts,
   ]);
 }

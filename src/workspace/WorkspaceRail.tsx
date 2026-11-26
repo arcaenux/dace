@@ -1,5 +1,5 @@
 import { CSSProperties, FC, RefObject, useMemo } from "react";
-import { BookOpen, ChevronLeft, FileText, Home, Network, PanelRight, Settings2, SquareTerminal } from "lucide-react";
+import { BookOpen, ChevronLeft, ChevronRight, FileText, Home, Network, PanelRight, Settings2, SquareTerminal } from "lucide-react";
 import { WorkspaceActivityId } from "../core/types";
 
 interface WorkspaceRailProps {
@@ -66,6 +66,7 @@ export const WorkspaceRail: FC<WorkspaceRailProps> = ({
   } as CSSProperties;
 
   return (
+    <>
     <aside
       className={`workspace-rail ${isEffectivelyCollapsed ? "is-collapsed" : ""} ${compact ? "is-compact" : ""} ${isOverlayOpen ? "is-overlay" : ""}`}
       aria-label="Primary navigation"
@@ -174,5 +175,18 @@ export const WorkspaceRail: FC<WorkspaceRailProps> = ({
         )}
       </div>
     </aside>
+    {isEffectivelyCollapsed && onToggleCollapse && (
+      <button
+        type="button"
+        className="rail-reopen-btn"
+        onClick={onToggleCollapse}
+        aria-label="Expand navigation (Ctrl+B)"
+        title="Expand navigation (Ctrl+B)"
+        data-tauri-drag-region="false"
+      >
+        <ChevronRight size={15} strokeWidth={1.6} aria-hidden="true" />
+      </button>
+    )}
+    </>
   );
 };

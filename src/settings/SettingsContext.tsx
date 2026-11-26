@@ -8,6 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { fontStack } from "./fonts";
 import { getAppInfo, getAppSettings, getStorageInfo, resetAppSettings, updateAppSettings } from "./settingsApi";
 import { normalizeSettings } from "./settingsSchema";
 import type { AppInfo, AppSettings, StorageInfo } from "./types";
@@ -88,11 +89,15 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     root.dataset.reducedMotion = String(settings.appearance.reducedMotion);
     root.dataset.sidebarCollapsed = String(settings.appearance.sidebarCollapsed);
     root.style.setProperty("--dace-text-scale", String(settings.appearance.textScale));
+    root.style.setProperty("--dace-app-font", fontStack(settings.appearance.appFont, "app"));
+    root.style.setProperty("--dace-text-font", fontStack(settings.appearance.textFont, "text"));
   }, [
     settings.appearance.density,
     settings.appearance.reducedMotion,
     settings.appearance.sidebarCollapsed,
     settings.appearance.textScale,
+    settings.appearance.appFont,
+    settings.appearance.textFont,
   ]);
 
   const persist = useCallback(async (next: AppSettings) => {

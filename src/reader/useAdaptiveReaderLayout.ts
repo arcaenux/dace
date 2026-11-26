@@ -142,11 +142,8 @@ export function useAdaptiveReaderLayout(
   );
 
   const restoreNavigation = useCallback(() => {
-    queuePatch({
-      readerNavCollapsed: false,
-      ...(mode === "reading" ? { readerDefaultMode: "research" as const } : {}),
-    });
-  }, [mode, queuePatch]);
+    queuePatch({ readerNavCollapsed: false });
+  }, [queuePatch]);
 
   const toggleHeader = useCallback(() => {
     queuePatch({ readerHeaderCollapsed: !settings.workspace.readerHeaderCollapsed });

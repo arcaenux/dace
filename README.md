@@ -41,7 +41,7 @@ No cloud. No subscription. Everything lives on your machine, in an open SQLite d
 | Database | SQLite via `rusqlite` (bundled) |
 | PDF rendering | `pdfjs-dist` |
 | Terminal | `portable-pty` + `xterm.js` |
-| Typography | Manrope · Newsreader · IBM Plex Mono |
+| Typography | Aptos base · user-selected device fonts |
 
 ---
 

@@ -185,14 +185,26 @@
   --ambient-veil: none;
 
   /* ------------------------------------------------------------------
-     5. Typography — friendly study mode (Manrope UI + Newsreader study)
+     5. Typography — Aptos base with user-selectable device fonts
+
+     SettingsContext writes --dace-app-font and --dace-text-font from the
+     persisted Appearance preferences. All semantic tokens resolve through
+     those two hooks so every surface follows the same selection.
      ------------------------------------------------------------------ */
-  --font-interface: "Manrope Variable", Manrope, "Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-sans: var(--font-interface);
-  --font-display: "Manrope Variable", Manrope, "Space Grotesk", sans-serif;
-  --font-editorial: "Newsreader Variable", Newsreader, Georgia, serif;
-  --font-quotation: "Newsreader Variable", Newsreader, Georgia, serif;
-  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --dace-app-font: "Aptos", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --dace-text-font: "Aptos", Georgia, "Times New Roman", serif;
+
+  --font-app: var(--dace-app-font);
+  --font-text: var(--dace-text-font);
+  --font-code: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace;
+
+  --font-interface: var(--font-app);
+  --font-sans: var(--font-app);
+  --font-display: var(--font-app);
+  --font-label: var(--font-app);
+  --font-editorial: var(--font-text);
+  --font-quotation: var(--font-text);
+  --font-mono: var(--font-code);
 
   --letter-spacing-display: -0.02em;
   --letter-spacing-editorial: -0.01em;
@@ -280,13 +292,14 @@
   /* ------------------------------------------------------------------
      7. Motion — purposeful, short, lightweight
      ------------------------------------------------------------------ */
-  --duration-fast: 100ms;
-  --duration-normal: 180ms;
-  --duration-slow: 280ms;
-  --duration-ambient: 0ms;
-  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
-  --ease-enter: cubic-bezier(0.2, 0, 0, 1);
-  --motion-drift: none;
+  --duration-fast: 120ms;
+  --duration-normal: 200ms;
+  --duration-slow: 340ms;
+  --duration-ambient: 18s;
+  --ease-standard: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-enter: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+  --motion-drift: 18s ease-in-out infinite alternate;
 }
 
 /* -------------------------------------------------------------------------
@@ -376,6 +389,7 @@
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;

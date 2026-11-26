@@ -16,6 +16,10 @@ export interface AppearanceSettings {
   textScale: number;
   reducedMotion: boolean;
   sidebarCollapsed: boolean;
+  /** Installed font family used for the application interface. */
+  appFont: string;
+  /** Installed font family used for reader and editorial text. */
+  textFont: string;
 }
 
 export interface WorkspaceSettings {

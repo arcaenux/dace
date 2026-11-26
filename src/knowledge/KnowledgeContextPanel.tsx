@@ -6,6 +6,7 @@ import {
   ListTree,
   Network,
   PanelRight,
+  X,
 } from "lucide-react";
 import { KnowledgeRecord } from "./types";
 import { RecordRelationshipsPanel } from "./RecordRelationshipsPanel";
@@ -55,6 +56,7 @@ interface KnowledgeContextPanelProps {
   onJumpToLine: (line: number) => void;
   onOpenFullGraph?: () => void;
   isOpen?: boolean;
+  onClose?: () => void;
 }
 
 const views: { id: DeskContextView; label: string; icon: typeof PanelRight }[] = [
@@ -85,10 +87,11 @@ export const KnowledgeContextPanel: FC<KnowledgeContextPanelProps> = ({
   onOpenExcerptInReader,
   onJumpToLine,
   onOpenFullGraph,
-  isOpen = true,
+  isOpen = false,
+  onClose,
 }) => {
   const [view, setView] = useState<DeskContextView>("context");
-  const [metadataExpanded, setMetadataExpanded] = useState(true);
+  const [metadataExpanded, setMetadataExpanded] = useState(false);
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
   if (isFocusSpace) return null;
@@ -130,6 +133,17 @@ export const KnowledgeContextPanel: FC<KnowledgeContextPanelProps> = ({
             </button>
           );
         })}
+        {onClose && (
+          <button
+            type="button"
+            className="desk-context-close"
+            onClick={onClose}
+            aria-label="Close context panel"
+            title="Close context panel"
+          >
+            <X size={14} strokeWidth={1.6} aria-hidden="true" />
+          </button>
+        )}
       </div>
 
       <div className={`desk-context-body ${view === "graph" ? "graph-active" : ""}`}>

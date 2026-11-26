@@ -1,0 +1,537 @@
+/* Dace — Research Reader speed-reading dialog.
+   A quiet reading instrument: solid surfaces, one accent, stable focus point. */
+
+.dace-app .overlay-backdrop.speed-read-backdrop {
+  background: rgba(3, 7, 18, 0.86);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  animation: none;
+}
+
+.dace-app .speed-read-modal {
+  display: flex;
+  flex-direction: column;
+  width: min(760px, calc(100vw - 40px));
+  max-height: min(620px, calc(100vh - 48px));
+  overflow: hidden;
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface-elevated);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.48);
+  color: var(--text-primary);
+  font-family: var(--font-app);
+  font-size: var(--type-body);
+}
+
+.dace-app .speed-read-modal :focus-visible {
+  outline: none;
+  border-color: var(--input-focus-border);
+  box-shadow: var(--state-focus-ring);
+}
+
+.dace-app .speed-read-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px 14px;
+  flex: 0 0 auto;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-surface-elevated);
+}
+
+.dace-app .speed-read-heading {
+  min-width: 0;
+}
+
+.dace-app .speed-read-overline {
+  display: block;
+  color: var(--text-dim);
+  font-family: var(--font-label);
+  font-size: var(--type-micro);
+  letter-spacing: var(--letter-spacing-overline);
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.dace-app .speed-read-title {
+  margin: 5px 0 0;
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-size: var(--type-section);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+.dace-app .speed-read-source {
+  margin: 4px 0 0;
+  max-width: 560px;
+  overflow: hidden;
+  color: var(--text-muted);
+  font-family: var(--font-label);
+  font-size: var(--type-small);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dace-app .speed-read-close {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.dace-app .speed-read-close:hover {
+  border-color: var(--border-subtle);
+  background: var(--state-hover);
+  color: var(--text-primary);
+}
+
+.dace-app .speed-read-stage {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 260px;
+  padding: 28px 32px 24px;
+  background: var(--bg-app);
+}
+
+.dace-app .speed-read-stage-meta {
+  position: absolute;
+  top: 14px;
+  right: 20px;
+  left: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--text-dim);
+  font-family: var(--font-label);
+  font-size: var(--type-micro);
+  letter-spacing: var(--letter-spacing-overline);
+  text-transform: uppercase;
+}
+
+.dace-app .speed-read-word {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.28em;
+  max-width: 100%;
+  color: var(--text-muted);
+  font-family: var(--font-editorial);
+  font-size: clamp(38px, 5vw, 56px);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  text-align: center;
+}
+
+.dace-app .speed-read-token {
+  overflow-wrap: anywhere;
+}
+
+.dace-app .speed-read-token.focus {
+  color: var(--text-bright);
+  font-weight: var(--font-weight-semibold);
+}
+
+.dace-app .speed-read-orp {
+  color: var(--accent-text);
+  text-decoration: underline;
+  text-decoration-color: var(--accent-primary);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.12em;
+}
+
+.dace-app .speed-read-sr-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.dace-app .speed-read-progress {
+  width: min(520px, 100%);
+  height: 2px;
+  margin-top: 26px;
+  overflow: hidden;
+  background: var(--border-medium);
+}
+
+.dace-app .speed-read-progress-fill {
+  height: 100%;
+  background: var(--accent-primary);
+}
+
+.dace-app .speed-read-readout {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  width: min(520px, 100%);
+  margin: 14px 0 0;
+}
+
+.dace-app .speed-read-readout div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.dace-app .speed-read-readout dt {
+  color: var(--text-dim);
+  font-family: var(--font-label);
+  font-size: var(--type-micro);
+  letter-spacing: var(--letter-spacing-overline);
+  text-transform: uppercase;
+}
+
+.dace-app .speed-read-readout dd {
+  margin: 0;
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-family: var(--font-label);
+  font-size: var(--type-small);
+  font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dace-app .speed-read-empty {
+  max-width: 420px;
+  text-align: center;
+}
+
+.dace-app .speed-read-empty p {
+  margin: 0 0 8px;
+  color: var(--text-primary);
+  font-family: var(--font-editorial);
+  font-size: var(--type-body);
+}
+
+.dace-app .speed-read-empty span {
+  color: var(--text-muted);
+  font-family: var(--font-label);
+  font-size: var(--type-small);
+  line-height: var(--line-height-relaxed);
+}
+
+.dace-app .speed-read-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 20px;
+  padding: 14px 20px;
+  flex: 0 0 auto;
+  border-top: 1px solid var(--border-subtle);
+  background: var(--bg-surface-elevated);
+}
+
+.dace-app .speed-read-transport,
+.dace-app .speed-read-settings,
+.dace-app .speed-read-setting {
+  display: flex;
+  align-items: center;
+}
+
+.dace-app .speed-read-transport {
+  gap: 6px;
+}
+
+.dace-app .speed-read-icon-btn {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.dace-app .speed-read-icon-btn:hover:not(:disabled) {
+  border-color: var(--border-medium);
+  background: var(--state-hover);
+  color: var(--text-primary);
+}
+
+.dace-app .speed-read-icon-btn:disabled,
+.dace-app .speed-read-play-btn:disabled {
+  opacity: var(--state-disabled);
+  cursor: default;
+}
+
+.dace-app .speed-read-play-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 92px;
+  height: 32px;
+  padding: 0 14px;
+  border: 1px solid var(--brand-blue-60);
+  border-radius: var(--radius-sm);
+  background: var(--accent-primary);
+  color: var(--accent-contrast);
+  font-family: var(--font-label);
+  font-size: var(--type-small);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+}
+
+.dace-app .speed-read-play-btn:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.dace-app .speed-read-settings {
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.dace-app .speed-read-setting {
+  gap: 10px;
+}
+
+.dace-app .speed-read-setting-label {
+  color: var(--text-dim);
+  font-family: var(--font-label);
+  font-size: var(--type-micro);
+  letter-spacing: var(--letter-spacing-overline);
+  text-transform: uppercase;
+}
+
+.dace-app .speed-read-range {
+  width: 168px;
+  height: 12px;
+  margin: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.dace-app .speed-read-range::-webkit-slider-runnable-track {
+  height: 2px;
+  background: var(--border-medium);
+}
+
+.dace-app .speed-read-range::-moz-range-track {
+  height: 2px;
+  background: var(--border-medium);
+}
+
+.dace-app .speed-read-range::-webkit-slider-thumb {
+  width: 12px;
+  height: 12px;
+  margin-top: -5px;
+  appearance: none;
+  -webkit-appearance: none;
+  border: 2px solid var(--bg-surface-elevated);
+  border-radius: var(--radius-full);
+  background: var(--accent-text);
+}
+
+.dace-app .speed-read-range::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--bg-surface-elevated);
+  border-radius: var(--radius-full);
+  background: var(--accent-text);
+}
+
+.dace-app .speed-read-range:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 3px var(--brand-blue-28);
+}
+
+.dace-app .speed-read-range:focus-visible::-moz-range-thumb {
+  box-shadow: 0 0 0 3px var(--brand-blue-28);
+}
+
+.dace-app .speed-read-number-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dace-app .speed-read-number {
+  width: 54px;
+  height: 30px;
+  padding: 0 6px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-family: var(--font-code);
+  font-size: var(--type-small);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.dace-app .speed-read-unit {
+  color: var(--text-dim);
+  font-family: var(--font-label);
+  font-size: var(--type-micro);
+  letter-spacing: var(--letter-spacing-caps);
+}
+
+.dace-app .speed-read-caution {
+  flex-basis: 100%;
+  margin: -6px 0 0;
+  color: var(--text-muted);
+  font-family: var(--font-label);
+  font-size: var(--type-micro);
+  line-height: var(--line-height-normal);
+}
+
+.dace-app .speed-read-segment {
+  display: inline-flex;
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+}
+
+.dace-app .speed-read-segment button {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-right: 1px solid var(--border-subtle);
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--font-code);
+  font-size: var(--type-small);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.dace-app .speed-read-segment button:last-child {
+  border-right: 0;
+}
+
+.dace-app .speed-read-segment button:hover {
+  background: var(--state-hover);
+  color: var(--text-primary);
+}
+
+.dace-app .speed-read-segment button.active {
+  background: var(--accent-muted);
+  color: var(--accent-text);
+}
+
+.dace-app .speed-read-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 20px;
+  flex: 0 0 auto;
+  border-top: 1px solid var(--border-subtle);
+  background: var(--bg-surface-elevated);
+  color: var(--text-dim);
+  font-family: var(--font-label);
+  font-size: var(--type-micro);
+}
+
+.dace-app .speed-read-hints {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.dace-app .speed-read-hints span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.dace-app .speed-read-hints kbd {
+  padding: 1px 5px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xs);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  font-family: var(--font-code);
+  font-size: var(--type-micro);
+}
+
+.dace-app .speed-read-note {
+  max-width: 260px;
+  text-align: right;
+}
+
+@media (max-width: 720px) {
+  .dace-app .speed-read-modal {
+    width: calc(100vw - 24px);
+    max-height: calc(100vh - 24px);
+  }
+
+  .dace-app .speed-read-header,
+  .dace-app .speed-read-controls,
+  .dace-app .speed-read-footer {
+    padding-right: 14px;
+    padding-left: 14px;
+  }
+
+  .dace-app .speed-read-stage {
+    min-height: 220px;
+    padding: 24px 16px 20px;
+  }
+
+  .dace-app .speed-read-controls {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .dace-app .speed-read-settings {
+    justify-content: space-between;
+    gap: 14px;
+  }
+
+  .dace-app .speed-read-range {
+    width: 120px;
+  }
+
+  .dace-app .speed-read-footer {
+    justify-content: center;
+  }
+
+  .dace-app .speed-read-hints span:nth-child(4),
+  .dace-app .speed-read-note {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dace-app .speed-read-modal,
+  .dace-app .speed-read-backdrop {
+    animation: none;
+  }
+}
+
+html[data-reduced-motion="true"] .dace-app .speed-read-modal,
+html[data-reduced-motion="true"] .dace-app .speed-read-backdrop {
+  animation: none;
+}
