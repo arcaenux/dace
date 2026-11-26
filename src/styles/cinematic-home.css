@@ -12,15 +12,15 @@
   background: var(--bg-app);
   display: flex;
   justify-content: center;
-  padding: 40px clamp(16px, 4vw, 48px);
+  padding: 28px clamp(16px, 4vw, 48px) 28px calc(clamp(16px, 4vw, 48px) + var(--rail-safe-left, 0px));
 }
 
 .home-container {
   width: 100%;
-  max-width: 980px;
+  max-width: 880px;
   display: flex;
   flex-direction: column;
-  gap: 36px;
+  gap: 24px;
 }
 
 /* --------------------------------------------------------------------------
@@ -31,10 +31,10 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  padding-bottom: 24px;
+  padding-bottom: 18px;
   border-bottom: 1px solid var(--border-subtle);
   flex-wrap: wrap;
-  gap: 16px;
+  gap: 14px;
 }
 
 .home-header-left {
@@ -44,7 +44,7 @@
 }
 
 .home-greeting-label {
-  font-family: var(--font-mono);
+  font-family: var(--font-label);
   font-size: 11px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -135,7 +135,7 @@
   border-radius: var(--radius-xs);
   background: rgba(var(--brand-blue-rgb), 0.14);
   color: var(--accent-text);
-  font-family: var(--font-mono);
+  font-family: var(--font-label);
   font-size: 10px;
   font-weight: 500;
 }
@@ -258,7 +258,7 @@
 }
 
 .home-record-tag {
-  font-family: var(--font-mono);
+  font-family: var(--font-label);
   font-size: 10px;
   color: var(--text-muted);
   background: var(--bg-surface-elevated);
@@ -267,36 +267,26 @@
 }
 
 .home-record-time {
-  font-family: var(--font-mono);
+  font-family: var(--font-label);
   font-size: 11px;
   color: var(--text-muted);
   flex-shrink: 0;
   margin-left: 12px;
 }
 
-.home-empty-card {
+.home-empty-quiet {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 36px 20px;
-  border: 1px dashed var(--border-subtle);
-  border-radius: var(--radius-sm);
-  background: var(--bg-surface);
-  text-align: center;
-  gap: 12px;
-}
-
-.home-empty-icon {
-  color: var(--text-muted);
+  align-items: flex-start;
+  gap: 8px;
+  padding: 16px 0;
 }
 
 .home-empty-text {
-  font-size: 12px;
-  color: var(--text-secondary);
-  max-width: 260px;
+  font-size: 13px;
+  color: var(--text-muted);
   margin: 0;
-  line-height: 1.4;
+  line-height: 1.5;
 }
 
 /* --------------------------------------------------------------------------
@@ -311,9 +301,9 @@
 
 .home-workspace-card {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 12px;
-  padding: 12px 14px;
+  padding: 10px 12px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-subtle);
   background: var(--bg-surface);

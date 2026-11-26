@@ -35,6 +35,19 @@ body,
   display: flex;
   flex-direction: column;
   position: relative;
+  --rail-safe-left: 0px;
+}
+
+.dace-app.rail-visible {
+  --rail-safe-left: 56px;
+}
+
+.dace-app.reader-nav-compact.rail-visible {
+  --rail-safe-left: 58px;
+}
+
+.dace-app.rail-hidden {
+  --rail-safe-left: 0px;
 }
 
 .sr-only {
@@ -88,33 +101,12 @@ body,
 .topbar-left {
   display: flex;
   align-items: center;
-  gap: 12px;
   min-width: 0;
-}
-
-.topbar-nav-toggle {
-  display: grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  border: 1px solid transparent;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: color 120ms ease, border-color 120ms ease, background-color 120ms ease;
-}
-
-.topbar-nav-toggle:hover {
-  color: var(--text-primary);
-  border-color: var(--border-subtle);
-  background: var(--state-hover);
 }
 
 .topbar-brand {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 10px;
   min-width: 0;
 }
@@ -126,8 +118,8 @@ body,
 }
 
 .topbar-brand-logo {
-  width: 18px;
-  height: 18px;
+  width: 24px;
+  height: 24px;
   object-fit: contain;
   flex-shrink: 0;
 }
@@ -153,7 +145,7 @@ body,
 
 .topbar-breadcrumb-sep {
   color: var(--text-muted);
-  font-family: var(--font-mono);
+  font-family: var(--font-label);
   font-size: 12px;
   line-height: 1;
   opacity: 0.6;
@@ -183,7 +175,7 @@ body,
 
 .topbar-version {
   color: var(--text-muted);
-  font-family: var(--font-mono);
+  font-family: var(--font-label);
   font-size: 11px;
   letter-spacing: 0.02em;
   margin-right: 4px;
@@ -201,7 +193,7 @@ body,
   border-radius: var(--radius-sm);
   background: var(--bg-surface-elevated);
   color: var(--text-secondary);
-  font-family: var(--font-mono);
+  font-family: var(--font-label);
   font-size: 11px;
   cursor: pointer;
   transition: color 120ms ease, border-color 120ms ease, background-color 120ms ease;
@@ -240,6 +232,10 @@ body,
   height: var(--top-plane);
   z-index: var(--z-drag-region);
   pointer-events: auto;
+}
+
+.dace-app.reader-header-hidden .window-drag-region {
+  display: none;
 }
 
 .window-controls {
@@ -317,6 +313,18 @@ body,
    Navigation Rail (Clean, Restrained, Content-First)
    -------------------------------------------------------------------------- */
 
+.dace-app .desk-toolbar,
+.dace-app .editor-scroll-area,
+.dace-app .reader-viewport,
+.dace-app .terminal-header,
+.dace-app .terminal-context,
+.dace-app .terminal-mount,
+.dace-app .terminal-footer,
+.dace-app .settings-nav,
+.dace-app .home-workspace {
+  transition: padding-left 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 .dace-app .workspace-rail {
   position: absolute;
   inset: 0 auto 0 0;
@@ -329,11 +337,13 @@ body,
   border-right: none;
   display: flex;
   flex-direction: column;
+  transform: translate3d(0, 0, 0);
+  opacity: 1;
+  visibility: visible;
   transition:
-    width 200ms cubic-bezier(0.2, 0, 0, 1),
-    min-width 200ms cubic-bezier(0.2, 0, 0, 1),
-    transform 200ms cubic-bezier(0.2, 0, 0, 1),
-    opacity 160ms ease;
+    transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 180ms ease,
+    visibility 0s linear 0s;
   overflow: visible;
   pointer-events: none;
   user-select: none;
@@ -344,17 +354,49 @@ body,
 }
 
 .dace-app .workspace-rail.is-collapsed {
-  width: 0 !important;
-  min-width: 0 !important;
   border-right: none !important;
-  transform: translateX(-100%);
-  opacity: 0 !important;
-  visibility: hidden !important;
+  transform: translate3d(-100%, 0, 0);
+  opacity: 0;
+  visibility: hidden;
   pointer-events: none !important;
+  transition:
+    transform 200ms cubic-bezier(0.4, 0, 1, 1),
+    opacity 150ms ease,
+    visibility 0s linear 200ms;
 }
 
 .dace-app .workspace-rail.is-collapsed * {
   pointer-events: none !important;
+}
+
+.dace-app .rail-reopen-btn {
+  position: absolute;
+  bottom: 14px;
+  left: 10px;
+  z-index: var(--z-rail);
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xs);
+  background: var(--bg-surface-elevated);
+  color: var(--text-muted);
+  cursor: pointer;
+  opacity: 0.72;
+  transition:
+    opacity 140ms ease,
+    color 120ms ease,
+    border-color 120ms ease,
+    background-color 120ms ease;
+}
+
+.dace-app .rail-reopen-btn:hover {
+  opacity: 1;
+  color: var(--text-primary);
+  border-color: var(--border-medium);
+  background: var(--state-hover);
 }
 
 .rail-orbit {

@@ -16,6 +16,10 @@
   background: var(--bg-app);
 }
 
+.dace-app .record-list-panel {
+  z-index: 65;
+}
+
 .dace-app .record-list-panel:not(.open) {
   visibility: hidden !important;
   pointer-events: none !important;
@@ -55,18 +59,23 @@
   position: relative;
   z-index: 20;
   display: flex;
-  flex: 0 0 44px;
+  flex: 0 0 40px;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  height: 44px;
-  padding: 0 24px;
+  height: 40px;
+  padding: 0 20px 0 calc(var(--rail-safe-left, 0px) + 16px);
   border-bottom: 1px solid var(--border-subtle);
   background: var(--bg-surface);
 }
 
+.dace-app .editor-container.in-focus {
+  padding-top: 0;
+}
+
 .dace-app .editor-container.in-focus .desk-toolbar {
-  padding-right: calc(var(--window-control-space) + 140px);
+  padding-left: 20px;
+  padding-right: 132px;
 }
 
 .dace-app .desk-toolbar-left,
@@ -123,7 +132,7 @@
   gap: 7px;
   margin-left: 12px;
   color: var(--text-muted);
-  font-family: var(--font-mono);
+  font-family: var(--font-label);
   font-size: 10px;
   letter-spacing: 0.04em;
   white-space: nowrap;
@@ -154,26 +163,40 @@
   cursor: pointer;
 }
 
+.dace-app .desk-word-count {
+  color: var(--text-muted);
+  font-family: var(--font-label);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
 .dace-app .desk-save-button {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  height: 28px;
-  padding: 0 11px;
+  gap: 6px;
+  height: 26px;
+  padding: 0 10px;
   border: 1px solid rgba(var(--brand-blue-rgb), 0.45);
   border-radius: 4px;
-  background: rgba(var(--brand-blue-rgb), 0.06);
+  background: rgba(var(--brand-blue-rgb), 0.08);
   color: var(--accent-text);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.07em;
+  font-family: var(--font-label);
+  font-size: 11px;
+  letter-spacing: 0.04em;
   cursor: pointer;
   transition: background-color 140ms ease, border-color 140ms ease;
 }
 
+.dace-app .desk-save-button.is-error {
+  border-color: rgba(var(--status-danger-rgb), 0.5);
+  background: rgba(var(--status-danger-rgb), 0.1);
+  color: var(--status-danger);
+}
+
 .dace-app .desk-save-button:hover {
   border-color: var(--accent-text);
-  background: rgba(var(--brand-blue-rgb), 0.12);
+  background: rgba(var(--brand-blue-rgb), 0.14);
 }
 
 .dace-app .desk-actions-menu {
@@ -238,15 +261,20 @@
   flex: 1;
   min-height: 0;
   overflow: hidden;
-  padding: 40px 48px;
+  padding: 32px clamp(24px, 4vw, 48px) 16px calc(clamp(24px, 4vw, 48px) + var(--rail-safe-left, 0px));
   background: var(--bg-app);
+}
+
+.dace-app .editor-container.in-focus .editor-scroll-area {
+  padding: 32px clamp(24px, 4vw, 48px) 16px;
 }
 
 .dace-app .editor-document {
   display: flex;
   flex-direction: column;
+  gap: 0;
   width: 100%;
-  max-width: 700px;
+  max-width: 720px;
   height: 100%;
   min-height: 0;
   margin: 0 auto;
@@ -260,7 +288,7 @@
   display: block;
   flex: 0 0 auto;
   width: 100%;
-  min-height: 44px;
+  min-height: 40px;
   padding: 0;
   border: none;
   outline: none;
@@ -269,7 +297,7 @@
   background: transparent;
   color: var(--text-primary);
   font-family: var(--font-editorial);
-  font-size: clamp(28px, 2.7vw, 38px);
+  font-size: clamp(26px, 2.5vw, 34px);
   font-weight: 500;
   line-height: 1.15;
   letter-spacing: -0.015em;
@@ -289,27 +317,34 @@
 
 .dace-app .editor-tags-container {
   flex: 0 0 auto;
-  margin-top: 18px;
+  margin-top: 10px;
   padding: 0 0 10px;
   border-bottom: 1px solid var(--border-subtle);
+}
+
+.dace-app .editor-tags-container.is-empty {
+  margin-top: 6px;
+  padding: 0 0 4px;
+  border-bottom-color: transparent;
 }
 
 .dace-app .editor-tags-container .tags-list {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 9px 17px;
-  min-height: 26px;
+  gap: 8px 14px;
+  min-height: 22px;
 }
 
 .dace-app .add-tag-button {
   padding: 0;
   border: none;
   background: transparent;
-  color: var(--text-secondary);
+  color: var(--text-muted);
   font-family: var(--font-interface);
   font-size: 12px;
   cursor: pointer;
+  transition: color 120ms ease;
 }
 
 .dace-app .add-tag-button:hover { color: var(--accent-text); }
@@ -370,7 +405,7 @@
   flex: 1;
   width: 100%;
   min-height: 0;
-  padding: 24px 0 40px 0;
+  padding: 16px 0 32px 0;
   border: none;
   outline: none;
   resize: none;
@@ -410,51 +445,6 @@
   background: #292929;
 }
 
-/* Quiet status strip: it never floats over the writing surface. */
-.dace-app .editor-status-bar {
-  display: flex;
-  flex: 0 0 62px;
-  align-items: flex-start;
-  gap: 22px;
-  height: 62px;
-  padding: 13px 46px 0 46px;
-  border-top: 1px solid #292929;
-  background: #101010;
-  color: var(--text-muted);
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.08em;
-  white-space: nowrap;
-}
-
-.dace-app .editor-status-bar .status-dot {
-  width: 5px;
-  height: 5px;
-  margin-top: 3px;
-  border-radius: 50%;
-  background: #7ea98b;
-}
-
-.dace-app .editor-status-bar .status-dot.saving { background: var(--text-secondary); }
-.dace-app .editor-status-bar .status-dot.unsaved { background: var(--accent-primary); }
-.dace-app .editor-status-bar .status-dot.error { background: #a65b57; }
-
-.dace-app .editor-status-spacer { flex: 1; }
-
-.dace-app .editor-status-bar .status-command {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  color: var(--text-secondary);
-}
-
-.dace-app .command-mark {
-  color: var(--accent-text);
-  font-family: var(--font-interface);
-  font-size: 12px;
-  line-height: 1;
-}
-
 /* --------------------------------------------------------------------------
    Contextual rail
    -------------------------------------------------------------------------- */
@@ -487,11 +477,11 @@
 
 .dace-app .desk-context-tabs {
   display: flex;
-  flex: 0 0 44px;
+  flex: 0 0 40px;
   align-items: center;
-  gap: 20px;
-  height: 44px;
-  padding: 0 20px;
+  gap: 18px;
+  height: 40px;
+  padding: 0 14px 0 18px;
   border-bottom: 1px solid var(--border-subtle);
 }
 
@@ -499,7 +489,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 44px;
+  height: 40px;
   padding: 0;
   border: none;
   border-bottom: 2px solid transparent;
@@ -511,6 +501,26 @@
   letter-spacing: 0;
   cursor: pointer;
   transition: color 120ms ease, border-color 120ms ease;
+}
+
+.dace-app .desk-context-close {
+  margin-left: auto;
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 120ms ease, background-color 120ms ease;
+}
+
+.dace-app .desk-context-close:hover {
+  color: var(--text-primary);
+  background: var(--state-hover);
 }
 
 .dace-app .desk-context-tab:hover { color: var(--text-primary); }
@@ -525,7 +535,7 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: 24px 20px;
+  padding: 18px;
 }
 
 .dace-app .desk-context-body.graph-active {
@@ -534,8 +544,8 @@
 }
 
 .dace-app .desk-context-section {
-  margin-bottom: 24px;
-  padding-bottom: 24px;
+  margin-bottom: 18px;
+  padding-bottom: 18px;
   border-bottom: 1px solid var(--border-subtle);
 }
 
@@ -623,7 +633,7 @@
 .dace-app .desk-context-panel .relationships-count-badge {
   margin-left: 7px;
   color: var(--text-muted);
-  font-family: var(--font-mono);
+  font-family: var(--font-label);
   font-size: 9px;
 }
 
@@ -632,7 +642,7 @@
   border: none;
   background: transparent;
   color: var(--text-secondary);
-  font-family: var(--font-mono);
+  font-family: var(--font-label);
   font-size: 10px;
   letter-spacing: 0.02em;
   text-transform: none;
@@ -666,7 +676,7 @@
 .dace-app .desk-context-panel .section-label {
   margin-bottom: 8px;
   color: var(--text-muted);
-  font-family: var(--font-mono);
+  font-family: var(--font-label);
   font-size: 9px;
   font-weight: 400;
   letter-spacing: 0.12em;
@@ -692,7 +702,7 @@
   border: none;
   background: transparent;
   color: var(--accent-text);
-  font-family: var(--font-mono);
+  font-family: var(--font-label);
   font-size: 9px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -771,7 +781,7 @@
 
 .dace-app .desk-context-panel .attachments-counter {
   color: var(--text-muted);
-  font-family: var(--font-mono);
+  font-family: var(--font-label);
   font-size: 9px;
 }
 
@@ -780,7 +790,7 @@
   border: none;
   background: transparent;
   color: var(--text-secondary);
-  font-family: var(--font-mono);
+  font-family: var(--font-label);
   font-size: 10px;
   letter-spacing: 0.02em;
   text-transform: none;
@@ -812,7 +822,7 @@
   border-color: #292929;
   background: #151515;
   color: var(--text-secondary);
-  font-family: var(--font-mono);
+  font-family: var(--font-label);
   font-size: 9px;
   text-transform: uppercase;
 }
@@ -841,7 +851,7 @@
 
 .dace-app .desk-meta-grid span:nth-child(odd) {
   color: var(--text-muted);
-  font-family: var(--font-mono);
+  font-family: var(--font-label);
   font-size: 9px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -898,7 +908,7 @@
 .dace-app .outline-line {
   flex: 0 0 18px;
   color: var(--text-muted);
-  font-family: var(--font-mono);
+  font-family: var(--font-label);
   font-size: 9px;
 }
 
@@ -964,7 +974,7 @@
   border-radius: 4px;
   background: #151515;
   color: var(--text-secondary);
-  font-family: var(--font-mono);
+  font-family: var(--font-label);
   font-size: 9px;
   letter-spacing: 0.06em;
   cursor: pointer;
@@ -976,10 +986,15 @@
 .dace-app .desk-empty-state {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
   gap: 12px;
-  padding: 90px 84px;
+  width: 100%;
+  max-width: 480px;
+  height: 100%;
+  margin: 0 auto;
+  padding: 32px 24px 32px calc(24px + var(--rail-safe-left, 0px));
+  text-align: center;
   border: none;
   background: transparent;
 }
@@ -987,62 +1002,55 @@
 .dace-app .desk-empty-heading {
   color: var(--text-primary);
   font-family: var(--font-editorial);
-  font-size: clamp(38px, 4.6vw, 64px);
+  font-size: clamp(34px, 4vw, 52px);
   font-weight: 400;
-  letter-spacing: -0.035em;
-  line-height: 1.05;
+  letter-spacing: -0.03em;
+  line-height: 1.08;
 }
 
 .dace-app .desk-empty-sub {
-  max-width: 480px;
+  max-width: 420px;
   color: var(--text-secondary);
   font-family: var(--font-interface);
   font-size: 13px;
   line-height: 1.65;
 }
 
-.dace-app .desk-empty-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
+.dace-app .desk-empty-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 8px; }
 
 /* --------------------------------------------------------------------------
    Responsive — reduce chrome, preserve the writing column
    -------------------------------------------------------------------------- */
 
 @media (max-width: 1280px) {
-  .dace-app .desk-toolbar { padding-right: 32px; padding-left: 32px; }
-  .dace-app .editor-scroll-area { padding-right: 32px; padding-left: 64px; }
-  .dace-app .editor-status-bar { padding-right: 32px; padding-left: 32px; }
-  .dace-app .desk-context-panel { flex-basis: 360px; width: 360px; }
-  .dace-app .desk-context-tabs { padding-left: 36px; gap: 20px; }
-  .dace-app .desk-context-body { padding-right: 36px; padding-left: 48px; }
+  .dace-app .desk-context-panel { flex-basis: 330px; width: 330px; }
 }
 
-@media (max-width: 1040px) {
-  .dace-app .desk-workspace { flex-direction: row; }
-  .dace-app .desk-toolbar { padding-right: 24px; padding-left: 24px; }
-  .dace-app .editor-scroll-area { padding-right: 24px; padding-left: 44px; }
-  .dace-app .editor-status-bar { padding-right: 24px; padding-left: 24px; }
-  .dace-app .desk-context-panel { flex-basis: 300px; width: 300px; }
-  .dace-app .desk-context-tabs { padding: 0 18px 0 24px; gap: 14px; }
-  .dace-app .desk-context-body { padding: 44px 22px 48px 30px; }
-  .dace-app .editor-title-input { font-size: clamp(36px, 4.4vw, 48px); }
-}
-
-@media (max-width: 880px) {
-  .dace-app .desk-toolbar { padding-right: 18px; padding-left: 18px; }
-  .dace-app .desk-toolbar-context,
-  .dace-app .desk-save-status { display: none; }
-  .dace-app .editor-scroll-area { padding-right: 18px; padding-left: 30px; }
-  .dace-app .editor-status-bar { padding-right: 18px; padding-left: 18px; gap: 12px; }
-  .dace-app .desk-context-panel { flex-basis: 260px; width: 260px; }
-  .dace-app .desk-context-tabs { padding: 0 12px 0 16px; gap: 10px; }
-  .dace-app .desk-context-tab { gap: 4px; font-size: 9px; }
-  .dace-app .desk-context-body { padding: 36px 18px 40px 22px; }
+@media (max-width: 960px) {
+  .dace-app .desk-workspace { position: relative; flex-direction: row; }
+  .dace-app .desk-context-panel {
+    position: absolute;
+    top: 40px;
+    right: 0;
+    bottom: 0;
+    z-index: 40;
+    width: min(340px, 92vw);
+    flex: none;
+    box-shadow: -18px 0 44px rgba(0, 0, 0, 0.58);
+  }
+  .dace-app .desk-context-panel.is-collapsed {
+    width: min(340px, 92vw) !important;
+    transform: translateX(102%);
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+  .dace-app .desk-toolbar { padding: 0 14px 0 calc(var(--rail-safe-left, 0px) + 12px); }
+  .dace-app .editor-scroll-area { padding: 24px 20px 16px calc(20px + var(--rail-safe-left, 0px)); }
 }
 
 @media (max-width: 720px) {
-  .dace-app .desk-context-panel { display: none; }
-  .dace-app .editor-scroll-area { padding: 44px 22px 0; }
-  .dace-app .editor-status-bar { padding-right: 14px; padding-left: 14px; }
-  .dace-app .desk-toolbar { padding-right: 12px; padding-left: 12px; }
-  .dace-app .desk-empty-state { padding: 70px 28px; }
+  .dace-app .desk-word-count { display: none; }
+  .dace-app .editor-scroll-area { padding: 20px 16px 14px calc(16px + var(--rail-safe-left, 0px)); }
+  .dace-app .desk-toolbar { padding: 0 10px 0 calc(var(--rail-safe-left, 0px) + 10px); }
+  .dace-app .desk-empty-state { padding: 32px 20px; }
 }

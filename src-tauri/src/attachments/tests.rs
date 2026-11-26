@@ -161,6 +161,37 @@ fn test_repository_attachment_and_record_association_lifecycle() {
 }
 
 #[test]
+fn test_deletion_target_preserves_shared_managed_files() {
+    let db = Database::init_in_memory().unwrap();
+    let conn = db.conn.lock().unwrap();
+
+    for id in ["att-shared-a", "att-shared-b"] {
+        conn.execute(
+            "INSERT INTO attachments (id, file_name, mime_type, file_size, sha256_hash, storage_path, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+            rusqlite::params![
+                id,
+                "shared.md",
+                "text/markdown",
+                128,
+                "sharedhash",
+                "sh/shared.md",
+                "2026-11-15T00:00:00Z",
+                "2026-11-15T00:00:00Z",
+            ],
+        ).unwrap();
+    }
+
+    let (path, can_delete) = AttachmentRepository::deletion_target(&conn, "att-shared-a").unwrap();
+    assert_eq!(path, "sh/shared.md");
+    assert_eq!(can_delete, false, "shared storage must not be physically deleted");
+
+    AttachmentRepository::delete_attachment(&conn, "att-shared-a").unwrap();
+    let (_, last_can_delete) = AttachmentRepository::deletion_target(&conn, "att-shared-b").unwrap();
+    assert_eq!(last_can_delete, true, "the final row owns the physical file");
+}
+
+#[test]
 fn test_record_deletion_cascades_associations_without_deleting_attachment() {
     let db = Database::init_in_memory().unwrap();
     let conn = db.conn.lock().unwrap();

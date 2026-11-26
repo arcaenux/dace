@@ -1,6 +1,8 @@
-import { useCallback, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { formatBytes } from "../backup/backupApi";
 import { useSettings } from "./SettingsContext";
+import { listSystemFonts } from "./fontsApi";
+import type { SystemFont } from "./fonts";
 import { pickBackupDirectory } from "./settingsApi";
 import type {
   AppSettings,
@@ -70,6 +72,27 @@ function Toggle({
   );
 }
 
+function useSystemFonts() {
+  const [fonts, setFonts] = useState<SystemFont[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [usingFallback, setUsingFallback] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    void listSystemFonts().then((list) => {
+      if (!active) return;
+      setFonts(list);
+      setUsingFallback(list.every((font) => font.source === "browser-preview"));
+      setLoading(false);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  return { fonts, loading, usingFallback };
+}
+
 export function SettingsView({ onExportBackup, onRestoreBackup }: SettingsViewProps) {
   const {
     settings,
@@ -84,6 +107,17 @@ export function SettingsView({ onExportBackup, onRestoreBackup }: SettingsViewPr
     refreshInfo,
   } = useSettings();
   const [section, setSection] = useState<SettingsSectionId>("general");
+  const { fonts, loading: loadingFonts, usingFallback } = useSystemFonts();
+
+  const fontOptions = useMemo(() => {
+    const families = new Set<string>();
+    for (const font of fonts) families.add(font.family);
+    families.add(settings.appearance.appFont);
+    families.add(settings.appearance.textFont);
+    return [...families].sort((a, b) =>
+      a.localeCompare(b, undefined, { sensitivity: "base" })
+    );
+  }, [fonts, settings.appearance.appFont, settings.appearance.textFont]);
 
   const patch = useCallback(
     (build: (current: AppSettings) => AppSettings) => {
@@ -228,6 +262,62 @@ export function SettingsView({ onExportBackup, onRestoreBackup }: SettingsViewPr
                 }
               />
             </Field>
+            <Field
+              label="App font"
+              description="Installed fonts for the interface; monospace choices also style the terminal."
+            >
+              <select
+                aria-label="App font"
+                value={settings.appearance.appFont}
+                disabled={loadingFonts}
+                onChange={(event) =>
+                  patch((current) => ({
+                    ...current,
+                    appearance: {
+                      ...current.appearance,
+                      appFont: event.target.value,
+                    },
+                  }))
+                }
+              >
+                {fontOptions.map((family) => (
+                  <option key={family} value={family}>
+                    {family}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field
+              label="Text font"
+              description="Fonts installed on this device, used for long-form reading."
+            >
+              <select
+                aria-label="Text font"
+                value={settings.appearance.textFont}
+                disabled={loadingFonts}
+                onChange={(event) =>
+                  patch((current) => ({
+                    ...current,
+                    appearance: {
+                      ...current.appearance,
+                      textFont: event.target.value,
+                    },
+                  }))
+                }
+              >
+                {fontOptions.map((family) => (
+                  <option key={family} value={family}>
+                    {family}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            {usingFallback && (
+              <p className="settings-font-notice">
+                Installed fonts are listed in the desktop app. The browser preview shows a short
+                fallback list.
+              </p>
+            )}
             <Field label="Reduced motion" description="Minimise decorative animation and transitions.">
               <Toggle
                 label="Reduced motion"
@@ -506,9 +596,9 @@ export function SettingsView({ onExportBackup, onRestoreBackup }: SettingsViewPr
             type="button"
             className={`settings-nav-item ${section === item.id ? "is-active" : ""}`}
             onClick={() => setSection(item.id)}
+            title={item.hint}
           >
             <span>{item.label}</span>
-            <small>{item.hint}</small>
           </button>
         ))}
       </aside>
@@ -523,6 +613,11 @@ export function SettingsView({ onExportBackup, onRestoreBackup }: SettingsViewPr
             <span className="settings-save-state">
               {loading ? "Loading…" : saving ? "Saving…" : error ? "Save failed" : savedAt ? "Saved" : "Ready"}
             </span>
+            {(section === "storage" || section === "backup" || section === "about") && (
+              <button type="button" onClick={() => void refreshInfo()} title="Refresh storage and recovery info">
+                Refresh
+              </button>
+            )}
             <button type="button" onClick={handleReset} disabled={loading}>
               Reset to defaults
             </button>
@@ -530,9 +625,6 @@ export function SettingsView({ onExportBackup, onRestoreBackup }: SettingsViewPr
         </header>
         {error && <div className="settings-error" role="alert">{error}</div>}
         <div className="settings-panel">{renderSection()}</div>
-        <button type="button" className="settings-refresh" onClick={() => void refreshInfo()}>
-          Refresh storage and recovery information
-        </button>
       </section>
     </div>
   );

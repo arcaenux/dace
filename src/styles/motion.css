@@ -1,0 +1,246 @@
+/* ==========================================================================
+   Dace — Motion & Modern UI Layer
+
+   Additive polish applied after the component styles. Every animation uses the
+   shared motion tokens, so the Appearance "Reduced motion" preference and the
+   OS setting disable it in one place.
+   ========================================================================== */
+
+@keyframes dace-fade-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes dace-slide-in {
+  from {
+    opacity: 0;
+    transform: translate3d(-14px, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes dace-pop-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 12px, 0) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes dace-backdrop-in {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0);
+  }
+  to {
+    opacity: 1;
+    backdrop-filter: blur(10px);
+  }
+}
+
+@keyframes dace-ambient-pan {
+  from {
+    background-position: 0% 0%, 100% 0%;
+  }
+  to {
+    background-position: 100% 28%, 0% 22%;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Shell entrance and ambient depth
+   -------------------------------------------------------------------------- */
+
+.dace-app .workspace-topbar {
+  animation: dace-fade-rise var(--duration-slow) var(--ease-enter) both;
+}
+
+.dace-app .workspace-stage {
+  background-image:
+    radial-gradient(900px 520px at 18% -12%, rgba(var(--brand-blue-rgb), 0.09), transparent 62%),
+    radial-gradient(760px 480px at 100% 0%, rgba(var(--brand-blue-rgb), 0.05), transparent 58%);
+  background-size: 160% 160%, 150% 150%;
+  animation: dace-ambient-pan var(--duration-ambient) ease-in-out infinite alternate;
+}
+
+.dace-app .topbar-brand-logo {
+  filter: drop-shadow(0 0 8px rgba(var(--brand-blue-rgb), 0.28));
+  transition:
+    transform var(--duration-normal) var(--ease-spring),
+    filter var(--duration-normal) var(--ease-standard);
+}
+
+.dace-app .workspace-topbar:hover .topbar-brand-logo {
+  transform: rotate(-4deg) scale(1.06);
+  filter: drop-shadow(0 0 12px rgba(var(--brand-blue-rgb), 0.45));
+}
+
+/* --------------------------------------------------------------------------
+   Controls — tactile hover and press feedback
+   -------------------------------------------------------------------------- */
+
+.dace-app button:not(:disabled),
+.dace-app select:not(:disabled) {
+  transition:
+    transform var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard),
+    background-color var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard);
+}
+
+.dace-app button:not(:disabled):active {
+  transform: scale(0.97);
+}
+
+.dace-app .topbar-icon-btn:hover:not(:disabled),
+.dace-app .desk-btn:hover:not(:disabled),
+.dace-app .graph-control-btn:hover:not(:disabled),
+.settings-content button:hover:not(:disabled) {
+  box-shadow: 0 0 0 3px rgba(var(--brand-blue-rgb), 0.1);
+}
+
+/* Rail icons are absolutely centred with a transform. Never animate that
+   transform: the hover/press scale would make them jump out of their slots. */
+.dace-app button.rail-nav-item:active {
+  transform: translate(-50%, -50%);
+}
+
+/* --------------------------------------------------------------------------
+   Cards, lists and settings rows
+   -------------------------------------------------------------------------- */
+
+.dace-app .record-card-item,
+.dace-app .attachment-card,
+.dace-app .settings-field {
+  animation: dace-fade-rise var(--duration-normal) var(--ease-enter) backwards;
+  transition:
+    transform var(--duration-normal) var(--ease-standard),
+    box-shadow var(--duration-normal) var(--ease-standard),
+    border-color var(--duration-normal) var(--ease-standard),
+    background-color var(--duration-normal) var(--ease-standard);
+}
+
+.dace-app .record-card-item:nth-child(2),
+.dace-app .attachment-card:nth-child(2),
+.dace-app .settings-field:nth-child(2) {
+  animation-delay: 35ms;
+}
+
+.dace-app .record-card-item:nth-child(3),
+.dace-app .attachment-card:nth-child(3),
+.dace-app .settings-field:nth-child(3) {
+  animation-delay: 70ms;
+}
+
+.dace-app .record-card-item:nth-child(n + 4),
+.dace-app .attachment-card:nth-child(n + 4),
+.dace-app .settings-field:nth-child(n + 4) {
+  animation-delay: 105ms;
+}
+
+.dace-app .record-card-item:hover,
+.dace-app .attachment-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-active);
+  box-shadow: var(--shadow-elevated);
+}
+
+.settings-field:hover {
+  transform: translateX(2px);
+  background: var(--state-hover);
+}
+
+/* --------------------------------------------------------------------------
+   Overlays and panels
+   -------------------------------------------------------------------------- */
+
+.dace-app .overlay-backdrop {
+  animation: dace-backdrop-in var(--duration-normal) var(--ease-enter) both;
+}
+
+.dace-app .command-palette,
+.dace-app .shortcut-modal,
+.dace-app .restore-modal,
+.dace-app .delete-confirm-dialog,
+.dace-app .preview-modal-container,
+.dace-app .attachment-details-modal {
+  animation: dace-pop-in var(--duration-normal) var(--ease-spring) both;
+  box-shadow:
+    0 28px 90px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(var(--brand-blue-rgb), 0.12);
+}
+
+.dace-app .contextual-panel.open,
+.dace-app .desk-context-panel.open {
+  animation: dace-slide-in var(--duration-normal) var(--ease-enter) both;
+}
+
+/* --------------------------------------------------------------------------
+   Reader and graph micro-interactions
+   -------------------------------------------------------------------------- */
+
+.dace-app .drawer-tab {
+  position: relative;
+  transition:
+    color var(--duration-fast) var(--ease-standard),
+    transform var(--duration-fast) var(--ease-standard);
+}
+
+.dace-app .drawer-tab::after {
+  content: "";
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: -1px;
+  height: 2px;
+  border-radius: var(--radius-pill);
+  background: var(--brand-blue-text);
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform var(--duration-normal) var(--ease-enter);
+}
+
+.dace-app .drawer-tab.active::after {
+  transform: scaleX(1);
+}
+
+.dace-app .drawer-tab:hover {
+  transform: translateY(-1px);
+}
+
+.dace-app .graph-control-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+/* --------------------------------------------------------------------------
+   Reduced motion — delays are covered globally, this keeps our layer explicit
+   -------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .dace-app *,
+  .dace-app *::before,
+  .dace-app *::after {
+    animation-delay: 0ms !important;
+    transition-delay: 0ms !important;
+  }
+}
+
+html[data-reduced-motion="true"] .dace-app *,
+html[data-reduced-motion="true"] .dace-app *::before,
+html[data-reduced-motion="true"] .dace-app *::after {
+  animation-delay: 0ms !important;
+  transition-delay: 0ms !important;
+}

@@ -121,8 +121,12 @@ export const RecordAttachmentsPanel: FC<RecordAttachmentsPanelProps> = ({
   // Disassociate from this note
   const handleDisassociate = async (attachmentId: string) => {
     try {
-      await api.disassociateAttachmentFromRecord(recordId, attachmentId);
-      onShowNotice("Document disassociated from note. (File remains in vault storage)");
+      const removed = await api.disassociateAttachmentFromRecord(recordId, attachmentId);
+      if (!removed) {
+        onShowNotice("Could not unlink document — the link may already be gone.");
+      } else {
+        onShowNotice("Document disassociated from note. (File remains in vault storage)");
+      }
       await loadAttachments();
     } catch (err) {
       console.error("Failed to disassociate attachment:", err);
@@ -135,14 +139,19 @@ export const RecordAttachmentsPanel: FC<RecordAttachmentsPanelProps> = ({
     try {
       const deleted = await api.deleteAttachment(attachmentId);
       if (!deleted) {
-        onShowNotice("Could not delete attachment file");
+        onShowNotice("Could not delete attachment file — it may already be gone.");
+        setDeleteConfirmId(null);
+        await loadAttachments();
         return;
       }
       setDeleteConfirmId(null);
       onShowNotice("Managed document permanently purged from storage");
       window.dispatchEvent(new CustomEvent("dace:attachment-deleted", { detail: attachmentId }));
+      await loadAttachments();
     } catch (err) {
       console.error("Failed to permanently delete attachment:", err);
+      setDeleteConfirmId(null);
+      await loadAttachments();
       onShowNotice("Failed to delete attachment file");
     }
   };
@@ -230,9 +239,10 @@ export const RecordAttachmentsPanel: FC<RecordAttachmentsPanelProps> = ({
                       </button>
                       <button
                         type="button"
-                        className="icon-action-btn"
-                        onClick={() => handleDisassociate(att.id)}
-                        title="Remove association from this note (preserves file in storage)"
+                        className="icon-action-btn danger"
+                        onClick={() => setDeleteConfirmId(att.id)}
+                        title="Delete document from managed storage"
+                        aria-label={`Delete ${att.file_name} from storage`}
                       >
                         ×
                       </button>
@@ -306,14 +316,24 @@ export const RecordAttachmentsPanel: FC<RecordAttachmentsPanelProps> = ({
                         </div>
                       </div>
                     ) : (
-                      <button
-                        type="button"
-                        className="purge-file-link"
-                        onClick={() => setDeleteConfirmId(att.id)}
-                        title="Permanently remove file from managed storage"
-                      >
-                        Delete from Storage
-                      </button>
+                      <div className="attachment-footer-links">
+                        <button
+                          type="button"
+                          className="purge-file-link unlink-link"
+                          onClick={() => handleDisassociate(att.id)}
+                          title="Remove from this note only (keeps the file in storage)"
+                        >
+                          Unlink
+                        </button>
+                        <button
+                          type="button"
+                          className="purge-file-link"
+                          onClick={() => setDeleteConfirmId(att.id)}
+                          title="Permanently remove file from managed storage"
+                        >
+                          Delete from Storage
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>

@@ -25,6 +25,7 @@ interface MarkdownReaderProps {
   isDistractionFree?: boolean;
   zoom: number;
   annotationType?: HighlightType | null;
+  onSpeedRead?: (text: string) => void;
 }
 
 interface SelectionCapture {
@@ -46,6 +47,7 @@ const MarkdownReaderComponent: FC<MarkdownReaderProps> = ({
   isDistractionFree = false,
   zoom,
   annotationType = null,
+  onSpeedRead,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const articleRef = useRef<HTMLDivElement>(null);
@@ -59,6 +61,7 @@ const MarkdownReaderComponent: FC<MarkdownReaderProps> = ({
     onRecordCreatedFromExcerpt,
     onExcerptAdded,
     onShowNotice,
+    onSpeedRead,
   });
   callbacksRef.current = {
     onHighlightCreated,
@@ -67,6 +70,7 @@ const MarkdownReaderComponent: FC<MarkdownReaderProps> = ({
     onRecordCreatedFromExcerpt,
     onExcerptAdded,
     onShowNotice,
+    onSpeedRead,
   };
 
   const [selectionRange, setSelectionRange] = useState<SelectionCapture | null>(null);
@@ -244,6 +248,7 @@ const MarkdownReaderComponent: FC<MarkdownReaderProps> = ({
             onAddToNotes={handleAddToNotes}
             onExcerpt={handleCreateExcerpt}
             onConnectExcerpt={handleConnect}
+            onSpeedRead={() => callbacksRef.current.onSpeedRead?.(selectionRange.text)}
             onClose={clearSelection}
             preferredType={annotationType}
           />
