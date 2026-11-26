@@ -15,6 +15,7 @@ interface KeyboardShortcutsProps {
   setActiveActivity: (act: WorkspaceActivityId) => void;
   requestIntent: (request: WorkspaceIntentRequest) => void;
   onToggleNav?: () => void;
+  onToggleColorMode?: () => void;
 }
 
 export function useKeyboardShortcuts({
@@ -29,6 +30,7 @@ export function useKeyboardShortcuts({
   setActiveActivity,
   requestIntent,
   onToggleNav,
+  onToggleColorMode,
 }: KeyboardShortcutsProps) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -83,6 +85,13 @@ export function useKeyboardShortcuts({
       if (modifier && (e.key === "b" || e.key === "B") && !e.shiftKey && !e.altKey) {
         e.preventDefault();
         onToggleNav?.();
+        return;
+      }
+
+      // 3.2. Ctrl+Shift+L (or Cmd+Shift+L): Toggle Light / Dark Appearance
+      if (modifier && e.shiftKey && (e.key === "l" || e.key === "L") && !e.altKey) {
+        e.preventDefault();
+        onToggleColorMode?.();
         return;
       }
 
@@ -208,5 +217,6 @@ export function useKeyboardShortcuts({
     setActiveActivity,
     requestIntent,
     onToggleNav,
+    onToggleColorMode,
   ]);
 }

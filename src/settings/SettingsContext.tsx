@@ -85,6 +85,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const root = document.documentElement;
+    root.dataset.appearance = settings.appearance.colorMode;
     root.dataset.density = settings.appearance.density;
     root.dataset.reducedMotion = String(settings.appearance.reducedMotion);
     root.dataset.sidebarCollapsed = String(settings.appearance.sidebarCollapsed);
@@ -92,6 +93,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     root.style.setProperty("--dace-app-font", fontStack(settings.appearance.appFont, "app"));
     root.style.setProperty("--dace-text-font", fontStack(settings.appearance.textFont, "text"));
   }, [
+    settings.appearance.colorMode,
     settings.appearance.density,
     settings.appearance.reducedMotion,
     settings.appearance.sidebarCollapsed,

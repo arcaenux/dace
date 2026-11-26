@@ -8,8 +8,30 @@ import {
   forwardRef,
   useImperativeHandle,
   KeyboardEvent,
+  ReactNode,
 } from "react";
-import { ArrowLeft, MoreHorizontal, PanelLeft, PanelRight, Save } from "lucide-react";
+import {
+  ArrowLeft,
+  Bold,
+  Code,
+  Hash,
+  Heading1,
+  Heading2,
+  Heading3,
+  Italic,
+  Link,
+  List,
+  ListChecks,
+  ListOrdered,
+  Minus,
+  MoreHorizontal,
+  PanelLeft,
+  Quote,
+  Strikethrough,
+  X,
+  type LucideIcon,
+} from "lucide-react";
+import { applyMarkdownFormat, formatActionForShortcut, type FormatAction } from "./markdownFormat.ts";
 import { KnowledgeRecord, SaveStatus } from "./types";
 import { useDismissable } from "../core/useDismissable";
 import { useSettings } from "../settings/SettingsContext";
@@ -33,9 +55,31 @@ export interface RecordEditorProps {
   canNavigateBack?: boolean;
   onNavigateBack?: () => void;
   previousRecordTitle?: string | null;
-  isContextOpen?: boolean;
-  onToggleContext?: () => void;
+  /** Small panel toggles rendered at the end of the editor bar. */
+  trailingControls?: ReactNode;
 }
+
+const FORMAT_GROUPS: { action: FormatAction; label: string; icon: LucideIcon; hint?: string }[][] = [
+  [
+    { action: "h1", label: "Heading 1", icon: Heading1 },
+    { action: "h2", label: "Heading 2", icon: Heading2 },
+    { action: "h3", label: "Heading 3", icon: Heading3 },
+  ],
+  [
+    { action: "bold", label: "Bold", icon: Bold, hint: "Ctrl+B" },
+    { action: "italic", label: "Italic", icon: Italic, hint: "Ctrl+I" },
+    { action: "strike", label: "Strikethrough", icon: Strikethrough, hint: "Ctrl+Shift+X" },
+    { action: "code", label: "Inline code", icon: Code, hint: "Ctrl+E" },
+    { action: "link", label: "Link", icon: Link },
+  ],
+  [
+    { action: "bullet", label: "Bulleted list", icon: List },
+    { action: "numbered", label: "Numbered list", icon: ListOrdered },
+    { action: "task", label: "Checklist", icon: ListChecks },
+    { action: "quote", label: "Quote", icon: Quote },
+    { action: "divider", label: "Divider", icon: Minus },
+  ],
+];
 
 const statusLabels: Record<SaveStatus, string> = {
   saved: "Saved",
@@ -56,8 +100,7 @@ export const RecordEditor = forwardRef<RecordEditorHandle, RecordEditorProps>(fu
     canNavigateBack,
     onNavigateBack,
     previousRecordTitle,
-    isContextOpen = false,
-    onToggleContext,
+    trailingControls,
   },
   ref
 ) {
@@ -74,6 +117,7 @@ export const RecordEditor = forwardRef<RecordEditorHandle, RecordEditorProps>(fu
 
   const titleTextareaRef = useRef<HTMLTextAreaElement>(null);
   const bodyTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
   const tagInputRef = useRef<HTMLInputElement>(null);
   const moreMenuRef = useRef<HTMLDivElement>(null);
   const moreTriggerRef = useRef<HTMLButtonElement>(null);
@@ -222,10 +266,32 @@ export const RecordEditor = forwardRef<RecordEditorHandle, RecordEditorProps>(fu
     for (let index = 0; index < target - 1; index += 1) {
       offset += lines[index].length + 1;
     }
-    textarea.focus();
+    textarea.focus({ preventScroll: true });
     textarea.setSelectionRange(offset, offset + (lines[target - 1]?.length || 0));
-    const lineHeight = parseFloat(window.getComputedStyle(textarea).lineHeight) || 26;
-    textarea.scrollTop = Math.max(0, (target - 1) * lineHeight - textarea.clientHeight / 3);
+
+    // The body grows with its content and the page scrolls, so measure where
+    // the line really sits (soft-wrapped lines included) with a mirror element.
+    const scroller = scrollAreaRef.current;
+    if (!scroller) return;
+    const style = window.getComputedStyle(textarea);
+    const mirror = document.createElement("div");
+    for (const prop of ["fontFamily", "fontSize", "fontWeight", "lineHeight", "letterSpacing", "paddingLeft", "paddingRight", "paddingTop", "boxSizing"] as const) {
+      mirror.style[prop] = style[prop];
+    }
+    mirror.style.position = "absolute";
+    mirror.style.visibility = "hidden";
+    mirror.style.whiteSpace = "pre-wrap";
+    mirror.style.overflowWrap = "break-word";
+    mirror.style.width = `${textarea.clientWidth}px`;
+    mirror.textContent = textarea.value.slice(0, offset) || " ";
+    document.body.appendChild(mirror);
+    const lineHeight = parseFloat(style.lineHeight) || 26;
+    const caretY = mirror.offsetHeight - lineHeight;
+    mirror.remove();
+
+    const textareaTop =
+      textarea.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop;
+    scroller.scrollTo({ top: Math.max(0, textareaTop + caretY - scroller.clientHeight / 3) });
   }, []);
 
   // Expose imperatively to parent coordinator (KnowledgeDesk)
@@ -277,10 +343,8 @@ export const RecordEditor = forwardRef<RecordEditorHandle, RecordEditorProps>(fu
       }
     };
     window.addEventListener("dace:save-record" as any, handleGlobalSaveRequest);
-    window.addEventListener("novadome:save-record" as any, handleGlobalSaveRequest);
     return () => {
       window.removeEventListener("dace:save-record" as any, handleGlobalSaveRequest);
-      window.removeEventListener("novadome:save-record" as any, handleGlobalSaveRequest);
       if (debounceTimerRef.current !== null) {
         window.clearTimeout(debounceTimerRef.current);
       }
@@ -359,183 +423,251 @@ export const RecordEditor = forwardRef<RecordEditorHandle, RecordEditorProps>(fu
     onDeleteRecord(record.id);
   };
 
+  // Apply a formatting action as one native edit so Ctrl+Z still works.
+  const applyFormat = (action: FormatAction) => {
+    const textarea = bodyTextareaRef.current;
+    if (!textarea) return;
+    const edit = applyMarkdownFormat(textarea.value, textarea.selectionStart, textarea.selectionEnd, action);
+    textarea.focus({ preventScroll: true });
+    textarea.setSelectionRange(edit.start, edit.end);
+    const inserted =
+      typeof document.execCommand === "function" && document.execCommand("insertText", false, edit.insert);
+    if (!inserted) {
+      textarea.setRangeText(edit.insert, edit.start, edit.end, "end");
+      handleContentChange(textarea.value);
+    }
+    textarea.setSelectionRange(edit.selectionStart, edit.selectionEnd);
+  };
+
+  const handleBodyKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    const modifier = e.ctrlKey || e.metaKey;
+    if (!modifier || e.altKey) return;
+    const action = formatActionForShortcut(e.key, e.shiftKey);
+    if (!action) return;
+    e.preventDefault();
+    applyFormat(action);
+  };
+
+  // The body grows with its content so the whole page scrolls as one sheet.
+  useLayoutEffect(() => {
+    const textarea = bodyTextareaRef.current;
+    const scroller = scrollAreaRef.current;
+    if (!textarea) return;
+    const keep = scroller?.scrollTop ?? 0;
+    textarea.style.height = "auto";
+    textarea.style.height = `${textarea.scrollHeight}px`;
+    if (scroller) scroller.scrollTop = keep;
+  }, [content]);
+
+  const saveLabel = saveStatus === "saved" ? "Saved" : statusLabels[saveStatus];
+
   return (
-    <div className={`editor-container ${isFocusSpace ? "in-focus" : ""}`}>
-      <div className="desk-toolbar">
-        <div className="desk-toolbar-left">
+    <div className={`kd-editor ${isFocusSpace ? "in-focus" : ""}`}>
+      <header className="kd-bar">
+        <div className="kd-bar-start">
+          {!isFocusSpace && (
+            <button
+              type="button"
+              className={`kd-icon ${isListOpen ? "is-active" : ""}`}
+              data-dismiss-ignore
+              data-tauri-drag-region="false"
+              onClick={onToggleRecordList}
+              aria-expanded={isListOpen}
+              title={isListOpen ? "Hide library" : "Show library"}
+              aria-label={isListOpen ? "Hide library" : "Show library"}
+            >
+              <PanelLeft size={15} strokeWidth={1.6} aria-hidden="true" />
+            </button>
+          )}
           {canNavigateBack && onNavigateBack && (
             <button
               type="button"
-              className="desk-toolbar-icon"
+              className="kd-icon"
               onClick={onNavigateBack}
-              title={`Return to '${previousRecordTitle || "previous concept"}'`}
+              title={`Back to '${previousRecordTitle || "previous record"}'`}
               aria-label="Back to previous record"
             >
               <ArrowLeft size={15} strokeWidth={1.6} aria-hidden="true" />
             </button>
           )}
-
-          <button
-            type="button"
-            className="desk-toolbar-icon"
-            data-dismiss-ignore
-            data-tauri-drag-region="false"
-            onClick={onToggleRecordList}
-            aria-expanded={isListOpen}
-            title={isListOpen ? "Hide records" : "Browse records"}
-            aria-label={isListOpen ? "Hide records" : "Browse records"}
-          >
-            <PanelLeft size={15} strokeWidth={1.6} aria-hidden="true" />
-          </button>
-
-          <span className="desk-toolbar-rule" aria-hidden="true" />
-
-          <div className={`desk-save-status ${saveStatus}`} aria-live="polite">
-            {saveStatus === "error" ? (
-              <button type="button" onClick={flushSave} title={errorMessage || "Click to retry save"}>
-                <span className="status-dot" />
-                {statusLabels[saveStatus]} · Retry
-              </button>
-            ) : (
-              <>
-                <span className="status-dot" />
-                {statusLabels[saveStatus]}
-              </>
-            )}
-          </div>
         </div>
 
-        <div className="desk-toolbar-right">
+        <div className="kd-format" role="toolbar" aria-label="Formatting">
+          {FORMAT_GROUPS.map((group, groupIndex) => (
+            <div className="kd-format-group" key={groupIndex}>
+              {group.map(({ action, label, icon: Icon, hint }) => (
+                <button
+                  key={action}
+                  type="button"
+                  className="kd-icon kd-icon-sm"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => applyFormat(action)}
+                  title={hint ? `${label} (${hint})` : label}
+                  aria-label={label}
+                >
+                  <Icon size={14} strokeWidth={1.7} aria-hidden="true" />
+                </button>
+              ))}
+            </div>
+          ))}
+        </div>
+
+        <div className="kd-bar-end">
+          {saveStatus === "error" ? (
+            <button
+              type="button"
+              className="kd-save is-error"
+              onClick={flushSave}
+              title={errorMessage || "Click to retry save"}
+              aria-live="polite"
+            >
+              <span className="kd-save-dot" />
+              Save failed · Retry
+            </button>
+          ) : (
+            <button
+              type="button"
+              className={`kd-save is-${saveStatus}`}
+              onClick={flushSave}
+              title="Save now (Ctrl+S)"
+              aria-live="polite"
+            >
+              <span className="kd-save-dot" />
+              {saveLabel}
+            </button>
+          )}
+
           {settings.editor.showWordCount && (
-            <span className="desk-word-count" aria-label="Word count">
+            <span className="kd-meta-text desk-word-count" aria-label="Word count">
               {wordCount} {wordCount === 1 ? "word" : "words"}
             </span>
           )}
 
-          {(saveStatus === "unsaved" || saveStatus === "error") && (
+          <div className="kd-menu-anchor">
             <button
+              ref={moreTriggerRef}
               type="button"
-              className={`desk-save-button ${saveStatus === "error" ? "is-error" : ""}`}
-              onClick={flushSave}
-              title="Save now (Ctrl+S)"
+              className="kd-icon"
+              data-dismiss-ignore
+              aria-haspopup="menu"
+              aria-expanded={isMoreMenuOpen}
+              onClick={() => setIsMoreMenuOpen((current) => !current)}
+              title="More actions"
+              aria-label="More actions"
             >
-              <Save size={13} strokeWidth={1.6} aria-hidden="true" />
-              {saveStatus === "error" ? "Retry" : "Save"}
+              <MoreHorizontal size={15} strokeWidth={1.6} aria-hidden="true" />
             </button>
-          )}
 
-          <button
-            ref={moreTriggerRef}
-            type="button"
-            className="desk-toolbar-icon"
-            data-dismiss-ignore
-            aria-haspopup="menu"
-            aria-expanded={isMoreMenuOpen}
-            onClick={() => setIsMoreMenuOpen((current) => !current)}
-            title="More actions"
-            aria-label="More actions"
-          >
-            <MoreHorizontal size={16} strokeWidth={1.6} aria-hidden="true" />
-          </button>
+            {isMoreMenuOpen && (
+              <div ref={moreMenuRef} className="kd-menu" role="menu">
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setIsMoreMenuOpen(false);
+                    void flushSave();
+                  }}
+                >
+                  Save now
+                  <kbd>Ctrl S</kbd>
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setIsMoreMenuOpen(false);
+                    handleStartAddingTag();
+                  }}
+                >
+                  Add tag
+                </button>
+                <span className="kd-menu-divider" aria-hidden="true" />
+                <button type="button" role="menuitem" className="destructive" onClick={runDelete}>
+                  Delete record
+                </button>
+              </div>
+            )}
+          </div>
 
-          {isMoreMenuOpen && (
-            <div ref={moreMenuRef} className="desk-actions-menu" role="menu">
-              <button
-                type="button"
-                role="menuitem"
-                onClick={() => {
-                  setIsMoreMenuOpen(false);
-                  void flushSave();
-                }}
-              >
-                Save now
-                <kbd>Ctrl S</kbd>
-              </button>
-              <span className="desk-actions-divider" aria-hidden="true" />
-              <button type="button" role="menuitem" className="destructive" onClick={runDelete}>
-                Delete record
-              </button>
-            </div>
-          )}
-
-          {onToggleContext && !isFocusSpace && (
-            <button
-              type="button"
-              className={`desk-toolbar-icon ${isContextOpen ? "active" : ""}`}
-              onClick={onToggleContext}
-              title={isContextOpen ? "Hide context panel" : "Context (Connections, Documents, Outline)"}
-              aria-label="Toggle context panel"
-              aria-pressed={isContextOpen}
-            >
-              <PanelRight size={15} strokeWidth={1.6} aria-hidden="true" />
-            </button>
+          {trailingControls && !isFocusSpace && (
+            <>
+              <span className="kd-bar-rule" aria-hidden="true" />
+              {trailingControls}
+            </>
           )}
         </div>
-      </div>
+      </header>
 
-      <div className="editor-scroll-area">
-        <div className="editor-document">
+      <div className="kd-scroll" ref={scrollAreaRef}>
+        <article className="kd-page">
           <textarea
             ref={titleTextareaRef}
-            className="editor-title-input"
+            className="kd-title"
             rows={1}
-            placeholder="Untitled Record"
+            placeholder="Untitled"
             value={title}
             onChange={(e) => handleTitleChange(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                bodyTextareaRef.current?.focus();
+              }
+            }}
             aria-label="Record title"
           />
 
-          <div className={`editor-tags-container ${tags.length === 0 && !isAddingTag ? "is-empty" : ""}`}>
-            <div className="tags-list">
-              {tags.map((t) => (
-                <span key={t} className="tag-chip">
-                  {t}
-                  <button
-                    type="button"
-                    className="tag-remove-btn"
-                    onClick={() => handleRemoveTag(t)}
-                    aria-label={`Remove tag ${t}`}
-                    title={`Remove ${t}`}
-                  >
-                    ×
-                  </button>
-                </span>
-              ))}
-
-              {isAddingTag ? (
-                <input
-                  ref={tagInputRef}
-                  type="text"
-                  className="tag-input"
-                  placeholder="tag name"
-                  value={tagInput}
-                  onChange={(e) => setTagInput(e.target.value)}
-                  onKeyDown={handleTagKeyDown}
-                  onBlur={handleAddTag}
-                  aria-label="Tag name"
-                />
-              ) : (
-                <button type="button" className="add-tag-button" onClick={handleStartAddingTag}>
-                  + Add tag
+          <div className={`kd-tags ${tags.length === 0 && !isAddingTag ? "is-empty" : ""}`}>
+            {tags.map((t) => (
+              <span key={t} className="kd-tag">
+                <span className="kd-tag-hash" aria-hidden="true">#</span>
+                {t}
+                <button
+                  type="button"
+                  className="kd-tag-remove"
+                  onClick={() => handleRemoveTag(t)}
+                  aria-label={`Remove tag ${t}`}
+                  title={`Remove ${t}`}
+                >
+                  <X size={10} strokeWidth={2} aria-hidden="true" />
                 </button>
-              )}
-            </div>
+              </span>
+            ))}
+
+            {isAddingTag ? (
+              <input
+                ref={tagInputRef}
+                type="text"
+                className="kd-tag-input"
+                placeholder="tag"
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={handleTagKeyDown}
+                onBlur={handleAddTag}
+                aria-label="Tag name"
+              />
+            ) : (
+              <button type="button" className="kd-tag-add" onClick={handleStartAddingTag}>
+                <Hash size={11} strokeWidth={1.8} aria-hidden="true" />
+                Add tag
+              </button>
+            )}
           </div>
 
           <textarea
             ref={bodyTextareaRef}
-            className="editor-textarea"
+            className="kd-body"
             placeholder={
               settings.editor.defaultFormat === "markdown"
-                ? "Write knowledge here… (Markdown supported)"
-                : "Write knowledge here…"
+                ? "Start writing… Markdown works: # heading, - list, **bold**"
+                : "Start writing…"
             }
             value={content}
             onChange={(e) => handleContentChange(e.target.value)}
+            onKeyDown={handleBodyKeyDown}
             spellCheck={settings.editor.spellcheck}
             aria-label="Record content"
           />
-        </div>
+        </article>
       </div>
     </div>
   );

@@ -457,12 +457,23 @@ export const WorkspaceShell: FC = () => {
     });
   }, [isRailSuppressed]);
 
+  const toggleColorMode = useCallback(() => {
+    const nextMode = settings.appearance.colorMode === "dark" ? "light" : "dark";
+    void updateSettings((current) => ({
+      ...current,
+      appearance: { ...current.appearance, colorMode: nextMode },
+    }));
+    showNotice(nextMode === "dark" ? "Switched to Dark Mode" : "Switched to Light Mode");
+  }, [settings.appearance.colorMode, updateSettings, showNotice]);
+
   const commandList = useMemo(() => {
     return buildCommandList({
       activeActivity,
       setActiveActivity: selectActivity,
       requestIntent,
       onToggleNav: toggleRail,
+      colorMode: settings.appearance.colorMode,
+      onToggleColorMode: toggleColorMode,
       isFocusSpace,
       enterFocusSpace,
       exitFocusSpace,
@@ -481,6 +492,8 @@ export const WorkspaceShell: FC = () => {
     selectActivity,
     requestIntent,
     toggleRail,
+    settings.appearance.colorMode,
+    toggleColorMode,
   ]);
 
   useKeyboardShortcuts({
@@ -495,6 +508,7 @@ export const WorkspaceShell: FC = () => {
     setActiveActivity: selectActivity,
     requestIntent,
     onToggleNav: toggleRail,
+    onToggleColorMode: toggleColorMode,
   });
 
   const deskIntent = intentQueue.find(isTargetedKnowledgeDeskIntent) ?? null;
@@ -504,7 +518,7 @@ export const WorkspaceShell: FC = () => {
 
   return (
     <div
-      className={`dace-app nova-app reader-nav-${readerChrome.navigation} reader-header-${readerChrome.header} ${
+      className={`dace-app reader-nav-${readerChrome.navigation} reader-header-${readerChrome.header} ${
         isRailVisible ? "rail-visible" : "rail-hidden"
       }`}
     >
@@ -512,6 +526,8 @@ export const WorkspaceShell: FC = () => {
         activeActivity={activeActivity}
         isFocusSpace={isFocusSpace}
         hidden={readerChrome.header === "hidden"}
+        colorMode={settings.appearance.colorMode}
+        onToggleColorMode={toggleColorMode}
         onOpenCommands={() => openOverlay("command-palette")}
         onOpenShortcuts={() => openOverlay("shortcut-reference")}
         onSearch={() => requestIntent({ type: "search-records" })}

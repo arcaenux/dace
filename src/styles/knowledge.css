@@ -205,13 +205,13 @@
   gap: var(--space-3);
 }/* General Buttons */
 .desk-btn {
-  background: var(--bg-surface-elevated);
+  background: var(--bg-surface);
   border: 1px solid var(--border-medium);
-  color: var(--text-secondary);
+  color: var(--text-primary);
   font-size: var(--font-size-xs);
   font-family: var(--font-sans);
-  padding: 4px 10px;
-  border-radius: var(--radius-sm);
+  padding: 5px 14px;
+  border-radius: var(--radius-pill);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -219,15 +219,16 @@
   transition: all var(--duration-fast);
 }.desk-btn:hover {
   background: var(--bg-surface-active);
-  color: var(--text-primary);
+  color: var(--text-bright);
   border-color: var(--border-active);
 }.desk-btn.primary {
-  background: var(--accent-muted);
+  background: var(--accent-primary);
   border-color: var(--accent-primary);
-  color: var(--accent-text);
+  color: var(--accent-on-brand);
 }.desk-btn.primary:hover {
-  background: rgba(118, 151, 198, 0.25);
-  color: #fff;
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+  color: var(--accent-on-brand);
 }.desk-btn.danger {
   color: var(--status-danger);
 }.desk-btn.danger:hover {
@@ -386,11 +387,11 @@ blockquote,
   font-style: italic;
   font-size: 1.0625rem;
   line-height: var(--line-height-relaxed);
-  color: #e2e8f0;
+  color: var(--text-primary);
   border-left: 2px solid var(--accent-primary);
   padding: var(--space-2) var(--space-4);
   margin: var(--space-4) 0;
-  background: rgba(118, 151, 198, 0.04);
+  background: var(--accent-subtle);
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   letter-spacing: var(--letter-spacing-quote);
 }/* Empty State */
@@ -567,10 +568,10 @@ blockquote,
   font-style: italic;
   font-size: var(--font-size-xs);
   letter-spacing: var(--letter-spacing-quote);
-  color: #cbd5e1;
+  color: var(--text-secondary);
   padding-left: var(--space-2);
-  border-left: 2px solid rgba(118, 151, 198, 0.4);
-  background: rgba(118, 151, 198, 0.03);
+  border-left: 2px solid var(--border-active);
+  background: var(--accent-subtle);
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   margin-top: 4px;
   line-height: var(--line-height-relaxed);

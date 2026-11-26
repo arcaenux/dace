@@ -49,7 +49,7 @@
 .attachments-empty-state {
   text-align: center;
   padding: var(--space-6) var(--space-4);
-  background: rgba(20, 24, 33, 0.4);
+  background: var(--bg-surface-elevated);
   border: 1px dashed var(--border-subtle);
   border-radius: var(--radius-lg);
   display: flex;
@@ -212,14 +212,12 @@
 .preview-modal-container {
   width: min(920px, 94vw);
   height: min(85vh, 880px);
-  background: rgba(13, 17, 26, 0.95);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-xl);
   display: flex;
   flex-direction: column;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.7);
+  box-shadow: var(--shadow-elevated);
   overflow: hidden;
 }.preview-header {
   display: flex;
@@ -227,7 +225,7 @@
   justify-content: space-between;
   padding: var(--space-4) var(--space-5);
   border-bottom: 1px solid var(--border-subtle);
-  background: rgba(14, 18, 27, 0.8);
+  background: var(--bg-surface-elevated);
 }.preview-title-block {
   display: flex;
   align-items: center;
@@ -259,7 +257,7 @@
   flex: 1;
   overflow: auto;
   position: relative;
-  background: #080b12;
+  background: var(--bg-app);
 }.preview-loading-state {
   display: flex;
   flex-direction: column;
@@ -349,13 +347,11 @@
   width: min(560px, 92vw);
   max-height: min(88vh, 720px);
   overflow-y: auto;
-  background: rgba(14, 18, 27, 0.96);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-xl);
   padding: var(--space-6);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
+  box-shadow: var(--shadow-elevated);
 }.details-header {
   display: flex;
   align-items: center;
@@ -416,10 +412,10 @@
   flex: 1;
   font-family: var(--font-mono);
   font-size: 11px;
-  background: rgba(0, 0, 0, 0.35);
+  background: var(--bg-surface-elevated);
   padding: 6px 10px;
   border-radius: var(--radius-sm);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-subtle);
   color: var(--text-secondary);
   word-break: break-all;
 }.hash-copy-btn {

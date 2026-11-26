@@ -1,6 +1,7 @@
 export type StartupBehavior = "remember-last" | "default-activity";
 export type DefaultActivity = "workspace" | "knowledge-desk" | "reader" | "knowledge-graph";
 export type Density = "comfortable" | "compact";
+export type ColorMode = "light" | "dark";
 export type ReaderModeSetting = "reading" | "research" | "writing";
 export type EditorFormat = "markdown" | "plain-text";
 
@@ -12,6 +13,7 @@ export interface GeneralSettings {
 }
 
 export interface AppearanceSettings {
+  colorMode: ColorMode;
   density: Density;
   textScale: number;
   reducedMotion: boolean;

@@ -38,8 +38,7 @@ input,
 textarea,
 select {
   font: inherit;
-}.dace-app,
-.nova-app {
+}.dace-app {
   position: relative;
   display: block;
   width: 100vw;
