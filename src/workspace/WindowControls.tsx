@@ -3,12 +3,17 @@ import { Copy, Minus, Square, X } from "lucide-react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { isTauriEnvironment } from "../focus/tauriWindow";
 
+interface WindowControlsProps {
+  /** Native fullscreen has no draggable title plane and no window buttons. */
+  isFocusSpace?: boolean;
+}
+
 /**
  * Frameless-window chrome. The native title bar is disabled in tauri.conf.json;
  * these controls are painted directly on the Dace canvas. A sibling drag plane
  * keeps the window movable without turning any control into a drag handle.
  */
-export const WindowControls: FC = () => {
+export const WindowControls: FC<WindowControlsProps> = ({ isFocusSpace = false }) => {
   const [isMaximized, setIsMaximized] = useState(false);
 
   useEffect(() => {
@@ -76,6 +81,8 @@ export const WindowControls: FC = () => {
     }
   }, []);
 
+  if (isFocusSpace) return null;
+
   return (
     <>
       <div
@@ -93,6 +100,7 @@ export const WindowControls: FC = () => {
           aria-label="Minimize window"
           title="Minimize"
           data-dismiss-ignore
+          data-tauri-drag-region="false"
         >
           <Minus size={15} strokeWidth={1.5} aria-hidden="true" />
         </button>
@@ -104,6 +112,7 @@ export const WindowControls: FC = () => {
           aria-label={isMaximized ? "Restore window" : "Maximize window"}
           title={isMaximized ? "Restore" : "Maximize"}
           data-dismiss-ignore
+          data-tauri-drag-region="false"
         >
           {isMaximized ? (
             <Copy size={14} strokeWidth={1.5} aria-hidden="true" />
@@ -119,6 +128,7 @@ export const WindowControls: FC = () => {
           aria-label="Close window"
           title="Close"
           data-dismiss-ignore
+          data-tauri-drag-region="false"
         >
           <X size={15} strokeWidth={1.5} aria-hidden="true" />
         </button>

@@ -1,5 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
@@ -76,4 +78,24 @@ test("2. Legacy data migration protocol: non-destructive copy with receipt and s
 
   // Cleanup
   fs.rmSync(tempRoot, { recursive: true, force: true });
+});
+
+test("3. Old logo backups and byte-identical copies are not tracked", () => {
+  const tracked = execFileSync("git", ["ls-files"], { encoding: "utf8" })
+    .split(/\r?\n/)
+    .filter(Boolean);
+
+  assert.ok(
+    !tracked.some((file) => /(?:^|\/)logo[-_]?old(?:\.|$)/i.test(file)),
+    "An old-logo backup is still tracked"
+  );
+
+  // SHA-256 of the previous brand mark (src/assets/brand/logo.png before the rebrand).
+  const oldLogoHash = "ae0f7b2ff7c17f6d0d253c067d578836d473dd68a9eb6a7d6836e6bb272858ad";
+  const imageFiles = tracked.filter((file) => /\.(png|ico|icns|jpe?g|webp|svg)$/i.test(file));
+
+  for (const file of imageFiles) {
+    const hash = createHash("sha256").update(fs.readFileSync(path.resolve(file))).digest("hex");
+    assert.notStrictEqual(hash, oldLogoHash, `${file} is a byte-identical copy of the old logo`);
+  }
 });

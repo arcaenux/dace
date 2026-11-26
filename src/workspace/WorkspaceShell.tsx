@@ -500,9 +500,13 @@ export const WorkspaceShell: FC = () => {
   const deskIntent = intentQueue.find(isTargetedKnowledgeDeskIntent) ?? null;
   const readerIntent = intentQueue.find(isTargetedResearchReaderIntent) ?? null;
 
+  const isRailVisible = !isFocusSpace && readerChrome.navigation !== "hidden" && !isRailCollapsed;
+
   return (
     <div
-      className={`dace-app nova-app reader-nav-${readerChrome.navigation} reader-header-${readerChrome.header}`}
+      className={`dace-app nova-app reader-nav-${readerChrome.navigation} reader-header-${readerChrome.header} ${
+        isRailVisible ? "rail-visible" : "rail-hidden"
+      }`}
     >
       <WorkspaceTopBar
         activeActivity={activeActivity}
@@ -511,13 +515,11 @@ export const WorkspaceShell: FC = () => {
         onOpenCommands={() => openOverlay("command-palette")}
         onOpenShortcuts={() => openOverlay("shortcut-reference")}
         onSearch={() => requestIntent({ type: "search-records" })}
-        onToggleNav={toggleRail}
-        isNavCollapsed={isRailSuppressed ? !isRailOverlayOpen : isRailCollapsed}
         commandsTriggerRef={commandsTriggerRef}
         shortcutsTriggerRef={shortcutsTriggerRef}
       />
 
-      <WindowControls />
+      <WindowControls isFocusSpace={isFocusSpace} />
 
       <div className="workspace-shell-body">
         <WorkspaceRail
@@ -574,6 +576,9 @@ export const WorkspaceShell: FC = () => {
                     selectActivity("reader");
                   }}
                   onOpenGraphView={() => selectActivity("knowledge-graph")}
+                  onRecordDeleted={(recordId) =>
+                    setSelectedDeskRecordId((current) => (current === recordId ? null : current))
+                  }
                 />
                 </WorkspaceErrorBoundary>
               )}
@@ -636,7 +641,7 @@ export const WorkspaceShell: FC = () => {
           >
             <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
               <div>
-                <div style={{ fontSize: "var(--font-size-xs)", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "var(--font-mono)" }}>
+                <div style={{ fontSize: "var(--font-size-xs)", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "var(--font-label)" }}>
                   Current Activity
                 </div>
                 <div style={{ fontWeight: 600, color: "var(--text-primary)", marginTop: "4px" }}>
@@ -655,7 +660,7 @@ export const WorkspaceShell: FC = () => {
               </div>
 
               <div>
-                <div style={{ fontSize: "var(--font-size-xs)", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "var(--font-mono)" }}>
+                <div style={{ fontSize: "var(--font-size-xs)", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "var(--font-label)" }}>
                   Focus Space
                 </div>
                 <div style={{ color: "var(--text-secondary)", marginTop: "4px" }}>
@@ -663,7 +668,7 @@ export const WorkspaceShell: FC = () => {
                 </div>
               </div>
 
-              <div style={{ marginTop: "var(--space-4)", paddingTop: "var(--space-4)", borderTop: "1px solid var(--border-subtle)", fontSize: "var(--font-size-xs)", color: "var(--text-muted)", lineHeight: "1.5", fontFamily: "var(--font-mono)" }}>
+              <div style={{ marginTop: "var(--space-4)", paddingTop: "var(--space-4)", borderTop: "1px solid var(--border-subtle)", fontSize: "var(--font-size-xs)", color: "var(--text-muted)", lineHeight: "1.5", fontFamily: "var(--font-label)" }}>
                 Panels in Dace only consume screen space when summoned. Dismiss with <kbd>Esc</kbd> or the close control.
               </div>
             </div>

@@ -101,6 +101,8 @@ pub struct AppearanceSettings {
     pub text_scale: f64,
     pub reduced_motion: bool,
     pub sidebar_collapsed: bool,
+    pub app_font: String,
+    pub text_font: String,
 }
 
 impl Default for AppearanceSettings {
@@ -110,6 +112,8 @@ impl Default for AppearanceSettings {
             text_scale: 1.0,
             reduced_motion: false,
             sidebar_collapsed: false,
+            app_font: "Aptos".to_string(),
+            text_font: "Aptos".to_string(),
         }
     }
 }
@@ -197,6 +201,8 @@ impl AppSettings {
     /// unrelated valid preferences.
     pub fn normalized(mut self) -> Self {
         self.appearance.text_scale = clamp(self.appearance.text_scale, 0.85, 1.25, 1.0);
+        normalize_font_family(&mut self.appearance.app_font, "Aptos");
+        normalize_font_family(&mut self.appearance.text_font, "Aptos");
         self.workspace.reader_split_ratio =
             clamp(self.workspace.reader_split_ratio, 0.32, 0.76, 0.6);
         self.editor.autosave_delay_ms = clamp_u64(self.editor.autosave_delay_ms, 300, 5000, 1200);
@@ -225,6 +231,24 @@ fn clamp_u64(value: u64, min: u64, max: u64, fallback: u64) -> u64 {
     } else {
         value.clamp(min, max)
     }
+}
+
+fn normalize_font_family(value: &mut String, fallback: &str) {
+    let cleaned: String = value
+        .chars()
+        .filter(|c| {
+            !c.is_control()
+                && !matches!(c, ',' | ';' | ':' | '{' | '}' | '(' | ')' | '<' | '>' | '"' | '\'' | '\\')
+        })
+        .collect::<String>()
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ");
+    *value = if cleaned.is_empty() {
+        fallback.to_string()
+    } else {
+        cleaned.chars().take(120).collect()
+    };
 }
 
 pub fn load_settings(db: &Database) -> Result<AppSettings, String> {
@@ -457,6 +481,8 @@ mod tests {
     fn defaults_are_valid() {
         let settings = AppSettings::default().normalized();
         assert_eq!(settings.appearance.text_scale, 1.0);
+        assert_eq!(settings.appearance.app_font, "Aptos");
+        assert_eq!(settings.appearance.text_font, "Aptos");
         assert_eq!(settings.workspace.reader_split_ratio, 0.6);
         assert!(settings.general.confirm_destructive_actions);
     }
@@ -465,11 +491,15 @@ mod tests {
     fn normalizes_out_of_range_values() {
         let mut settings = AppSettings::default();
         settings.appearance.text_scale = 9.0;
+        settings.appearance.app_font = " Segoe UI; color: red ".to_string();
+        settings.appearance.text_font = "   ".to_string();
         settings.workspace.reader_split_ratio = -1.0;
         settings.editor.autosave_delay_ms = 0;
         settings.documents.default_backup_directory = Some("   ".to_string());
         let normalized = settings.normalized();
         assert_eq!(normalized.appearance.text_scale, 1.25);
+        assert_eq!(normalized.appearance.app_font, "Segoe UI color red");
+        assert_eq!(normalized.appearance.text_font, "Aptos");
         assert_eq!(normalized.workspace.reader_split_ratio, 0.32);
         assert_eq!(normalized.editor.autosave_delay_ms, 1200);
         assert_eq!(normalized.documents.default_backup_directory, None);
@@ -480,6 +510,8 @@ mod tests {
         let db = Database::init_in_memory().expect("in-memory database");
         let mut settings = AppSettings::default();
         settings.appearance.density = Density::Compact;
+        settings.appearance.app_font = "Calibri".to_string();
+        settings.appearance.text_font = "Georgia".to_string();
         settings.editor.show_word_count = false;
         store_settings(&db, &settings).expect("settings should persist");
         assert_eq!(load_settings(&db).expect("settings should load"), settings);

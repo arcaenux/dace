@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import type { WorkspaceIntentRequest } from "./appIntents.ts";
 import { OverlayType, WorkspaceActivityId } from "./types";
+import { areShortcutsBlocked } from "./useDismissable.ts";
 
 interface KeyboardShortcutsProps {
   activeOverlay: OverlayType;
@@ -33,6 +34,8 @@ export function useKeyboardShortcuts({
     const handleKeyDown = (e: KeyboardEvent) => {
       // Escape and other keys may already be claimed by a focused overlay.
       if (e.defaultPrevented) return;
+      // Modal surfaces such as the Speed Reader own the keyboard while open.
+      if (areShortcutsBlocked()) return;
 
       const isInput =
         e.target instanceof HTMLInputElement ||

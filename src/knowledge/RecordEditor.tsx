@@ -56,7 +56,7 @@ export const RecordEditor = forwardRef<RecordEditorHandle, RecordEditorProps>(fu
     canNavigateBack,
     onNavigateBack,
     previousRecordTitle,
-    isContextOpen = true,
+    isContextOpen = false,
     onToggleContext,
   },
   ref
@@ -191,13 +191,25 @@ export const RecordEditor = forwardRef<RecordEditorHandle, RecordEditorProps>(fu
     }, autosaveDelayMs);
   }, [autosaveDelayMs, performSave]);
 
-  // Flush save immediately (clears debounce timer and awaits save)
+  // Flush save immediately. Drain every queued mutation so a delete cannot
+  // race a follow-up autosave scheduled while the previous save was in flight.
   const flushSave = useCallback(async (): Promise<boolean> => {
+    let ok = true;
+    for (let round = 0; round < 8; round += 1) {
+      if (debounceTimerRef.current !== null) {
+        window.clearTimeout(debounceTimerRef.current);
+        debounceTimerRef.current = null;
+      }
+      if (!inFlightPromiseRef.current && mutationSeqRef.current <= lastSavedSeqRef.current) break;
+      const saved = await performSave();
+      ok = saved && ok;
+      if (!saved) return false;
+    }
     if (debounceTimerRef.current !== null) {
       window.clearTimeout(debounceTimerRef.current);
       debounceTimerRef.current = null;
     }
-    return await performSave();
+    return ok && mutationSeqRef.current <= lastSavedSeqRef.current;
   }, [performSave]);
 
   // Move the caret to a real line in the body canvas (used by the Outline view).
@@ -367,6 +379,7 @@ export const RecordEditor = forwardRef<RecordEditorHandle, RecordEditorProps>(fu
             type="button"
             className="desk-toolbar-icon"
             data-dismiss-ignore
+            data-tauri-drag-region="false"
             onClick={onToggleRecordList}
             aria-expanded={isListOpen}
             title={isListOpen ? "Hide records" : "Browse records"}
@@ -376,13 +389,12 @@ export const RecordEditor = forwardRef<RecordEditorHandle, RecordEditorProps>(fu
           </button>
 
           <span className="desk-toolbar-rule" aria-hidden="true" />
-          <span className="desk-toolbar-context">Record</span>
 
           <div className={`desk-save-status ${saveStatus}`} aria-live="polite">
             {saveStatus === "error" ? (
               <button type="button" onClick={flushSave} title={errorMessage || "Click to retry save"}>
                 <span className="status-dot" />
-                {statusLabels[saveStatus]}
+                {statusLabels[saveStatus]} · Retry
               </button>
             ) : (
               <>
@@ -394,6 +406,24 @@ export const RecordEditor = forwardRef<RecordEditorHandle, RecordEditorProps>(fu
         </div>
 
         <div className="desk-toolbar-right">
+          {settings.editor.showWordCount && (
+            <span className="desk-word-count" aria-label="Word count">
+              {wordCount} {wordCount === 1 ? "word" : "words"}
+            </span>
+          )}
+
+          {(saveStatus === "unsaved" || saveStatus === "error") && (
+            <button
+              type="button"
+              className={`desk-save-button ${saveStatus === "error" ? "is-error" : ""}`}
+              onClick={flushSave}
+              title="Save now (Ctrl+S)"
+            >
+              <Save size={13} strokeWidth={1.6} aria-hidden="true" />
+              {saveStatus === "error" ? "Retry" : "Save"}
+            </button>
+          )}
+
           <button
             ref={moreTriggerRef}
             type="button"
@@ -428,17 +458,12 @@ export const RecordEditor = forwardRef<RecordEditorHandle, RecordEditorProps>(fu
             </div>
           )}
 
-          <button type="button" className="desk-save-button" onClick={flushSave} title="Save (Ctrl+S)">
-            <Save size={13} strokeWidth={1.6} aria-hidden="true" />
-            Save
-          </button>
-
-          {onToggleContext && (
+          {onToggleContext && !isFocusSpace && (
             <button
               type="button"
               className={`desk-toolbar-icon ${isContextOpen ? "active" : ""}`}
               onClick={onToggleContext}
-              title={isContextOpen ? "Hide context panel" : "Show context panel"}
+              title={isContextOpen ? "Hide context panel" : "Context (Connections, Documents, Outline)"}
               aria-label="Toggle context panel"
               aria-pressed={isContextOpen}
             >
@@ -460,12 +485,8 @@ export const RecordEditor = forwardRef<RecordEditorHandle, RecordEditorProps>(fu
             aria-label="Record title"
           />
 
-          <div className="editor-tags-container">
+          <div className={`editor-tags-container ${tags.length === 0 && !isAddingTag ? "is-empty" : ""}`}>
             <div className="tags-list">
-              <button type="button" className="add-tag-button" onClick={handleStartAddingTag}>
-                + Add tag
-              </button>
-
               {tags.map((t) => (
                 <span key={t} className="tag-chip">
                   {t}
@@ -481,7 +502,7 @@ export const RecordEditor = forwardRef<RecordEditorHandle, RecordEditorProps>(fu
                 </span>
               ))}
 
-              {isAddingTag && (
+              {isAddingTag ? (
                 <input
                   ref={tagInputRef}
                   type="text"
@@ -493,6 +514,10 @@ export const RecordEditor = forwardRef<RecordEditorHandle, RecordEditorProps>(fu
                   onBlur={handleAddTag}
                   aria-label="Tag name"
                 />
+              ) : (
+                <button type="button" className="add-tag-button" onClick={handleStartAddingTag}>
+                  + Add tag
+                </button>
               )}
             </div>
           </div>
@@ -511,19 +536,6 @@ export const RecordEditor = forwardRef<RecordEditorHandle, RecordEditorProps>(fu
             aria-label="Record content"
           />
         </div>
-      </div>
-
-      <div className="editor-status-bar" aria-label="Editor status">
-        {settings.editor.showWordCount && (
-          <span>{wordCount} {wordCount === 1 ? "word" : "words"}</span>
-        )}
-        <span>{settings.editor.defaultFormat === "markdown" ? "Markdown" : "Plain text"}</span>
-        <span className={`status-dot ${saveStatus}`} />
-        <span>{statusLabels[saveStatus]}</span>
-        <span className="editor-status-spacer" />
-        <span className="status-command">
-          <span className="command-mark">⌘</span> Command
-        </span>
       </div>
     </div>
   );

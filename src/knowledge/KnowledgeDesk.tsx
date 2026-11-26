@@ -19,6 +19,7 @@ interface KnowledgeDeskProps {
   saveRegistry: SaveParticipantRegistry;
   onOpenInReader?: (attachmentId: string, pageNumber: number) => void;
   onOpenGraphView?: () => void;
+  onRecordDeleted?: (recordId: string) => void;
 }
 
 export const KnowledgeDesk: FC<KnowledgeDeskProps> = ({
@@ -29,6 +30,7 @@ export const KnowledgeDesk: FC<KnowledgeDeskProps> = ({
   saveRegistry,
   onOpenInReader,
   onOpenGraphView,
+  onRecordDeleted,
 }) => {
   const [records, setRecords] = useState<KnowledgeRecordSummary[]>([]);
   const [activeRecord, setActiveRecord] = useState<KnowledgeRecord | null>(null);
@@ -36,12 +38,13 @@ export const KnowledgeDesk: FC<KnowledgeDeskProps> = ({
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [isListOpen, setIsListOpen] = useState<boolean>(false);
   const [isContextPanelOpen, setIsContextPanelOpen] = useState<boolean>(() => {
-    if (typeof window !== "undefined" && window.location.hash.includes("context=collapsed")) {
-      return false;
+    if (typeof window !== "undefined" && window.location.hash.includes("context=open")) {
+      return true;
     }
-    return true;
+    return false;
   });
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const { settings } = useSettings();
 
@@ -285,34 +288,52 @@ export const KnowledgeDesk: FC<KnowledgeDeskProps> = ({
     }
   }, [loadRecords, onShowNotice, refreshTags, selectedTag]);
 
-  // Delete active record after confirmation
+  // Delete active record after confirmation. Flush first so an in-flight
+  // autosave cannot land after the row is gone, and always clear any stale
+  // deep-link target that would otherwise reselect the deleted record.
   const handleConfirmDelete = async () => {
-    if (!deleteConfirmId) return;
+    if (!deleteConfirmId || isDeleting) return;
     const deletedId = deleteConfirmId;
+    setIsDeleting(true);
+
+    const clearDeletedSelection = async () => {
+      setDeleteConfirmId(null);
+      setNavigationHistory((prev) => prev.filter((id) => id !== deletedId));
+      if (pendingSwitchTargetRef.current === deletedId) pendingSwitchTargetRef.current = null;
+      onRecordDeleted?.(deletedId);
+
+      const list = await loadRecords(selectedTag);
+      await refreshTags();
+      if (activeRecord?.id === deletedId) {
+        const next = list.length > 0 ? await api.getRecord(list[0].id) : null;
+        setActiveRecord(next);
+      }
+    };
 
     try {
-      const success = await api.deleteRecord(deletedId);
-      if (success) {
-        window.dispatchEvent(new CustomEvent("dace:record-deleted", { detail: deletedId }));
-        onShowNotice("Record deleted");
-        setDeleteConfirmId(null);
-        setNavigationHistory((prev) => prev.filter((id) => id !== deletedId));
-        const list = await loadRecords(selectedTag);
-        await refreshTags();
-
-        // Switch to adjacent record or clear
-        if (activeRecord?.id === deletedId) {
-          if (list.length > 0) {
-            const next = await api.getRecord(list[0].id);
-            setActiveRecord(next);
-          } else {
-            setActiveRecord(null);
-          }
+      if (editorRef.current?.getRecordId() === deletedId) {
+        const flushed = await editorRef.current.flushSave();
+        if (!flushed) {
+          onShowNotice("Could not save changes to the record. Delete cancelled.");
+          return;
         }
       }
+
+      const success = await api.deleteRecord(deletedId);
+      if (!success) {
+        onShowNotice("Record could not be deleted — it may already be gone. Refreshing library.");
+        await clearDeletedSelection();
+        return;
+      }
+
+      window.dispatchEvent(new CustomEvent("dace:record-deleted", { detail: deletedId }));
+      onShowNotice("Record deleted");
+      await clearDeletedSelection();
     } catch (err) {
       console.error("[KnowledgeDesk] Failed to delete record:", err);
       onShowNotice("Error deleting record from library");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -429,6 +450,7 @@ export const KnowledgeDesk: FC<KnowledgeDeskProps> = ({
               onJumpToLine={(line) => editorRef.current?.jumpToLine(line)}
               onOpenFullGraph={onOpenGraphView}
               isOpen={isContextPanelOpen}
+              onClose={() => setIsContextPanelOpen(false)}
             />
           </div>
         ) : (
@@ -439,7 +461,7 @@ export const KnowledgeDesk: FC<KnowledgeDeskProps> = ({
             </p>
             <div className="desk-empty-actions">
               <button className="desk-btn primary" onClick={handleCreateNewRecord}>
-                + Create First Record
+                + New Record
               </button>
               {records.length > 0 && (
                 <button className="desk-btn" onClick={() => setIsListOpen(true)}>
@@ -476,8 +498,9 @@ export const KnowledgeDesk: FC<KnowledgeDeskProps> = ({
                 type="button"
                 className="desk-btn danger-solid"
                 onClick={handleConfirmDelete}
+                disabled={isDeleting}
               >
-                Confirm Delete
+                {isDeleting ? "Deleting…" : "Confirm Delete"}
               </button>
             </div>
           </div>

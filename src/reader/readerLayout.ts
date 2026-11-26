@@ -32,15 +32,12 @@ export function splitRatioFromMode(mode: ReaderMode, savedRatio: number): number
 }
 
 export function chromeStateForMode(
-  mode: ReaderMode,
+  _mode: ReaderMode,
   overrides: Pick<ReaderLayoutPreferences, "navCollapsed" | "headerCollapsed">
 ): ReaderChromeState {
-  if (mode === "reading") {
-    return { navigation: "hidden", header: "hidden" };
-  }
-  if (mode === "writing") {
-    return { navigation: "compact", header: "hidden" };
-  }
+  // Reader layouts change the document composition, not the application
+  // chrome. The top bar and navigation rail stay fixed across every view;
+  // Focus Space remains the only immersive mode that removes them.
   return {
     navigation: overrides.navCollapsed ? "compact" : "full",
     header: overrides.headerCollapsed ? "hidden" : "full",

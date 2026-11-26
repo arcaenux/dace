@@ -8,6 +8,7 @@ import {
   activityFromHash,
   hashForActivity,
 } from "../src/workspace/workspaceNavigation.ts";
+import { chromeStateForMode } from "../src/reader/readerLayout.ts";
 
 function makeCommandContext(
   activeActivity: "workspace" | "knowledge-desk" | "reader" = "workspace",
@@ -198,4 +199,122 @@ test("8. WorkspaceShell is the sole intent owner and target views consume by id"
   assert.ok(!desk.includes('window.addEventListener("dace:'));
   assert.ok(!reader.includes('window.addEventListener("dace:'));
   assert.ok(!layout.includes("dace:reader-mode"));
+});
+
+test("9. Command and shortcut overlays have scrollable, readable layouts", () => {
+  const css = fs.readFileSync(
+    path.resolve("src/styles/cinematic-overlays.css"),
+    "utf-8"
+  );
+  const shortcutSource = fs.readFileSync(
+    path.resolve("src/overlays/ShortcutReference.tsx"),
+    "utf-8"
+  );
+
+  assert.match(css, /\.dace-app \.command-results\s*\{[^}]*overflow-y:\s*auto/s);
+  assert.match(css, /\.dace-app \.shortcut-modal-body\s*\{[^}]*overflow-y:\s*auto/s);
+  assert.match(css, /\.dace-app \.shortcut-row\s*\{[^}]*display:\s*flex/s);
+  assert.match(css, /\.dace-app \.command-item\s*\{[^}]*display:\s*flex/s);
+  assert.match(css, /\.dace-app \.shortcut-keys\s*\{[^}]*font-family:\s*var\(--font-code\)/s);
+
+  assert.match(shortcutSource, /className="shortcut-modal-body"/);
+  assert.match(shortcutSource, /tabIndex=\{0\}/);
+  assert.ok(!shortcutSource.includes('style={{ padding: "1px 4px"'));
+});
+
+test("10. Focus Space removes window chrome and top bar drag handles", () => {
+  const controls = fs.readFileSync(
+    path.resolve("src/workspace/WindowControls.tsx"),
+    "utf-8"
+  );
+  const shell = fs.readFileSync(
+    path.resolve("src/workspace/WorkspaceShell.tsx"),
+    "utf-8"
+  );
+  const topBar = fs.readFileSync(
+    path.resolve("src/workspace/WorkspaceTopBar.tsx"),
+    "utf-8"
+  );
+  const focus = fs.readFileSync(
+    path.resolve("src/focus/FocusSpaceView.tsx"),
+    "utf-8"
+  );
+
+  assert.match(controls, /interface WindowControlsProps[\s\S]*isFocusSpace/);
+  assert.match(controls, /if \(isFocusSpace\) return null/);
+  assert.match(shell, /<WindowControls isFocusSpace=\{isFocusSpace\} \/>/);
+
+  assert.ok(
+    !topBar.includes('className="workspace-topbar" role="banner" data-tauri-drag-region')
+  );
+  assert.match(topBar, /className="topbar-meta" data-tauri-drag-region="false"/);
+  assert.equal(
+    (topBar.match(/data-tauri-drag-region="false"/g) ?? []).length,
+    4,
+    "Top bar action area and all three buttons must opt out of window dragging"
+  );
+  assert.match(focus, /data-tauri-drag-region="false"/);
+});
+
+test("11. Rail nav icons keep their centred transform without hover motion", () => {
+  const motion = fs.readFileSync(path.resolve("src/styles/motion.css"), "utf-8");
+  assert.ok(
+    !/\.rail-nav-item:hover\s*\{[^}]*transform:/s.test(motion),
+    "Rail icons must not slide out of their absolute slots on hover"
+  );
+  assert.match(motion, /button\.rail-nav-item:active\s*\{[^}]*transform:\s*translate\(-50%,\s*-50%\)/s);
+});
+
+test("12. Writing mode shows a source-document return bar", () => {
+  const reader = fs.readFileSync(
+    path.resolve("src/reader/ResearchReaderView.tsx"),
+    "utf-8"
+  );
+  const css = fs.readFileSync(path.resolve("src/styles/reader-adaptive.css"), "utf-8");
+
+  assert.match(reader, /className="reader-writing-source"/);
+  assert.match(reader, /layout\.mode === "writing" && activeAttachment/);
+  assert.match(reader, /Back to document/);
+  assert.match(css, /\.dace-app \.reader-writing-source\s*\{/);
+});
+
+test("13. Modal surfaces can block global shortcuts", () => {
+  const dismissable = fs.readFileSync(path.resolve("src/core/useDismissable.ts"), "utf-8");
+  const shortcuts = fs.readFileSync(path.resolve("src/core/useKeyboardShortcuts.ts"), "utf-8");
+  const speedRead = fs.readFileSync(path.resolve("src/reader/SpeedReadModal.tsx"), "utf-8");
+
+  assert.match(dismissable, /export function areShortcutsBlocked\(\): boolean/);
+  assert.match(shortcuts, /if \(areShortcutsBlocked\(\)\) return;/);
+  assert.match(speedRead, /blocksShortcuts:\s*true/);
+});
+
+test("14. Reader layouts keep the top bar and navigation rail stable", () => {
+  for (const mode of ["reading", "research", "writing"] as const) {
+    assert.deepEqual(chromeStateForMode(mode, { navCollapsed: false, headerCollapsed: false }), {
+      navigation: "full",
+      header: "full",
+    });
+  }
+  assert.deepEqual(chromeStateForMode("reading", { navCollapsed: true, headerCollapsed: true }), {
+    navigation: "compact",
+    header: "hidden",
+  });
+
+  const shell = fs.readFileSync(path.resolve("src/styles/cinematic-shell.css"), "utf-8");
+  const reader = fs.readFileSync(path.resolve("src/styles/reader-adaptive.css"), "utf-8");
+  const topBar = fs.readFileSync(path.resolve("src/workspace/WorkspaceTopBar.tsx"), "utf-8");
+  const toolbar = fs.readFileSync(path.resolve("src/reader/ReaderToolbar.tsx"), "utf-8");
+
+  assert.match(shell, /\.topbar-brand\s*\{[^}]*align-items:\s*center/s);
+  assert.match(topBar, /className="topbar-brand-logo"/);
+  assert.match(toolbar, /className="reader-toolbar-brand-logo"/);
+  assert.match(reader, /\.reader-toolbar-brand-logo\s*\{/);
+  assert.match(
+    reader,
+    /\.dace-app\.reader-nav-compact \.workspace-rail\.is-compact \.rail-active-halo\s*\{[^}]*left:\s*29px/s
+  );
+  assert.match(
+    reader,
+    /\.dace-app\.reader-nav-compact \.workspace-rail\.is-compact \.rail-nav-item\s*\{[^}]*left:\s*29px[^}]*transform:\s*translate\(-50%,\s*-50%\)/s
+  );
 });

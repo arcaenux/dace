@@ -86,6 +86,7 @@ export function useReaderNote(
   const inFlightRef = useRef<Promise<ReaderNoteSaveResult> | null>(null);
   const scheduleSaveRef = useRef<() => void>(() => {});
   const startPromiseRef = useRef<Promise<void> | null>(null);
+  const deletingRef = useRef(false);
   const selectionRequestRef = useRef<{ start: number; end: number } | null>(null);
   const contentRef = useRef<HTMLTextAreaElement | null>(null);
   const onSaveErrorRef = useRef(options.onSaveError);
@@ -180,6 +181,7 @@ export function useReaderNote(
 
   const markDirty = useCallback(
     (patch: Partial<ReaderNoteState>) => {
+      if (deletingRef.current) return;
       trackerRef.current.markDirty();
       applyState({
         ...stateRef.current,
@@ -290,7 +292,7 @@ export function useReaderNote(
   }, [state.content]);
 
   const startNote = useCallback(async () => {
-    if (!attachment || stateRef.current.recordId) return;
+    if (!attachment || stateRef.current.recordId || deletingRef.current) return;
     if (startPromiseRef.current) return startPromiseRef.current;
 
     const attachmentId = attachment.id;
@@ -413,31 +415,69 @@ export function useReaderNote(
 
   const deleteNote = useCallback(async (): Promise<boolean> => {
     const recordId = stateRef.current.recordId;
-    if (!recordId) return false;
+    const attachmentId = noteAttachmentRef.current;
+    if (!recordId || !attachmentId || deletingRef.current) return false;
 
+    deletingRef.current = true;
     clearTimer();
-    // Let an already-running autosave finish before deleting the backing record.
-    // Pending-but-unsent changes are intentionally discarded.
-    while (inFlightRef.current) {
-      await inFlightRef.current;
-    }
-
     try {
-      const deleted = await knowledgeApi.deleteRecord(recordId);
-      if (!deleted) {
-        onSaveErrorRef.current?.("Could not delete research note");
+      // Let an already-running autosave finish before deleting the backing
+      // record. Pending-but-unsent changes are intentionally discarded, and
+      // `deletingRef` prevents a new autosave from being scheduled meanwhile.
+      while (inFlightRef.current) {
+        await inFlightRef.current;
+      }
+
+      // Duplicates can exist when an older session recovered a note by tag.
+      // Delete every record bound to this attachment, not just the active one.
+      const tag = readerNoteTag(attachmentId);
+      const ids = new Set<string>([recordId]);
+      try {
+        const summaries = await knowledgeApi.listRecords(tag);
+        for (const candidate of summaries) {
+          if (candidate.tags?.includes(tag)) ids.add(candidate.id);
+        }
+      } catch {
+        // Fall back to the bound record if tag enumeration is unavailable.
+      }
+
+      const deletedIds: string[] = [];
+      let lastError: unknown = null;
+      for (const id of ids) {
+        try {
+          if (await knowledgeApi.deleteRecord(id)) deletedIds.push(id);
+        } catch (err) {
+          lastError = err;
+        }
+      }
+
+      if (deletedIds.length === 0) {
+        onSaveErrorRef.current?.(
+          lastError
+            ? `Could not delete research note: ${errorMessage(lastError)}`
+            : "Could not delete research note"
+        );
         return false;
       }
 
-      const attachmentId = noteAttachmentRef.current;
-      if (attachmentId) window.localStorage.removeItem(noteKey(attachmentId));
+      if (deletedIds.length < ids.size) {
+        onSaveErrorRef.current?.(
+          `Deleted ${deletedIds.length} of ${ids.size} research notes; some records remain.`
+        );
+      }
+
+      window.localStorage.removeItem(noteKey(attachmentId));
       trackerRef.current.reset();
       applyState(emptyState());
-      window.dispatchEvent(new CustomEvent("dace:record-deleted", { detail: recordId }));
+      for (const id of deletedIds) {
+        window.dispatchEvent(new CustomEvent("dace:record-deleted", { detail: id }));
+      }
       return true;
     } catch (err) {
       onSaveErrorRef.current?.(`Could not delete research note: ${errorMessage(err)}`);
       return false;
+    } finally {
+      deletingRef.current = false;
     }
   }, [applyState, clearTimer]);
 

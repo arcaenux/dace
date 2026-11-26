@@ -195,8 +195,9 @@ export async function deleteAttachment(attachmentId: string): Promise<boolean> {
     return await invoke<boolean>("delete_attachment", { attachmentId });
   }
 
+  const before = fallbackAttachments.length;
   fallbackAttachments = fallbackAttachments.filter((a) => a.id !== attachmentId);
-  return true;
+  return fallbackAttachments.length < before;
 }
 
 export async function readAttachmentText(attachmentId: string): Promise<string> {

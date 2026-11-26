@@ -1,6 +1,7 @@
 pub mod attachments;
 pub mod backup;
 pub mod db;
+pub mod fonts;
 pub mod knowledge;
 pub mod migration;
 pub mod reader;
@@ -165,6 +166,7 @@ pub fn run() {
             settings::get_storage_info,
             settings::get_app_info,
             settings::pick_backup_directory,
+            fonts::list_system_fonts,
             terminal::get_terminal_environment,
             terminal::spawn_terminal_session,
             terminal::write_terminal_session,

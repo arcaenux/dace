@@ -9,6 +9,7 @@ import { ReaderDrawer } from "./ReaderDrawer.tsx";
 import { ReaderToolbar } from "./ReaderToolbar.tsx";
 import { ReaderDivider } from "./ReaderDivider.tsx";
 import { ConnectExcerptModal } from "./ConnectExcerptModal.tsx";
+import { SpeedReadModal } from "./SpeedReadModal.tsx";
 import { useAdaptiveReaderLayout } from "./useAdaptiveReaderLayout.ts";
 import { useReaderNote } from "./useReaderNote.ts";
 import { parseNoteExcerpts } from "./noteExcerpts.ts";
@@ -95,6 +96,8 @@ export const ResearchReaderView: FC<ResearchReaderViewProps> = ({
   const [outline, setOutline] = useState<OutlineItem[]>([]);
   const [selectedHighlightId, setSelectedHighlightId] = useState<string | null>(null);
   const [annotationRequestId, setAnnotationRequestId] = useState<string | null>(null);
+  const [pdfPageText, setPdfPageText] = useState<{ page: number; text: string } | null>(null);
+  const [speedRead, setSpeedRead] = useState<{ text: string; label: string } | null>(null);
 
   const [drawerTab, setDrawerTab] = useState<ReaderDrawerTab>("highlights");
   const [connectHighlight, setConnectHighlight] = useState<Highlight | null>(null);
@@ -191,6 +194,8 @@ export const ResearchReaderView: FC<ResearchReaderViewProps> = ({
     setLoadError(null);
     setDataUrl(null);
     setTextContent(null);
+    setPdfPageText(null);
+    setSpeedRead(null);
     setSelectedHighlightId(null);
     setAnnotationRequestId(null);
     setOutline([]);
@@ -336,6 +341,7 @@ export const ResearchReaderView: FC<ResearchReaderViewProps> = ({
         return true;
       } catch (err: any) {
         console.error("Failed to delete document:", err);
+        await loadDocuments();
         onShowNotice(`Delete failed: ${err?.message || err}`);
         return false;
       }
@@ -411,6 +417,72 @@ export const ResearchReaderView: FC<ResearchReaderViewProps> = ({
     setZoom(Math.min(2.5, Math.max(0.6, +next.toFixed(2))));
   }, []);
 
+  const handlePageTextLoaded = useCallback((text: string, page: number) => {
+    setPdfPageText({ page, text });
+  }, []);
+
+  const handleSpeedRead = useCallback(
+    (text?: string) => {
+      const selected = text?.trim();
+      if (selected) {
+        setSpeedRead({ text: selected, label: "Selected passage" });
+        return;
+      }
+
+      if ((viewerType === "markdown" || viewerType === "text") && textContent?.trim()) {
+        setSpeedRead({
+          text: textContent,
+          label: activeAttachment ? `Full text — ${activeAttachment.file_name}` : "Full text",
+        });
+        return;
+      }
+
+      const highlightText = highlights
+        .map((highlight) => highlight.selected_text?.trim())
+        .filter((value): value is string => Boolean(value))
+        .join("\n\n");
+      if (highlightText) {
+        setSpeedRead({ text: highlightText, label: "Saved highlights" });
+        return;
+      }
+
+      const pageText = pdfPageText?.page === currentPage ? pdfPageText.text.trim() : "";
+      if (viewerType === "pdf" && pageText) {
+        setSpeedRead({
+          text: pageText,
+          label: activeAttachment
+            ? `Page ${currentPage} — ${activeAttachment.file_name}`
+            : `Page ${currentPage}`,
+        });
+        return;
+      }
+
+      onShowNotice(
+        "Select some text, add a highlight, or open a text-based document to use Speed Read."
+      );
+    },
+    [activeAttachment, currentPage, highlights, onShowNotice, pdfPageText, textContent, viewerType]
+  );
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (
+        event.defaultPrevented ||
+        speedRead ||
+        !activeAttachment ||
+        !(event.ctrlKey || event.metaKey) ||
+        !event.shiftKey ||
+        event.key.toLowerCase() !== "r"
+      ) {
+        return;
+      }
+      event.preventDefault();
+      handleSpeedRead();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [activeAttachment, handleSpeedRead, speedRead]);
+
   const showDocument = layout.mode !== "writing";
   // Narrow layouts still need a writing workspace: research shows the
   // document with a switch, writing shows the notes full width.
@@ -453,11 +525,13 @@ export const ResearchReaderView: FC<ResearchReaderViewProps> = ({
             annotationType={annotationType}
             onAnnotationTypeChange={setAnnotationType}
             isFocusSpace={isFocusSpace}
+            showBrand={isFocusSpace || layout.chrome.header === "hidden"}
             onToggleFocus={handleToggleFocus}
             showRestoreNavigation={layout.chrome.navigation !== "full"}
             onRestoreNavigation={layout.restoreNavigation}
             onResetLayout={handleResetLayout}
             onSaveNote={() => void handleSaveNote()}
+            onSpeedRead={() => handleSpeedRead()}
             isNarrow={layout.isNarrow}
           />
         </div>
@@ -498,6 +572,7 @@ export const ResearchReaderView: FC<ResearchReaderViewProps> = ({
                 onShowNotice={onShowNotice}
                 zoom={zoom}
                 annotationType={annotationType}
+                onSpeedRead={handleSpeedRead}
               />
             ) : viewerType === "pdf" && dataUrl ? (
               <PdfViewer
@@ -525,6 +600,8 @@ export const ResearchReaderView: FC<ResearchReaderViewProps> = ({
                 selectedHighlightId={selectedHighlightId}
                 initialScrollTop={initialScrollTopRef.current}
                 onScrollTopChange={handleDocumentScrollTop}
+                onPageTextLoaded={handlePageTextLoaded}
+                onSpeedRead={handleSpeedRead}
               />
             ) : (
               <div className="reader-surface-state">
@@ -550,12 +627,16 @@ export const ResearchReaderView: FC<ResearchReaderViewProps> = ({
               className="reader-writing-pane"
               style={{ display: showWriting ? undefined : "none" }}
             >
-              {layout.mode === "writing" && (
+              {layout.mode === "writing" && activeAttachment && (
                 <div className="reader-writing-source">
-                  <span className="reader-section-label">Source</span>
-                  <button onClick={() => layout.setMode("research")}>
+                  <span className="reader-section-label">Writing workspace</span>
+                  <button
+                    onClick={() => layout.setMode(layout.isNarrow ? "reading" : "research")}
+                    title="Return to the source document"
+                    data-tauri-drag-region="false"
+                  >
                     <span>{activeAttachment.file_name}</span>
-                    <span>p. {currentPage}</span>
+                    <span>Back to document →</span>
                   </button>
                 </div>
               )}
@@ -612,6 +693,14 @@ export const ResearchReaderView: FC<ResearchReaderViewProps> = ({
             onClose={() => setConnectHighlight(null)}
             onRecordCreated={(recordId) => onNavigateToRecord?.(recordId)}
             onShowNotice={onShowNotice}
+          />
+        )}
+
+        {speedRead && (
+          <SpeedReadModal
+            text={speedRead.text}
+            sourceLabel={speedRead.label}
+            onClose={() => setSpeedRead(null)}
           />
         )}
       </div>

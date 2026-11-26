@@ -1,5 +1,5 @@
 import { FC, useRef } from "react";
-import { BookOpen, Link2, PenLine, Quote } from "lucide-react";
+import { BookOpen, Gauge, Link2, PenLine, Quote } from "lucide-react";
 import { HighlightType } from "./types.ts";
 import { useDismissable } from "../core/useDismissable";
 
@@ -10,6 +10,7 @@ interface FloatingSelectionToolbarProps {
   onAddToNotes: () => void;
   onExcerpt: () => void;
   onConnectExcerpt: () => void;
+  onSpeedRead: () => void;
   onClose: () => void;
   preferredType?: HighlightType | null;
 }
@@ -21,6 +22,7 @@ export const FloatingSelectionToolbar: FC<FloatingSelectionToolbarProps> = ({
   onAddToNotes,
   onExcerpt,
   onConnectExcerpt,
+  onSpeedRead,
   onClose,
   preferredType = null,
 }) => {
@@ -83,6 +85,10 @@ export const FloatingSelectionToolbar: FC<FloatingSelectionToolbarProps> = ({
 
       <div className="toolbar-divider" />
 
+      <button className="reader-selection-action" onClick={onSpeedRead} title="Speed read this passage">
+        <Gauge size={13} />
+        <span>Speed read</span>
+      </button>
       <button className="reader-selection-action" onClick={onAddToNotes} title="Add exact passage to notes">
         <BookOpen size={13} />
         <span>Add to notes</span>
