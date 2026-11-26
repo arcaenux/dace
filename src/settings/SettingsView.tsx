@@ -6,6 +6,7 @@ import type { SystemFont } from "./fonts";
 import { pickBackupDirectory } from "./settingsApi";
 import type {
   AppSettings,
+  ColorMode,
   DefaultActivity,
   Density,
   EditorFormat,
@@ -222,7 +223,26 @@ export function SettingsView({ onExportBackup, onRestoreBackup }: SettingsViewPr
       case "appearance":
         return (
           <>
-            <Field label="Interface density" description="Dace keeps one permanent visual identity.">
+            <Field label="Colour mode" description="Toggle between warm paper light and obsidian dark (Ctrl+Shift+L).">
+              <div className="settings-segmented">
+                {(["light", "dark"] as ColorMode[]).map((colorMode) => (
+                  <button
+                    key={colorMode}
+                    type="button"
+                    className={settings.appearance.colorMode === colorMode ? "is-active" : ""}
+                    onClick={() =>
+                      patch((current) => ({
+                        ...current,
+                        appearance: { ...current.appearance, colorMode },
+                      }))
+                    }
+                  >
+                    {colorMode}
+                  </button>
+                ))}
+              </div>
+            </Field>
+            <Field label="Interface density" description="Controls chrome spacing across workspaces.">
               <div className="settings-segmented">
                 {(["comfortable", "compact"] as Density[]).map((density) => (
                   <button

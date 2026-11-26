@@ -1,15 +1,8 @@
 import { FC, useEffect, useMemo, useState } from "react";
-import {
-  ArrowRight,
-  ArrowUpRight,
-  BookOpen,
-  FileText,
-  Focus,
-  Network,
-  Plus,
-} from "lucide-react";
+import { ArrowRight, BookOpen, FileText, Focus, Network, Plus } from "lucide-react";
 import * as knowledgeApi from "../knowledge/knowledgeApi";
 import { KnowledgeRecordSummary } from "../knowledge/types";
+import { stripMarkdownPreview } from "../knowledge/markdownFormat.ts";
 
 interface WorkspaceIntroProps {
   onOpenCommands: () => void;
@@ -30,18 +23,34 @@ const formatRelativeTime = (timestamp?: string): string => {
   if (Number.isNaN(date.getTime())) return "Recently";
 
   const now = new Date();
-  const isToday =
-    date.getFullYear() === now.getFullYear() &&
-    date.getMonth() === now.getMonth() &&
-    date.getDate() === now.getDate();
-
-  if (isToday) {
-    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
+  if (date.toDateString() === now.toDateString()) {
+    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   }
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
   return date.toLocaleDateString([], { month: "short", day: "numeric" });
 };
 
+/** Re-render on the minute boundary only; the clock never shows seconds. */
+function useMinuteClock(): Date {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    let interval: number | undefined;
+    const align = window.setTimeout(() => {
+      setNow(new Date());
+      interval = window.setInterval(() => setNow(new Date()), 60_000);
+    }, 60_000 - (Date.now() % 60_000) + 50);
+    return () => {
+      window.clearTimeout(align);
+      if (interval !== undefined) window.clearInterval(interval);
+    };
+  }, []);
+  return now;
+}
+
 export const WorkspaceIntro: FC<WorkspaceIntroProps> = ({
+  onOpenCommands,
   onEnterFocus,
   onOpenKnowledgeDesk,
   onNewRecord,
@@ -50,6 +59,7 @@ export const WorkspaceIntro: FC<WorkspaceIntroProps> = ({
   onOpenRecord,
 }) => {
   const [recent, setRecent] = useState<KnowledgeRecordSummary[]>([]);
+  const [hasLoaded, setHasLoaded] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -59,6 +69,8 @@ export const WorkspaceIntro: FC<WorkspaceIntroProps> = ({
         if (mounted) setRecent(list.slice(0, 6));
       } catch {
         if (mounted) setRecent([]);
+      } finally {
+        if (mounted) setHasLoaded(true);
       }
     })();
     return () => {
@@ -66,173 +78,129 @@ export const WorkspaceIntro: FC<WorkspaceIntroProps> = ({
     };
   }, []);
 
-  const [time, setTime] = useState(() => new Date());
+  const now = useMinuteClock();
+  const hours = now.getHours();
+  const greeting = hours < 5 ? "Working late" : hours < 12 ? "Good morning" : hours < 18 ? "Good afternoon" : "Good evening";
 
-  useEffect(() => {
-    const timer = window.setInterval(() => setTime(new Date()), 60000);
-    return () => window.clearInterval(timer);
-  }, []);
+  const { clock, dayPeriod } = useMemo(() => {
+    const parts = new Intl.DateTimeFormat([], { hour: "numeric", minute: "2-digit" }).formatToParts(now);
+    return {
+      clock: parts
+        .filter((part) => part.type !== "dayPeriod")
+        .map((part) => part.value)
+        .join("")
+        .trim(),
+      dayPeriod: parts.find((part) => part.type === "dayPeriod")?.value ?? "",
+    };
+  }, [now]);
 
-  const hours = time.getHours();
-  const greeting = hours < 12 ? "Good morning" : hours < 18 ? "Good afternoon" : "Good evening";
-  const date = time.toLocaleDateString([], { weekday: "long", month: "short", day: "numeric" });
+  const weekday = now.toLocaleDateString([], { weekday: "long" });
+  const longDate = now.toLocaleDateString([], { day: "numeric", month: "long", year: "numeric" });
+  const startWriting = onNewRecord || onOpenKnowledgeDesk;
 
-  const workspaces = useMemo(
-    () => [
-      {
-        id: "desk",
-        title: "Knowledge Desk",
-        icon: BookOpen,
-        action: onOpenKnowledgeDesk,
-      },
-      {
-        id: "reader",
-        title: "Research Reader",
-        icon: FileText,
-        action: onOpenReader,
-      },
-      {
-        id: "graph",
-        title: "Knowledge Graph",
-        icon: Network,
-        action: onOpenGraph,
-      },
-    ],
-    [onOpenGraph, onOpenKnowledgeDesk, onOpenReader]
-  );
+  const [latest, ...others] = recent;
+  const spaces = [
+    { id: "desk", title: "Desk", icon: BookOpen, action: onOpenKnowledgeDesk },
+    { id: "reader", title: "Reader", icon: FileText, action: onOpenReader },
+    { id: "graph", title: "Graph", icon: Network, action: onOpenGraph },
+  ];
 
   return (
-    <div className="home-workspace">
+    <div className="home-workspace home-clean">
       <span className="sr-only">DACE — RESEARCH WORKSPACE</span>
 
-      <div className="home-container">
-        {/* Header Section */}
-        <header className="home-header">
-          <div className="home-header-left">
-            <span className="home-greeting-label">{date}</span>
-            <h1 className="home-title">{greeting}</h1>
-            <p className="home-tagline">Pick up a source or capture a new line of thought.</p>
-          </div>
+      <div className="home-layout">
+        {/* Left: the time, big and bold, with the date beneath it. */}
+        <section className="home-clock" aria-label="Today">
+          <span className="home-greeting">{greeting}</span>
+          <time className="home-time" dateTime={now.toISOString()} aria-label={`${clock} ${dayPeriod}`.trim()}>
+            {clock}
+            {dayPeriod && <span className="home-ampm">{dayPeriod}</span>}
+          </time>
+          <p className="home-date">
+            <span className="home-weekday">{weekday}</span>
+            <span className="home-longdate">{longDate}</span>
+          </p>
 
-          <div className="home-header-actions">
-            <button
-              type="button"
-              className="home-btn home-btn-primary"
-              onClick={onNewRecord || onOpenKnowledgeDesk}
-            >
-              <Plus size={14} strokeWidth={1.8} aria-hidden="true" />
-              <span>New Record</span>
+          <div className="home-quick">
+            <button type="button" className="home-pill is-primary" onClick={startWriting}>
+              <Plus size={14} strokeWidth={2} aria-hidden="true" />
+              New record
             </button>
-
-            <button
-              type="button"
-              className="home-btn home-btn-subtle"
-              onClick={onEnterFocus}
-              title="Enter distraction-free Focus Space (F11)"
-            >
-              <Focus size={14} strokeWidth={1.6} aria-hidden="true" />
-              <span>Focus</span>
+            <button type="button" className="home-pill" onClick={onEnterFocus} title="Distraction-free Focus Space (F11)">
+              <Focus size={14} strokeWidth={1.7} aria-hidden="true" />
+              Focus
+            </button>
+            <button type="button" className="home-pill is-ghost" onClick={onOpenCommands} title="Command palette">
+              Commands <kbd>Ctrl K</kbd>
             </button>
           </div>
-        </header>
+        </section>
 
-        {/* Content Columns: Recent Work & Workspaces */}
-        <div className="home-grid">
-          {/* Recent Records Column */}
-          <section className="home-section" aria-label="Recent Records">
-            <div className="home-section-header">
-              <h2 className="home-section-title">Recent Work</h2>
-              {recent.length > 0 && (
-                <button
-                  type="button"
-                  className="home-section-link"
-                  onClick={onOpenKnowledgeDesk}
-                >
-                  <span>View all</span>
-                  <ArrowUpRight size={12} aria-hidden="true" />
-                </button>
+        {/* Right: one clean zone — continue, recent, spaces. */}
+        <section className="home-zone" aria-label="Pick up where you left off">
+          {latest ? (
+            <button type="button" className="home-continue" onClick={() => onOpenRecord(latest.id)}>
+              <span className="home-eyebrow">Continue writing</span>
+              <span className="home-continue-title">{latest.title.trim() || "Untitled"}</span>
+              {latest.preview && (
+                <span className="home-continue-preview">{stripMarkdownPreview(latest.preview)}</span>
               )}
-            </div>
+              <span className="home-continue-foot">
+                <time className="home-record-time" dateTime={latest.updated_at}>
+                  Edited {formatRelativeTime(latest.updated_at)}
+                </time>
+                <ArrowRight size={14} strokeWidth={1.7} aria-hidden="true" />
+              </span>
+            </button>
+          ) : (
+            hasLoaded && (
+              <button type="button" className="home-continue is-empty" onClick={startWriting}>
+                <span className="home-eyebrow">A blank page</span>
+                <span className="home-continue-title">Start your first record</span>
+                <span className="home-continue-preview">
+                  Capture a thought, then connect it to sources in the reader.
+                </span>
+                <span className="home-continue-foot">
+                  <span>Ctrl N</span>
+                  <ArrowRight size={14} strokeWidth={1.7} aria-hidden="true" />
+                </span>
+              </button>
+            )
+          )}
 
-            {recent.length === 0 ? (
-              <div className="home-empty-quiet">
-                <p className="home-empty-text">No records yet. Start capturing your thoughts and research.</p>
-                <button
-                  type="button"
-                  className="home-section-link"
-                  onClick={onNewRecord || onOpenKnowledgeDesk}
-                >
-                  <span>Start writing</span>
-                  <ArrowRight size={12} aria-hidden="true" />
+          {others.length > 0 && (
+            <div className="home-block">
+              <div className="home-block-head">
+                <span className="home-eyebrow">Recent</span>
+                <button type="button" className="home-link" onClick={onOpenKnowledgeDesk}>
+                  All records
                 </button>
               </div>
-            ) : (
-              <div className="home-recent-list">
-                {recent.map((rec, index) => (
-                  <button
-                    key={rec.id}
-                    type="button"
-                    className={`home-record-item ${index === 0 ? "is-continue" : ""}`}
-                    onClick={() => onOpenRecord(rec.id)}
-                  >
-                    <div className="home-record-main">
-                      <span className="home-record-title">
-                        {rec.title.trim() ? rec.title : "Untitled Record"}
-                      </span>
-                      {rec.tags && rec.tags.length > 0 && (
-                        <div className="home-record-tags">
-                          {rec.tags.slice(0, 2).map((tag) => (
-                            <span key={tag} className="home-record-tag">
-                              #{tag}
-                            </span>
-                          ))}
-                          {rec.tags.length > 2 && (
-                            <span className="home-record-tag">+{rec.tags.length - 2}</span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                    <span className="home-record-meta">
-                      {index === 0 && <span className="home-continue-pill">Continue</span>}
-                      <span className="home-record-time">{formatRelativeTime(rec.updated_at)}</span>
-                    </span>
-                  </button>
+              <ul className="home-recent">
+                {others.slice(0, 4).map((rec) => (
+                  <li key={rec.id}>
+                    <button type="button" onClick={() => onOpenRecord(rec.id)}>
+                      <span className="home-recent-title">{rec.title.trim() || "Untitled"}</span>
+                      <time className="home-record-time" dateTime={rec.updated_at}>
+                        {formatRelativeTime(rec.updated_at)}
+                      </time>
+                    </button>
+                  </li>
                 ))}
-              </div>
-            )}
-          </section>
-
-          {/* Workspaces Navigation Column */}
-          <section className="home-section" aria-label="Workspaces">
-            <div className="home-section-header">
-              <h2 className="home-section-title">Workspaces</h2>
+              </ul>
             </div>
+          )}
 
-            <div className="home-workspaces-list">
-              {workspaces.map((ws) => {
-                const Icon = ws.icon;
-                return (
-                  <button
-                    key={ws.id}
-                    type="button"
-                    className="home-workspace-card"
-                    onClick={ws.action}
-                  >
-                    <div className="home-ws-icon-box">
-                      <Icon size={16} strokeWidth={1.6} aria-hidden="true" />
-                    </div>
-                    <div className="home-ws-info">
-                      <div className="home-ws-title-row">
-                        <span className="home-ws-title">{ws.title}</span>
-                        <ArrowRight size={13} className="home-ws-arrow" aria-hidden="true" />
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </section>
-        </div>
+          <nav className="home-spaces" aria-label="Workspaces">
+            {spaces.map(({ id, title, icon: Icon, action }) => (
+              <button key={id} type="button" className="home-space" onClick={action}>
+                <Icon size={15} strokeWidth={1.6} aria-hidden="true" />
+                {title}
+              </button>
+            ))}
+          </nav>
+        </section>
       </div>
     </div>
   );

@@ -49,6 +49,12 @@ export const ShortcutReference: FC<ShortcutReferenceProps> = ({
       status: "active",
     },
     {
+      keyCombo: "Ctrl + Shift + L",
+      description: "Toggle Light / Dark Mode",
+      context: "Switch between warm editorial light paper and obsidian dark mode",
+      status: "active",
+    },
+    {
       keyCombo: "Ctrl + S",
       description: "Save Knowledge Record",
       context: "Flush and commit active record to SQLite database",

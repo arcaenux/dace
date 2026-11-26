@@ -12,7 +12,7 @@
   --window-control-space: 104px;
   --window-control-gap: 2px;
   --window-control-inset: 10px;
-  --orbital-line: rgba(146, 147, 143, 0.15);
+  --orbital-line: rgba(var(--neutral-500-rgb), 0.18);
   --orbital-active: var(--accent-primary);
 }
 
@@ -125,8 +125,8 @@ body,
 }
 
 .topbar-brand-name {
-  color: var(--text-primary);
-  font-family: var(--font-display);
+  color: var(--text-bright);
+  font-family: var(--font-interface);
   font-size: 14px;
   font-weight: 600;
   letter-spacing: 0.08em;
@@ -153,7 +153,8 @@ body,
 
 .topbar-command-pill {
   gap: 8px !important;
-  padding: 0 9px !important;
+  padding: 0 12px !important;
+  border-radius: var(--radius-pill) !important;
   color: var(--text-secondary) !important;
 }
 
@@ -186,15 +187,16 @@ body,
   align-items: center;
   justify-content: center;
   gap: 6px;
-  min-width: 28px;
-  height: 28px;
-  padding: 0 7px;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 10px;
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-pill);
   background: var(--bg-surface-elevated);
   color: var(--text-secondary);
   font-family: var(--font-label);
-  font-size: 11px;
+  font-size: 12px;
+  font-weight: 500;
   cursor: pointer;
   transition: color 120ms ease, border-color 120ms ease, background-color 120ms ease;
 }
@@ -207,17 +209,17 @@ body,
 
 .dace-app .topbar-icon-btn kbd {
   display: inline-block;
-  padding: 1px 4px;
+  padding: 1px 5px;
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-xs);
-  background: rgba(0, 0, 0, 0.25);
+  background: var(--badge-bg);
   color: var(--text-muted);
   font-size: var(--type-micro);
 }
 
 .dace-app .topbar-icon-btn-quiet {
   padding: 0;
-  width: 28px;
+  width: 30px;
 }
 
 /* --------------------------------------------------------------------------
@@ -274,8 +276,8 @@ body,
 
 .dace-app .window-control-close:hover,
 .dace-app .window-control-close:active {
-  background: rgba(184, 88, 84, 0.2);
-  color: #df7a76;
+  background: var(--danger-subtle);
+  color: var(--status-danger);
 }
 
 /* --------------------------------------------------------------------------
@@ -298,6 +300,9 @@ body,
   height: 100%;
   position: relative;
   overflow: hidden;
+  /* Clip (not merely hide) so focus or scrollIntoView can never slide the
+     stage sideways and expose the off-canvas contextual panel. */
+  overflow: clip;
   background: var(--bg-app);
 }
 
@@ -428,13 +433,13 @@ body,
 
 .rail-orbit-guide {
   fill: none;
-  stroke: rgba(146, 147, 143, 0.05);
+  stroke: rgba(var(--neutral-500-rgb), 0.1);
   stroke-width: 1;
   stroke-dasharray: 2 4;
 }
 
 .rail-orbit-dock {
-  fill: rgba(146, 147, 143, 0.2);
+  fill: rgba(var(--neutral-500-rgb), 0.32);
   stroke: none;
 }
 
@@ -602,14 +607,14 @@ body,
   left: 50%;
   transform: translateX(-50%);
   z-index: var(--z-toast);
-  padding: 6px 14px;
+  padding: 7px 16px;
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
-  background: var(--bg-surface-elevated);
+  border-radius: var(--radius-pill);
+  background: var(--bg-surface);
   color: var(--text-primary);
   font-family: var(--font-interface);
-  font-size: 12px;
-  box-shadow: var(--shadow-elevated);
+  font-size: 13px;
+  box-shadow: var(--shadow-soft-drop);
   pointer-events: none;
   animation: quiet-notice-enter 160ms ease;
 }

@@ -15,6 +15,7 @@ Dace uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Workspace navigation utility (`workspaceNavigation.ts`) with URL-hash routing
 - Settings system test suite (5 tests covering defaults, validation, clamping, and equality)
 - Folded-ribbon Dace logo integrated into the top bar and application window
+- Light-mode logo variant that keeps the blue gradient but lifts the dark left fold, switched automatically across the top bar, reader toolbar, and navigation rail
 - Multi-resolution Tauri app icons and web favicons regenerated from the new brand mark
 - Workspace breadcrumb navigation in the top bar (`DACE / <Workspace>`)
 - Quiet neutral Knowledge Graph canvas without decorative grid or ambient texture

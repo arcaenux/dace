@@ -6,6 +6,8 @@ export interface CommandContext {
   setActiveActivity: (activity: WorkspaceActivityId) => void;
   requestIntent: (request: WorkspaceIntentRequest) => void;
   onToggleNav?: () => void;
+  colorMode?: "light" | "dark";
+  onToggleColorMode?: () => void;
   isFocusSpace: boolean;
   enterFocusSpace: () => Promise<void>;
   exitFocusSpace: () => Promise<void>;
@@ -141,6 +143,18 @@ export function buildCommandList(ctx: CommandContext): CommandItem[] {
       available: Boolean(ctx.onToggleNav),
       execute: () => {
         ctx.onToggleNav?.();
+        ctx.closeOverlay();
+      },
+    },
+    {
+      id: "appearance:toggle-theme",
+      name: ctx.colorMode === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode",
+      description: "Toggle between the warm editorial light and obsidian dark colour modes",
+      category: "Appearance",
+      shortcut: "Ctrl+Shift+L",
+      available: Boolean(ctx.onToggleColorMode),
+      execute: () => {
+        ctx.onToggleColorMode?.();
         ctx.closeOverlay();
       },
     },

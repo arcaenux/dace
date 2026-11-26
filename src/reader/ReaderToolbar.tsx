@@ -20,12 +20,15 @@ import {
   Plus,
   RotateCcw,
   Save,
+  Trash2,
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
-import logoUrl from "../assets/brand/logo.png";
+import logoDarkUrl from "../assets/brand/logo.png";
+import logoLightUrl from "../assets/brand/logo-light.png";
 import { AttachmentSummary } from "../attachments/types.ts";
 import { useDismissable } from "../core/useDismissable";
+import { useSettings } from "../settings/SettingsContext";
 import { ReaderMode } from "./readerLayout";
 import { HighlightType } from "./types.ts";
 
@@ -56,6 +59,8 @@ interface ReaderToolbarProps {
   onSaveNote: () => void;
   onSpeedRead: () => void;
   isNarrow: boolean;
+  /** Permanently delete an imported document (and its highlights). */
+  onDeleteDocument?: (attachmentId: string) => Promise<boolean>;
 }
 
 const HIGHLIGHT_TYPES: { value: HighlightType; label: string }[] = [
@@ -92,8 +97,17 @@ export const ReaderToolbar: FC<ReaderToolbarProps> = ({
   onSaveNote,
   onSpeedRead,
   isNarrow,
+  onDeleteDocument,
 }) => {
+  const { settings } = useSettings();
+  const logoSrc = settings.appearance.colorMode === "light" ? logoLightUrl : logoDarkUrl;
   const [isOverflowOpen, setIsOverflowOpen] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [isDeletingDocument, setIsDeletingDocument] = useState(false);
+
+  useEffect(() => {
+    if (!isDocPickerOpen) setConfirmDeleteId(null);
+  }, [isDocPickerOpen]);
   const [pageDraft, setPageDraft] = useState(String(currentPage));
   const overflowRef = useRef<HTMLDivElement>(null);
   const overflowTriggerRef = useRef<HTMLButtonElement>(null);
@@ -141,7 +155,7 @@ export const ReaderToolbar: FC<ReaderToolbarProps> = ({
         {showBrand && (
           <span className="reader-toolbar-brand">
             <img
-              src={logoUrl}
+              src={logoSrc}
               alt=""
               className="reader-toolbar-brand-logo"
               width={18}
@@ -182,20 +196,62 @@ export const ReaderToolbar: FC<ReaderToolbarProps> = ({
               {documents.length === 0 ? (
                 <div className="reader-popover-empty">No documents in library</div>
               ) : (
-                documents.map((document) => (
-                  <button
-                    key={document.id}
-                    className={`reader-popover-item ${
-                      document.id === activeAttachment?.id ? "active" : ""
-                    }`}
-                    onClick={() => {
-                      onPickDocument(document);
-                      onDocPickerToggle();
-                    }}
-                  >
-                    <span>{document.file_name}</span>
-                  </button>
-                ))
+                documents.map((document) =>
+                  confirmDeleteId === document.id ? (
+                    <div key={document.id} className="reader-doc-confirm" role="group" aria-label="Confirm delete">
+                      <span>Delete “{document.file_name}” and its highlights?</span>
+                      <div className="reader-doc-confirm-actions">
+                        <button type="button" onClick={() => setConfirmDeleteId(null)}>
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          className="is-danger"
+                          disabled={isDeletingDocument}
+                          onClick={async () => {
+                            if (!onDeleteDocument) return;
+                            setIsDeletingDocument(true);
+                            try {
+                              const deleted = await onDeleteDocument(document.id);
+                              if (deleted) setConfirmDeleteId(null);
+                            } finally {
+                              setIsDeletingDocument(false);
+                            }
+                          }}
+                        >
+                          {isDeletingDocument ? "Deleting…" : "Delete"}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div key={document.id} className="reader-doc-row">
+                      <button
+                        type="button"
+                        className={`reader-popover-item ${
+                          document.id === activeAttachment?.id ? "active" : ""
+                        }`}
+                        onClick={() => {
+                          onPickDocument(document);
+                          onDocPickerToggle();
+                        }}
+                        title={document.file_name}
+                      >
+                        <span>{document.file_name}</span>
+                      </button>
+                      {onDeleteDocument && (
+                        <button
+                          type="button"
+                          className="reader-doc-delete"
+                          onClick={() => setConfirmDeleteId(document.id)}
+                          title={`Delete ${document.file_name}`}
+                          aria-label={`Delete ${document.file_name}`}
+                        >
+                          <Trash2 size={12} strokeWidth={1.8} aria-hidden="true" />
+                        </button>
+                      )}
+                    </div>
+                  )
+                )
               )}
             </div>
           )}
@@ -274,26 +330,6 @@ export const ReaderToolbar: FC<ReaderToolbarProps> = ({
               </button>
             </div>
 
-            <div className="reader-zoom" aria-label="Zoom controls">
-              <button
-                className="reader-icon-btn"
-                onClick={() => onZoomChange(clampZoom(zoom - 0.15))}
-                title="Zoom out"
-                data-tauri-drag-region="false"
-              >
-                <ZoomOut size={14} />
-              </button>
-              <span>{Math.round(zoom * 100)}%</span>
-              <button
-                className="reader-icon-btn"
-                onClick={() => onZoomChange(clampZoom(zoom + 0.15))}
-                title="Zoom in"
-                data-tauri-drag-region="false"
-              >
-                <ZoomIn size={14} />
-              </button>
-            </div>
-
             <button
               className="reader-icon-btn"
               onClick={onSpeedRead}
@@ -343,6 +379,26 @@ export const ReaderToolbar: FC<ReaderToolbarProps> = ({
             </button>
             {isOverflowOpen && (
               <div className="reader-popover reader-overflow-popover">
+                <div className="reader-popover-zoom" aria-label="Zoom controls">
+                  <button
+                    className="reader-icon-btn"
+                    onClick={() => onZoomChange(clampZoom(zoom - 0.15))}
+                    title="Zoom out"
+                    aria-label="Zoom out"
+                  >
+                    <ZoomOut size={14} />
+                  </button>
+                  <span>{Math.round(zoom * 100)}%</span>
+                  <button
+                    className="reader-icon-btn"
+                    onClick={() => onZoomChange(clampZoom(zoom + 0.15))}
+                    title="Zoom in"
+                    aria-label="Zoom in"
+                  >
+                    <ZoomIn size={14} />
+                  </button>
+                </div>
+                <div className="reader-popover-divider" />
                 <button
                   className="reader-popover-action"
                   onClick={() => {

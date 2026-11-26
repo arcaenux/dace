@@ -4,17 +4,20 @@ import { DEFAULT_APP_FONT, type SystemFont } from "./fonts";
 
 const FALLBACK_FAMILIES = [
   DEFAULT_APP_FONT,
+  "Aptos",
   "Arial",
   "Calibri",
   "Cambria",
   "Cascadia Mono",
   "Consolas",
   "Courier New",
+  "EB Garamond",
   "Georgia",
   "Segoe UI",
   "Tahoma",
   "Times New Roman",
   "Verdana",
+  "Waldenburg",
 ];
 
 function fallbackFonts(): SystemFont[] {

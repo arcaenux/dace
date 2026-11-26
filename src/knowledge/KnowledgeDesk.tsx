@@ -4,12 +4,25 @@ import * as api from "./knowledgeApi";
 import { pickAndImportAttachment } from "../attachments/attachmentsApi";
 import { RecordEditor, RecordEditorHandle } from "./RecordEditor";
 import { RecordListPanel } from "./RecordListPanel";
-import { KnowledgeContextPanel, extractDeskOutline, DeskOutlineItem } from "./KnowledgeContextPanel";
+import {
+  KnowledgeContextPanel,
+  extractDeskOutline,
+  DeskOutlineItem,
+  DESK_PANEL_VIEWS,
+  type DeskPanelView,
+} from "./KnowledgeContextPanel";
 import { useFocusSpace } from "../focus/FocusSpaceContext";
 import { useDismissable } from "../core/useDismissable";
 import { useSettings } from "../settings/SettingsContext";
 import type { KnowledgeDeskIntent } from "../core/appIntents.ts";
 import type { SaveParticipantRegistry } from "../core/saveRegistry.ts";
+
+const LIBRARY_OPEN_KEY = "dace.desk.libraryOpen";
+
+const countWords = (text: string): number => {
+  const trimmed = text.trim();
+  return trimmed ? trimmed.split(/\s+/).length : 0;
+};
 
 interface KnowledgeDeskProps {
   onShowNotice: (msg: string) => void;
@@ -36,12 +49,20 @@ export const KnowledgeDesk: FC<KnowledgeDeskProps> = ({
   const [activeRecord, setActiveRecord] = useState<KnowledgeRecord | null>(null);
   const [tags, setTags] = useState<TagItem[]>([]);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
-  const [isListOpen, setIsListOpen] = useState<boolean>(false);
-  const [isContextPanelOpen, setIsContextPanelOpen] = useState<boolean>(() => {
+  // The library docks beside the page (like a card library) and remembers
+  // whether it was open; it never floats over the text.
+  const [isListOpen, setIsListOpen] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    const stored = window.localStorage.getItem(LIBRARY_OPEN_KEY);
+    if (stored !== null) return stored === "1";
+    return window.innerWidth >= 1280;
+  });
+  const [searchFocusToken, setSearchFocusToken] = useState<number>(0);
+  const [panelView, setPanelView] = useState<DeskPanelView | null>(() => {
     if (typeof window !== "undefined" && window.location.hash.includes("context=open")) {
-      return true;
+      return "connections";
     }
-    return false;
+    return null;
   });
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
@@ -52,6 +73,11 @@ export const KnowledgeDesk: FC<KnowledgeDeskProps> = ({
   const [navigationHistory, setNavigationHistory] = useState<string[]>([]);
   const [outline, setOutline] = useState<DeskOutlineItem[]>([]);
 
+  useEffect(() => {
+    window.localStorage.setItem(LIBRARY_OPEN_KEY, isListOpen ? "1" : "0");
+  }, [isListOpen]);
+
+  const [liveWordCount, setLiveWordCount] = useState<number>(0);
   const editorRef = useRef<RecordEditorHandle>(null);
   const outlineSignatureRef = useRef<string>("");
   const isSwitchingRef = useRef<boolean>(false);
@@ -80,6 +106,7 @@ export const KnowledgeDesk: FC<KnowledgeDeskProps> = ({
   // The Outline view is derived only from headings that actually exist in the
   // active record; a signature guard avoids re-rendering on every keystroke.
   const handleContentSnapshot = useCallback((content: string) => {
+    setLiveWordCount(countWords(content));
     const items = extractDeskOutline(content);
     const signature = JSON.stringify(items);
     if (signature !== outlineSignatureRef.current) {
@@ -369,6 +396,7 @@ export const KnowledgeDesk: FC<KnowledgeDeskProps> = ({
 
     if (intent.type === "search-records") {
       setIsListOpen(true);
+      setSearchFocusToken((token) => token + 1);
       return;
     }
 
@@ -404,10 +432,10 @@ export const KnowledgeDesk: FC<KnowledgeDeskProps> = ({
   ]);
 
   return (
-    <div className="knowledge-desk-root">
+    <div className={`knowledge-desk-root kd-root ${isListOpen && !isFocusSpace ? "has-library" : ""}`}>
       {/* 1. Record Navigation Drawer / Panel */}
       <RecordListPanel
-        isOpen={isListOpen}
+        isOpen={isListOpen && !isFocusSpace}
         onClose={() => setIsListOpen(false)}
         records={records}
         activeRecordId={activeRecord?.id || null}
@@ -418,6 +446,8 @@ export const KnowledgeDesk: FC<KnowledgeDeskProps> = ({
         selectedTag={selectedTag}
         onSelectTag={handleSelectTag}
         isLoading={isLoading}
+        searchFocusToken={searchFocusToken}
+        onDeleteRecord={(id) => setDeleteConfirmId(id)}
       />
 
       {/* 2. Main Writing / Record Area */}
@@ -437,8 +467,19 @@ export const KnowledgeDesk: FC<KnowledgeDeskProps> = ({
               canNavigateBack={navigationHistory.length > 0}
               onNavigateBack={handleNavigateBack}
               previousRecordTitle={previousRecordTitle}
-              isContextOpen={isContextPanelOpen}
-              onToggleContext={() => setIsContextPanelOpen((prev) => !prev)}
+              trailingControls={DESK_PANEL_VIEWS.map(({ id, label, icon: Icon }) => (
+                <button
+                  key={id}
+                  type="button"
+                  className={`kd-icon ${panelView === id ? "is-active" : ""}`}
+                  onClick={() => setPanelView((current) => (current === id ? null : id))}
+                  aria-pressed={panelView === id}
+                  title={panelView === id ? `Hide ${label.toLowerCase()}` : label}
+                  aria-label={label}
+                >
+                  <Icon size={15} strokeWidth={1.6} aria-hidden="true" />
+                </button>
+              ))}
             />
             <KnowledgeContextPanel
               record={activeRecord}
@@ -449,23 +490,22 @@ export const KnowledgeDesk: FC<KnowledgeDeskProps> = ({
               onOpenExcerptInReader={onOpenInReader}
               onJumpToLine={(line) => editorRef.current?.jumpToLine(line)}
               onOpenFullGraph={onOpenGraphView}
-              isOpen={isContextPanelOpen}
-              onClose={() => setIsContextPanelOpen(false)}
+              view={panelView}
+              wordCount={liveWordCount}
+              onClose={() => setPanelView(null)}
             />
           </div>
         ) : (
-          <div className="desk-empty-state">
-            <h2 className="desk-empty-heading">Knowledge Desk</h2>
-            <p className="desk-empty-sub">
-              A quiet space for capturing thoughts, structured concepts, and personal research.
-            </p>
-            <div className="desk-empty-actions">
-              <button className="desk-btn primary" onClick={handleCreateNewRecord}>
-                + New Record
+          <div className="kd-empty">
+            <h2 className="kd-empty-title">Nothing open</h2>
+            <p className="kd-empty-sub">Pick a record from the library or start a new page.</p>
+            <div className="kd-empty-actions">
+              <button type="button" className="kd-text-btn is-primary" onClick={handleCreateNewRecord}>
+                New record <kbd>Ctrl N</kbd>
               </button>
-              {records.length > 0 && (
-                <button className="desk-btn" onClick={() => setIsListOpen(true)}>
-                  Browse Records ({records.length})
+              {records.length > 0 && !isListOpen && (
+                <button type="button" className="kd-text-btn" onClick={() => setIsListOpen(true)}>
+                  Show library
                 </button>
               )}
             </div>
@@ -482,9 +522,11 @@ export const KnowledgeDesk: FC<KnowledgeDeskProps> = ({
           aria-label="Confirm Record Deletion"
         >
           <div ref={deleteDialogRef} className="delete-confirm-dialog">
-            <h3 className="confirm-title">Delete Knowledge Record?</h3>
+            <h3 className="confirm-title">Delete this record?</h3>
             <p className="confirm-message">
-              This record will be permanently deleted from your library. This action cannot be undone.
+              “{records.find((r) => r.id === deleteConfirmId)?.title.trim() ||
+                (activeRecord?.id === deleteConfirmId ? activeRecord.title.trim() : "") ||
+                "Untitled"}” will be permanently deleted from your library. This cannot be undone.
             </p>
             <div className="confirm-actions">
               <button
