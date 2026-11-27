@@ -365,3 +365,9 @@
     padding-right: 20px;
   }
 }
+
+/* The global tabular-numerals rule for <time> adds slashed zeros, which read
+   as a glyph error at clock size ("5:Ø3"). Plain lining figures here. */
+.dace-app .home-clock time.home-time {
+  font-variant-numeric: tabular-nums lining-nums;
+}

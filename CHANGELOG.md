@@ -10,6 +10,11 @@ Dace uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
+- Signed auto-updates from GitHub Releases: a quiet check on launch and a Check for updates / Install and restart control in Settings › About
+- CI workflow running frontend tests, the production build, and backend tests on every push and pull request
+- Release workflow that builds the MSI and setup installers, signed update packages, and `latest.json` into a draft GitHub release when a version tag is pushed (`RELEASING.md`)
+- Delete a note straight from its library row, and delete an imported document straight from the reader's document picker
+- Knowledge Desk format buttons (headings, bold, italic, strikethrough, code, link, lists, checklist, quote, divider) with Ctrl+B / Ctrl+I / Ctrl+E
 - Settings view with persistent preferences for typography, layout, startup behaviour, and backup paths
 - App font and text font preferences populated from fonts installed on the device via a native font-enumeration command
 - Workspace navigation utility (`workspaceNavigation.ts`) with URL-hash routing
@@ -27,6 +32,11 @@ Dace uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Quiet UI regression suite covering typography floors, label tracking, anti-slop styling rules, and concrete product copy
 
 ### Changed
+- Window opens at 1280×820, centred, with a 960×600 minimum so the three-pane layouts never collapse
+- Knowledge Desk: docked library, single slim editor bar, a page that grows with its text, and one side tool at a time
+- Research Reader: icon-driven drawer (Note, Passages, Outline, Links, Info), a full-height note page, and a quiet toolbar
+- Home: large light clock with the greeting above and the date beneath, beside one clean zone for recent work
+- Dark mode uses neutral graphite greys instead of warm stone
 - Typography: Aptos as the base for interface and reading text, with user-selectable device fonts; terminal keeps a monospace stack and follows monospace app-font choices
 - Command Palette and Shortcut Reference now dismiss when clicking the dark backdrop area
 - `closeOverlay` and `openOverlay` are now stable `useCallback` references, stopping unnecessary `commandList` rebuilds every render
@@ -36,6 +46,9 @@ Dace uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Whole-app quiet UI pass: flat solid surfaces, hairline structure, one accent, compact radii, dense chrome, roomy documents, and concrete copy instead of generic discovery language
 
 ### Fixed
+- Delete record did nothing: dialogs opened from a menu click were closed by that same click
+- Content no longer slides under the navigation rail's curve, and the stage can no longer scroll sideways
+- Removed leftover Nova Dome class and event names (legacy data migration is unchanged)
 - Modal backdrop clicks no longer fall through to window controls behind the overlay
 - Command palette actions called stale `closeOverlay` closure — now resolved via stable `useCallback`
 - Opening a modal then immediately clicking outside no longer triggers a spurious dismiss (grace period added)

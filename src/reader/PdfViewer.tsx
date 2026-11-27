@@ -27,6 +27,28 @@ import { pdfItemsToText } from "./speedRead.ts";
 // Configure workerSrc — this deliberately preserves the existing worker setup.
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
+/**
+ * pdf.js would otherwise *fetch* a data: URL from its worker, which the app's
+ * Content-Security-Policy (connect-src) rightly blocks in release builds —
+ * every PDF failed with "Unexpected server response (0)". Decoding to bytes
+ * here hands pdf.js the document directly, with no network request at all.
+ */
+export function pdfSourceFromDataUrl(url: string): string | { data: Uint8Array } {
+  if (!url.startsWith("data:")) return url;
+  const comma = url.indexOf(",");
+  const meta = url.slice(5, comma);
+  const payload = url.slice(comma + 1);
+  if (!meta.includes(";base64")) {
+    return { data: new TextEncoder().encode(decodeURIComponent(payload)) };
+  }
+  const binary = atob(payload);
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes[index] = binary.charCodeAt(index);
+  }
+  return { data: bytes };
+}
+
 interface PdfViewerProps {
   dataUrl: string;
   attachmentId: string;
@@ -162,7 +184,7 @@ const PdfViewerComponent: FC<PdfViewerProps> = ({
 
     async function loadPdf() {
       try {
-        loadingTask = pdfjsLib.getDocument(dataUrl);
+        loadingTask = pdfjsLib.getDocument(pdfSourceFromDataUrl(dataUrl));
         const documentProxy = await loadingTask.promise;
         loadedDoc = documentProxy;
         if (cancelled) {

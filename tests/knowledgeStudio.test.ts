@@ -23,6 +23,11 @@ test("1. Inline wraps toggle on and off and keep the selection on the text", () 
   assert.equal(off.next, "so meaning flows");
   assert.equal(off.selected, "meaning");
 
+  // Windows double-click includes the trailing space; markers must hug the word.
+  const spaced = apply("with important words", 5, 15, "bold");
+  assert.equal(spaced.next, "with **important** words");
+  assert.equal(spaced.selected, "important");
+
   const empty = apply("ab", 1, 1, "italic");
   assert.equal(empty.next, "a_text_b");
   assert.equal(empty.selected, "text");
@@ -86,4 +91,32 @@ test("7. Reader drawer is one quiet header with icon views and a free note page"
   assert.match(reader, /setAnnotationRequestId\(id\);\s*revealWriting\(\);\s*setDrawerTab\("passages"\)/);
   assert.match(css, /\.reader-mode-btn \{[^}]*text-transform: none/s);
   assert.match(css, /textarea\.rd-note-body:focus-visible[\s\S]*outline: none !important/);
+});
+
+test("8. Rich editor keeps reader excerpt markers byte-for-byte", async () => {
+  const { ExcerptMarker } = await import("../src/editor/excerptMarker.ts");
+  const config = ExcerptMarker.config as any;
+  const marker = "<!-- dace-excerpt:v2:%7B%22id%22%3A%22h1%22%7D -->";
+  const token = config.markdownTokenizer.tokenize(`${marker}\n> **[p. 3]** quote`);
+  assert.equal(token.type, "excerptMarker");
+  assert.equal(token.text, marker);
+  assert.equal(config.markdownTokenizer.tokenize("Plain text"), undefined);
+  assert.equal(config.markdownTokenizer.start(`intro\n${marker}`), 6);
+  assert.equal(config.renderMarkdown({ attrs: { raw: marker } }), marker);
+});
+
+test("9. Side browser only accepts web addresses", async () => {
+  const { normalizeSiteUrl, ASSISTANT_SITES } = await import("../src/assistant/assistantApi.ts");
+  assert.equal(normalizeSiteUrl("scholar.google.com"), "https://scholar.google.com/");
+  assert.equal(normalizeSiteUrl("https://chatgpt.com"), "https://chatgpt.com/");
+  assert.equal(normalizeSiteUrl("javascript:alert(1)"), null);
+  assert.equal(normalizeSiteUrl("file:///C:/secret"), null);
+  assert.equal(normalizeSiteUrl("not a site"), null);
+  assert.ok(ASSISTANT_SITES.some((site) => site.id === "gemini"));
+});
+
+test("10. Previews drop highlight, italic and hidden excerpt markers", () => {
+  assert.equal(stripMarkdownPreview("Plain *==paragraph==* with **bold** text."), "Plain paragraph with bold text.");
+  assert.equal(stripMarkdownPreview("<!-- dace-excerpt:v2:x -->\n> quote"), "quote");
+  assert.equal(stripMarkdownPreview("snake_case_name stays"), "snake_case_name stays");
 });

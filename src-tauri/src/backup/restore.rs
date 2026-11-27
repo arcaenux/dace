@@ -713,7 +713,7 @@ fn prepare_restore_inner(
             previous_counts = current_counts(&snapshot_path);
         }
 
-        let attachments_dir = app_data_dir.join("attachments");
+        let attachments_dir = crate::vault::attachments_root(app_data_dir);
         copy_directory_filtered(&attachments_dir, &recovery_dir.join("attachments"))?;
 
         let recovery_meta = serde_json::json!({
@@ -800,7 +800,7 @@ fn verify_installed_environment(
         let rows = read_attachment_rows(&conn)?;
         for row in rows {
             let relative = sanitize_archive_path(&row.storage_path)?;
-            let file = safe_join(&app_data_dir.join("attachments"), &relative)?;
+            let file = safe_join(&crate::vault::attachments_root(app_data_dir), &relative)?;
             let (hash, size) = sha256_file(&file).map_err(|e| {
                 format!(
                     "Restored attachment '{}' could not be verified: {}",
@@ -870,7 +870,7 @@ fn rollback_restore(
     }
 
     let saved_attachments = before_swap.join("attachments");
-    let active_attachments = app_data_dir.join("attachments");
+    let active_attachments = crate::vault::attachments_root(app_data_dir);
     if saved_attachments.exists() {
         if active_attachments.exists() {
             let parked = staging_dir.join(format!(
@@ -965,7 +965,7 @@ fn apply_files(
     }
     call_hook("after-active-database-moved")?;
 
-    let active_attachments = app_data_dir.join("attachments");
+    let active_attachments = crate::vault::attachments_root(app_data_dir);
     if active_attachments.exists() {
         move_any(&active_attachments, &before_swap.join("attachments"))?;
     }
@@ -984,7 +984,7 @@ fn apply_files(
     call_hook("after-database-installed")?;
 
     let staged_attachments = staging_dir.join("attachments");
-    let target_attachments = app_data_dir.join("attachments");
+    let target_attachments = crate::vault::attachments_root(app_data_dir);
     if staged_attachments.exists() {
         move_any(&staged_attachments, &target_attachments)?;
     } else {

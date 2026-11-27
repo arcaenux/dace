@@ -1,5 +1,5 @@
 import { FC, RefObject } from "react";
-import { Command, Keyboard, Moon, Search, Sun } from "lucide-react";
+import { Command, Keyboard, MessagesSquare, Moon, Search, Sun } from "lucide-react";
 import logoDarkUrl from "../assets/brand/logo.png";
 import logoLightUrl from "../assets/brand/logo-light.png";
 import { WorkspaceActivityId } from "../core/types.ts";
@@ -16,6 +16,8 @@ interface WorkspaceTopBarProps {
   onSearch: () => void;
   commandsTriggerRef?: RefObject<HTMLButtonElement | null>;
   shortcutsTriggerRef?: RefObject<HTMLButtonElement | null>;
+  isAssistantOpen?: boolean;
+  onToggleAssistant?: () => void;
 }
 
 const activityNames: Record<WorkspaceActivityId, string> = {
@@ -38,6 +40,8 @@ export const WorkspaceTopBar: FC<WorkspaceTopBarProps> = ({
   onSearch,
   commandsTriggerRef,
   shortcutsTriggerRef,
+  isAssistantOpen = false,
+  onToggleAssistant,
 }) => {
   const logoSrc = colorMode === "light" ? logoLightUrl : logoDarkUrl;
 
@@ -102,6 +106,21 @@ export const WorkspaceTopBar: FC<WorkspaceTopBarProps> = ({
         >
           <Keyboard size={14} strokeWidth={1.6} aria-hidden="true" />
         </button>
+
+        {onToggleAssistant && (
+          <button
+            type="button"
+            className={`topbar-icon-btn topbar-icon-btn-quiet ${isAssistantOpen ? "is-active" : ""}`}
+            onClick={onToggleAssistant}
+            aria-label={isAssistantOpen ? "Close side browser" : "Open side browser (ChatGPT, Gemini…)"}
+            aria-pressed={Boolean(isAssistantOpen)}
+            title="Side browser: ChatGPT, Gemini… (Ctrl+Shift+A)"
+            data-dismiss-ignore
+            data-tauri-drag-region="false"
+          >
+            <MessagesSquare size={14} strokeWidth={1.6} aria-hidden="true" />
+          </button>
+        )}
 
         <button
           type="button"

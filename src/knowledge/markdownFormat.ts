@@ -49,7 +49,15 @@ const LINE_PREFIXES: Partial<Record<FormatAction, string>> = {
 const HEADING_RE = /^#{1,6}\s+/;
 const LIST_RE = /^(?:- \[[ xX]\] |[-*+] |\d+\. |> )/;
 
-function wrapSelection(text: string, start: number, end: number, marker: string): FormatEdit {
+function wrapSelection(text: string, rawStart: number, rawEnd: number, marker: string): FormatEdit {
+  // Double-click on Windows selects the trailing space too; "**word **" is not
+  // valid Markdown, so markers hug the text and spaces stay outside.
+  let start = rawStart;
+  let end = rawEnd;
+  if (text.slice(start, end).trim()) {
+    while (start < end && /\s/.test(text[start])) start += 1;
+    while (end > start && /\s/.test(text[end - 1])) end -= 1;
+  }
   const selected = text.slice(start, end);
   const before = text.slice(Math.max(0, start - marker.length), start);
   const after = text.slice(end, end + marker.length);
@@ -149,8 +157,10 @@ export function formatActionForShortcut(key: string, shift: boolean): FormatActi
 /** Previews read as prose: drop Markdown markers such as "#", "**" or "- [ ]". */
 export const stripMarkdownPreview = (preview: string): string =>
   preview
+    .replace(/<!--[\s\S]*?(-->|$)/g, " ")
     .replace(/(^|\s)(?:#{1,6}|>|[-*+]|\d+\.)\s+(?:\[[ xX]\]\s+)?/g, "$1")
-    .replace(/(\*\*|__|~~|`)/g, "")
+    .replace(/\\([\\`*_{}\[\]()#+\-.!=~|>])/g, "$1")
+    .replace(/(\*\*|__|~~|==|`|(?<![\w])[*_](?=\S)|(?<=\S)[*_](?![\w]))/g, "")
     .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
     .replace(/\s+/g, " ")
     .trim();

@@ -8,28 +8,22 @@ import {
   useState,
 } from "react";
 import {
-  Bold,
   Check,
   ChevronRight,
   Hash,
-  Heading2,
   Highlighter,
   Info,
-  Italic,
-  Link,
   Link2,
-  List,
-  ListChecks,
   ListTree,
   MessageSquarePlus,
   MoreHorizontal,
   PenLine,
-  Quote,
   Trash2,
   X,
   type LucideIcon,
 } from "lucide-react";
 import { useDismissable } from "../core/useDismissable";
+import { RichTextEditor, type RichTextEditorHandle } from "../editor/RichTextEditor.tsx";
 import { Highlight, OutlineItem } from "./types.ts";
 import { AttachmentSummary } from "../attachments/types.ts";
 import * as readerApi from "./readerApi.ts";
@@ -118,16 +112,6 @@ const DRAWER_VIEWS: { id: ReaderDrawerTab; label: string; icon: LucideIcon }[] =
   { id: "info", label: "Info", icon: Info },
 ];
 
-const NOTE_FORMATS: { label: string; icon: LucideIcon; prefix: string; suffix?: string }[] = [
-  { label: "Heading", icon: Heading2, prefix: "## " },
-  { label: "Bold", icon: Bold, prefix: "**", suffix: "**" },
-  { label: "Italic", icon: Italic, prefix: "_", suffix: "_" },
-  { label: "List item", icon: List, prefix: "- " },
-  { label: "Task", icon: ListChecks, prefix: "- [ ] " },
-  { label: "Quote", icon: Quote, prefix: "> " },
-  { label: "Link", icon: Link, prefix: "[", suffix: "](https://)" },
-];
-
 const formatBytes = (bytes: number) => {
   if (!Number.isFinite(bytes) || bytes <= 0) return "—";
   if (bytes < 1024) return `${bytes} B`;
@@ -152,14 +136,12 @@ const NoteEditor = memo(function NoteEditor({
   noteSaveStatus,
   noteError,
   noteExcerpts,
-  noteContentRef,
   onStartNote,
   onNoteTitleChange,
   onNoteContentChange,
   onNoteTagsChange,
   onSaveNote,
   onDeleteNote,
-  onInsertMarkdown,
   onJumpToPage,
 }: NoteEditorProps) {
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
@@ -172,17 +154,16 @@ const NoteEditor = memo(function NoteEditor({
     setIsConfirmingDelete(false);
   }, menuRef, { triggerRef: menuTriggerRef, group: "reader-popover" });
 
-  // The note grows with its text so the drawer scrolls as one page; keep the
-  // scroll position steady while the height is re-measured.
+  const bodyRef = useRef<RichTextEditorHandle>(null);
+
+  // Long titles (e.g. "Notes — <paper name>") wrap instead of being cut off.
+  const titleRef = useRef<HTMLTextAreaElement>(null);
   useLayoutEffect(() => {
-    const textarea = noteContentRef.current;
-    if (!textarea) return;
-    const scroller = textarea.closest(".reader-drawer-content") as HTMLElement | null;
-    const keep = scroller?.scrollTop ?? 0;
-    textarea.style.height = "auto";
-    textarea.style.height = `${textarea.scrollHeight}px`;
-    if (scroller) scroller.scrollTop = keep;
-  }, [noteContent, hasNote, noteContentRef]);
+    const title = titleRef.current;
+    if (!title) return;
+    title.style.height = "auto";
+    title.style.height = `${title.scrollHeight}px`;
+  }, [noteTitle, hasNote]);
 
   const handleDeleteNote = async () => {
     const deleted = await onDeleteNote();
@@ -207,21 +188,7 @@ const NoteEditor = memo(function NoteEditor({
 
   return (
     <div className="rd-note">
-      <div className="rd-note-tools" role="toolbar" aria-label="Note formatting">
-        {NOTE_FORMATS.map(({ label, icon: Icon, prefix, suffix }) => (
-          <button
-            key={label}
-            type="button"
-            className="rd-icon rd-icon-sm"
-            onMouseDown={(event) => event.preventDefault()}
-            onClick={() => onInsertMarkdown(prefix, suffix)}
-            title={label}
-            aria-label={label}
-          >
-            <Icon size={14} strokeWidth={1.7} aria-hidden="true" />
-          </button>
-        ))}
-
+      <div className="rd-note-tools">
         <span className="rd-spacer" />
 
         <button
@@ -291,10 +258,18 @@ const NoteEditor = memo(function NoteEditor({
       </div>
 
       <div className="rd-note-page">
-        <input
+        <textarea
+          ref={titleRef}
           className="rd-note-title"
+          rows={1}
           value={noteTitle}
-          onChange={(event) => onNoteTitleChange(event.target.value)}
+          onChange={(event) => onNoteTitleChange(event.target.value.replace(/[\r\n]+/g, " "))}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              bodyRef.current?.focus();
+            }
+          }}
           placeholder="Untitled note"
           aria-label="Note title"
         />
@@ -332,15 +307,15 @@ const NoteEditor = memo(function NoteEditor({
           </div>
         )}
 
-        <textarea
-          ref={noteContentRef}
-          className="rd-note-body"
-          value={noteContent}
-          onChange={(event) => onNoteContentChange(event.target.value)}
-          placeholder="Write your research notes…"
-          aria-label="Note content"
-          spellCheck={false}
-        />
+        <div className="rd-note-body">
+          <RichTextEditor
+            ref={bodyRef}
+            value={noteContent}
+            onChange={onNoteContentChange}
+            placeholder="Write your research notes… Select text to format it."
+            ariaLabel="Note content"
+          />
+        </div>
       </div>
     </div>
   );

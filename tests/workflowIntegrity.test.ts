@@ -250,8 +250,8 @@ test("10. Focus Space removes window chrome and top bar drag handles", () => {
   assert.match(topBar, /className="topbar-meta" data-tauri-drag-region="false"/);
   assert.equal(
     (topBar.match(/data-tauri-drag-region="false"/g) ?? []).length,
-    5,
-    "Top bar action area and all four buttons must opt out of window dragging"
+    6,
+    "Top bar action area and all five buttons (incl. the side browser) must opt out of window dragging"
   );
   assert.match(focus, /data-tauri-drag-region="false"/);
 });

@@ -1,0 +1,285 @@
+/* ==========================================================================
+   Dace — Rich text editor
+   Writing looks like a document, not code: headings, lists and emphasis are
+   rendered, never shown as symbols. Formatting lives in a small toolbar that
+   appears over a selection.
+   ========================================================================== */
+
+.dace-app .rte {
+  position: relative;
+}
+
+.dace-app .rte-content {
+  min-height: 50vh;
+  outline: none;
+  color: var(--text-primary);
+  font-family: var(--font-editorial);
+  font-size: 16.5px;
+  line-height: 1.72;
+  caret-color: var(--accent-primary);
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.dace-app .rd-note-body .rte-content {
+  min-height: 55vh;
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+/* Tiptap gives the page tabindex="0", which the global keyboard-focus ring
+   would otherwise outline. The caret is the focus on a writing surface. */
+.dace-app .rte .rte-content.ProseMirror:focus,
+.dace-app .rte .rte-content.ProseMirror:focus-visible,
+.dace-app .rte .rte-content.ProseMirror[tabindex]:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.dace-app .rte-content > * + * {
+  margin-top: 0.7em;
+}
+
+.dace-app .rte-content p {
+  margin: 0;
+}
+
+.dace-app .rte-content p + p {
+  margin-top: 0.55em;
+}
+
+/* Placeholder on an empty page */
+.dace-app .rte-content p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  color: var(--text-dim, var(--text-muted));
+  pointer-events: none;
+}
+
+/* Headings read as a document's structure */
+.dace-app .rte-content h1,
+.dace-app .rte-content h2,
+.dace-app .rte-content h3,
+.dace-app .rte-content h4 {
+  margin: 1.4em 0 0.35em;
+  color: var(--text-bright);
+  font-family: var(--font-display);
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.dace-app .rte-content > :first-child {
+  margin-top: 0;
+}
+
+.dace-app .rte-content h1 { font-size: 1.75em; }
+.dace-app .rte-content h2 { font-size: 1.4em; }
+.dace-app .rte-content h3 { font-size: 1.18em; }
+.dace-app .rte-content h4 { font-size: 1.05em; font-family: var(--font-interface); font-weight: 600; }
+
+/* Emphasis */
+.dace-app .rte-content strong { font-weight: 650; color: var(--text-bright); }
+.dace-app .rte-content em { font-style: italic; }
+.dace-app .rte-content u { text-decoration-thickness: 1px; text-underline-offset: 3px; }
+.dace-app .rte-content s { color: var(--text-muted); }
+
+.dace-app .rte-content mark {
+  padding: 0 2px;
+  border-radius: 3px;
+  background: rgba(250, 204, 21, 0.32);
+  color: inherit;
+}
+
+.dace-app .rte-content code {
+  padding: 1px 5px;
+  border-radius: var(--radius-xs);
+  background: var(--state-hover);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 0.86em;
+}
+
+.dace-app .rte-content pre {
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--state-hover);
+  overflow-x: auto;
+}
+
+.dace-app .rte-content pre code {
+  padding: 0;
+  background: none;
+  font-size: 0.84em;
+}
+
+.dace-app .rte-content a {
+  color: var(--accent-text);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  cursor: text;
+}
+
+/* Lists */
+.dace-app .rte-content ul,
+.dace-app .rte-content ol {
+  margin: 0.4em 0;
+  padding-left: 1.4em;
+}
+
+.dace-app .rte-content li + li {
+  margin-top: 0.2em;
+}
+
+.dace-app .rte-content li p {
+  margin: 0;
+}
+
+.dace-app .rte-content ul[data-type="taskList"] {
+  padding-left: 0.2em;
+  list-style: none;
+}
+
+.dace-app .rte-content ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.dace-app .rte-content ul[data-type="taskList"] li > label {
+  flex: 0 0 auto;
+  margin-top: 0.32em;
+  user-select: none;
+}
+
+.dace-app .rte-content ul[data-type="taskList"] li > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.dace-app .rte-content ul[data-type="taskList"] input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: var(--accent-primary);
+  cursor: pointer;
+}
+
+.dace-app .rte-content ul[data-type="taskList"] li[data-checked="true"] > div {
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+
+/* Quotes and dividers */
+.dace-app .rte .rte-content blockquote {
+  margin: 0.6em 0;
+  padding: 2px 0 2px 14px;
+  border: 0;
+  border-left: 2px solid var(--border-medium);
+  border-radius: 0;
+  background: none;
+  color: var(--text-secondary);
+  font-style: normal;
+}
+
+.dace-app .rte .rte-content blockquote p {
+  font-style: normal;
+}
+
+.dace-app .rte-content hr {
+  height: 1px;
+  margin: 1.4em 0;
+  border: 0;
+  background: var(--border-subtle);
+}
+
+/* Hidden links from reader excerpts back to their source passage */
+.dace-app .rte-content .rte-excerpt-marker {
+  display: none;
+}
+
+.dace-app .rte-content .rte-excerpt-marker + * {
+  margin-top: 0.7em;
+}
+
+.dace-app .rte-content ::selection {
+  background: var(--bg-selection);
+}
+
+/* --------------------------------------------------------------------------
+   Selection toolbar
+   -------------------------------------------------------------------------- */
+
+.dace-app .rte-bubble {
+  z-index: 70;
+  padding: 3px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-elevated);
+}
+
+.dace-app .rte-bubble-row,
+.dace-app .rte-link-row {
+  display: flex;
+  align-items: center;
+}
+
+.dace-app .rte-bubble-group {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+}
+
+.dace-app .rte-bubble-group + .rte-bubble-group {
+  margin-left: 3px;
+  padding-left: 4px;
+  border-left: 1px solid var(--border-subtle);
+}
+
+.dace-app .rte-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.dace-app .rte-btn:hover {
+  background: var(--state-hover);
+  color: var(--text-primary);
+}
+
+.dace-app .rte-btn.is-active {
+  background: var(--state-active);
+  color: var(--text-bright);
+}
+
+.dace-app .rte-link-row {
+  gap: 6px;
+  padding: 0 2px 0 8px;
+  color: var(--text-muted);
+}
+
+.dace-app .rte-link-input {
+  width: 240px;
+  height: 26px;
+  padding: 0 4px;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-family: var(--font-interface);
+  font-size: 12.5px;
+}
+
+.dace-app .rte-link-input:focus-visible {
+  outline: none !important;
+}

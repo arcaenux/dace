@@ -54,6 +54,8 @@ import {
 import { useSettings } from "../settings/SettingsContext";
 import { SettingsView } from "../settings/SettingsView";
 import { TerminalView } from "../terminal/TerminalView";
+import { checkForUpdate } from "../settings/updaterApi";
+import { AssistantPanel } from "../assistant/AssistantPanel";
 import type { DefaultActivity } from "../settings/types";
 
 const PERSISTABLE_ACTIVITIES: DefaultActivity[] = [
@@ -89,6 +91,22 @@ export const WorkspaceShell: FC = () => {
   const closeErrorDialogRef = useRef<HTMLDivElement>(null);
   const [activeOverlay, setActiveOverlay] = useState<OverlayType>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  // Side browser (ChatGPT, Gemini…) docked beside whatever is open.
+  const [isAssistantOpen, setIsAssistantOpen] = useState<boolean>(() => {
+    try {
+      return window.localStorage.getItem("dace.assistant.open") === "1";
+    } catch {
+      return false;
+    }
+  });
+  const toggleAssistant = useCallback(() => setIsAssistantOpen((current) => !current), []);
+  useEffect(() => {
+    try {
+      window.localStorage.setItem("dace.assistant.open", isAssistantOpen ? "1" : "0");
+    } catch {
+      // Storage unavailable: the panel just won't reopen on launch.
+    }
+  }, [isAssistantOpen]);
   const [isPanelOpen, setIsPanelOpen] = useState<boolean>(false);
   const [isRailCollapsed, setIsRailCollapsed] = useState<boolean>(() => {
     if (typeof window !== "undefined") {
@@ -244,6 +262,27 @@ export const WorkspaceShell: FC = () => {
       }, durationMs);
     }
   }, []);
+
+  // One quiet update check per launch; failures (offline, no release yet,
+  // unsigned dev build) stay silent — Settings › About reports details.
+  useEffect(() => {
+    if (!isTauriEnvironment()) return;
+    let cancelled = false;
+    const timer = window.setTimeout(async () => {
+      try {
+        const available = await checkForUpdate();
+        if (!cancelled && available) {
+          showNotice(`Dace ${available.version} is available — install it from Settings › About`, 9000);
+        }
+      } catch {
+        // Silent by design.
+      }
+    }, 8000);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [showNotice]);
 
   const finishSaveAndClose = useCallback(async () => {
     const result = await attemptClose(saveRegistryRef.current, {
@@ -509,6 +548,7 @@ export const WorkspaceShell: FC = () => {
     requestIntent,
     onToggleNav: toggleRail,
     onToggleColorMode: toggleColorMode,
+    onToggleAssistant: toggleAssistant,
   });
 
   const deskIntent = intentQueue.find(isTargetedKnowledgeDeskIntent) ?? null;
@@ -533,6 +573,8 @@ export const WorkspaceShell: FC = () => {
         onSearch={() => requestIntent({ type: "search-records" })}
         commandsTriggerRef={commandsTriggerRef}
         shortcutsTriggerRef={shortcutsTriggerRef}
+        isAssistantOpen={isAssistantOpen}
+        onToggleAssistant={toggleAssistant}
       />
 
       <WindowControls isFocusSpace={isFocusSpace} />
@@ -690,6 +732,12 @@ export const WorkspaceShell: FC = () => {
             </div>
         </ContextualPanel>
       </main>
+        <AssistantPanel
+          open={isAssistantOpen && !isFocusSpace}
+          suspended={activeOverlay !== null || closeError !== null}
+          onClose={() => setIsAssistantOpen(false)}
+          onShowNotice={showNotice}
+        />
       </div>
 
       <CommandPalette

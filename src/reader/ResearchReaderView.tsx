@@ -252,6 +252,11 @@ export const ResearchReaderView: FC<ResearchReaderViewProps> = ({
       return;
     }
 
+    if (intent.type === "import-attachment") {
+      void handleImportRef.current();
+      return;
+    }
+
     setReaderMode(intent.mode);
   }, [intent, onConsumeIntent, handleSaveNote, setReaderMode]);
 
@@ -271,6 +276,9 @@ export const ResearchReaderView: FC<ResearchReaderViewProps> = ({
       onShowNotice(`Import failed: ${err?.message || err}`);
     }
   };
+
+  const handleImportRef = useRef(handleImport);
+  handleImportRef.current = handleImport;
 
   const handlePickDocument = (document: AttachmentSummary) => {
     // The hydration effect restores this document's own page/zoom/scroll
