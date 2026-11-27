@@ -141,7 +141,9 @@ impl AttachmentStorage {
 
     /// Verifies that a relative path is valid and strictly contained within base_dir
     pub fn resolve_path(&self, relative_path: &str) -> Result<PathBuf, String> {
-        let rel = Path::new(relative_path);
+        // Normalize backslashes so traversal checks work on all platforms
+        let normalized = relative_path.replace('\\', "/");
+        let rel = Path::new(&normalized);
         for comp in rel.components() {
             match comp {
                 std::path::Component::ParentDir | std::path::Component::RootDir | std::path::Component::Prefix(_) => {
