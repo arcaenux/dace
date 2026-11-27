@@ -6,14 +6,20 @@ use super::models::{
     UpdateRecordPayload,
 };
 use super::repository::KnowledgeRepository;
+use crate::vault::{mirror_note, remove_mirrored_note, VaultState};
 
 #[tauri::command]
 pub fn create_record(
     db: State<'_, Database>,
+    vault: State<'_, VaultState>,
     payload: CreateRecordPayload,
 ) -> Result<KnowledgeRecord, String> {
-    let mut conn = db.conn.lock().map_err(|e| format!("Mutex lock error: {}", e))?;
-    KnowledgeRepository::create_record(&mut conn, payload, db.has_fts5)
+    let record = {
+        let mut conn = db.conn.lock().map_err(|e| format!("Mutex lock error: {}", e))?;
+        KnowledgeRepository::create_record(&mut conn, payload, db.has_fts5)?
+    };
+    mirror_note(&vault, &record);
+    Ok(record)
 }
 
 #[tauri::command]
@@ -39,19 +45,31 @@ pub fn list_records(
 #[tauri::command]
 pub fn update_record(
     db: State<'_, Database>,
+    vault: State<'_, VaultState>,
     payload: UpdateRecordPayload,
 ) -> Result<KnowledgeRecord, String> {
-    let mut conn = db.conn.lock().map_err(|e| format!("Mutex lock error: {}", e))?;
-    KnowledgeRepository::update_record(&mut conn, payload, db.has_fts5)
+    let record = {
+        let mut conn = db.conn.lock().map_err(|e| format!("Mutex lock error: {}", e))?;
+        KnowledgeRepository::update_record(&mut conn, payload, db.has_fts5)?
+    };
+    mirror_note(&vault, &record);
+    Ok(record)
 }
 
 #[tauri::command]
 pub fn delete_record(
     db: State<'_, Database>,
+    vault: State<'_, VaultState>,
     id: String,
 ) -> Result<bool, String> {
-    let mut conn = db.conn.lock().map_err(|e| format!("Mutex lock error: {}", e))?;
-    KnowledgeRepository::delete_record(&mut conn, &id, db.has_fts5)
+    let deleted = {
+        let mut conn = db.conn.lock().map_err(|e| format!("Mutex lock error: {}", e))?;
+        KnowledgeRepository::delete_record(&mut conn, &id, db.has_fts5)?
+    };
+    if deleted {
+        remove_mirrored_note(&vault, &id);
+    }
+    Ok(deleted)
 }
 
 #[tauri::command]

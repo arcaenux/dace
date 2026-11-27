@@ -193,39 +193,11 @@
   background: var(--border-subtle);
 }
 
-.dace-app .kd-root .kd-format {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-  min-width: 0;
-  overflow: hidden;
-}
 
-.dace-app .kd-root .kd-format-group {
-  display: flex;
-  align-items: center;
-  gap: 0;
-}
 
-.dace-app .kd-root .kd-format-group + .kd-format-group {
-  margin-left: 4px;
-  padding-left: 6px;
-  border-left: 1px solid var(--border-subtle);
-}
 
-.dace-app .kd-root .kd-format .kd-icon {
-  color: var(--text-dim, var(--text-muted));
-}
 
-.dace-app .kd-root .kd-bar:hover .kd-format .kd-icon,
-.dace-app .kd-root .kd-editor:focus-within .kd-format .kd-icon {
-  color: var(--text-muted);
-}
 
-.dace-app .kd-root .kd-format .kd-icon:hover {
-  color: var(--text-primary);
-}
 
 .dace-app .kd-root .kd-save {
   display: inline-flex;
@@ -336,18 +308,8 @@
   background: var(--border-subtle);
 }
 
-/* Shed chrome as the sheet narrows; the text column always wins. */
-@container kd-editor (max-width: 940px) {
+@container kd-editor (max-width: 560px) {
   .dace-app .kd-root .kd-meta-text { display: none; }
-}
-
-@container kd-editor (max-width: 820px) {
-  .dace-app .kd-root .kd-format-group:nth-child(3) { display: none; }
-}
-
-@container kd-editor (max-width: 640px) {
-  .dace-app .kd-root .kd-format { display: none; }
-  .dace-app .kd-root .kd-bar { grid-template-columns: auto minmax(0, 1fr) auto; }
 }
 
 /* --------------------------------------------------------------------------
@@ -490,6 +452,7 @@
 }
 
 .dace-app .kd-root .kd-body {
+  /* Wrapper for the rich editor; overflow stays visible for its toolbar. */
   display: block;
   width: 100%;
   min-height: 50vh;
@@ -497,8 +460,7 @@
   padding: 0;
   border: none;
   outline: none;
-  resize: none;
-  overflow: hidden;
+  overflow: visible;
   background: transparent;
   color: var(--text-primary);
   font-family: var(--font-editorial);

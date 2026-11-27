@@ -166,7 +166,10 @@ export const KnowledgeDesk: FC<KnowledgeDeskProps> = ({
         if (targetId) {
           const full = await api.getRecord(targetId);
           if (full && isMounted) {
-            setActiveRecord(full);
+            // A record created or opened while this initial load was in
+            // flight (e.g. "New record" from Home) must win; only fill an
+            // empty desk. An explicit deep link still selects its target.
+            setActiveRecord((current) => (current && !initialRecordId ? current : full));
           }
         }
       }

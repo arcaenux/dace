@@ -9,6 +9,24 @@ interface DocumentPreviewModalProps {
   onShowNotice: (msg: string) => void;
 }
 
+/** Turn a base64 data: URL into a revocable blob: URL (no network fetch). */
+function dataUrlToObjectUrl(url: string): string {
+  if (!url.startsWith("data:")) return url;
+  const comma = url.indexOf(",");
+  const meta = url.slice(5, comma);
+  const mime = meta.split(";")[0] || "application/octet-stream";
+  const payload = url.slice(comma + 1);
+  let bytes: Uint8Array<ArrayBuffer>;
+  if (meta.includes(";base64")) {
+    const binary = atob(payload);
+    bytes = new Uint8Array(binary.length);
+    for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+  } else {
+    bytes = new Uint8Array(new TextEncoder().encode(decodeURIComponent(payload)));
+  }
+  return URL.createObjectURL(new Blob([bytes], { type: mime }));
+}
+
 export const DocumentPreviewModal: FC<DocumentPreviewModalProps> = ({
   attachment,
   onClose,
@@ -16,6 +34,12 @@ export const DocumentPreviewModal: FC<DocumentPreviewModalProps> = ({
 }) => {
   const [textContent, setTextContent] = useState<string | null>(null);
   const [dataUrl, setDataUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (dataUrl?.startsWith("blob:")) URL.revokeObjectURL(dataUrl);
+    };
+  }, [dataUrl]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const modalRef = useRef<HTMLDivElement>(null);
@@ -42,7 +66,14 @@ export const DocumentPreviewModal: FC<DocumentPreviewModalProps> = ({
           if (isMounted) setTextContent(text);
         } else if (viewerType === "image" || viewerType === "pdf") {
           const url = await api.readAttachmentDataUrl(attachment.id);
-          if (isMounted) setDataUrl(url);
+          // Frames may only load blob: URLs under the app's CSP, so PDFs are
+          // handed over as a local object URL instead of a data: URL.
+          const shown = viewerType === "pdf" ? dataUrlToObjectUrl(url) : url;
+          if (isMounted) {
+            setDataUrl(shown);
+          } else if (shown.startsWith("blob:")) {
+            URL.revokeObjectURL(shown);
+          }
         }
       } catch (err: any) {
         console.error("[DocumentPreviewModal] Error loading attachment preview:", err);

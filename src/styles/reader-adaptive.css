@@ -135,7 +135,8 @@ body.reader-is-resizing .dace-app * {
 /* Compact single-row document toolbar ----------------------------------- */
 .dace-app .reader-toolbar {
   position: relative;
-  z-index: 2;
+  /* Above the writing drawer (z-index 5) so toolbar popovers are never hidden. */
+  z-index: 10;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -770,16 +771,6 @@ body.reader-is-resizing .dace-app * {
   padding: 2px 0 8px;
   background: var(--reader-surface);
 }
-.dace-app .reader-shell .rd-note-tools > .rd-icon {
-  color: var(--text-dim, var(--text-muted));
-}
-.dace-app .reader-shell .rd-note:hover .rd-note-tools > .rd-icon,
-.dace-app .reader-shell .rd-note:focus-within .rd-note-tools > .rd-icon {
-  color: var(--text-muted);
-}
-.dace-app .reader-shell .rd-note-tools > .rd-icon:hover {
-  color: var(--text-primary);
-}
 .dace-app .reader-shell .rd-save {
   display: inline-flex;
   align-items: center;
@@ -835,10 +826,13 @@ body.reader-is-resizing .dace-app * {
   padding-top: 10px;
 }
 .dace-app .reader-shell .rd-note-title {
+  display: block;
   width: 100%;
   padding: 0;
   border: 0;
   outline: none;
+  resize: none;
+  overflow: hidden;
   background: transparent;
   color: var(--text-bright);
   font-family: var(--font-display);
@@ -922,8 +916,7 @@ body.reader-is-resizing .dace-app * {
   padding: 0;
   border: 0;
   outline: none;
-  resize: none;
-  overflow: hidden;
+  overflow: visible;
   background: transparent;
   color: var(--text-primary);
   font-family: var(--font-editorial);
@@ -936,7 +929,7 @@ body.reader-is-resizing .dace-app * {
 }
 
 /* The caret is the focus on writing surfaces — no ring around them. */
-.dace-app .reader-shell .rd-note-page input.rd-note-title:focus-visible,
+.dace-app .reader-shell .rd-note-page textarea.rd-note-title:focus-visible,
 .dace-app .reader-shell .rd-note-page textarea.rd-note-body:focus-visible,
 .dace-app .reader-shell .rd-note-tags input:focus-visible,
 .dace-app .reader-shell .rd-passage textarea.rd-annotation-input:focus-visible,

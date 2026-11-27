@@ -16,6 +16,7 @@ interface KeyboardShortcutsProps {
   requestIntent: (request: WorkspaceIntentRequest) => void;
   onToggleNav?: () => void;
   onToggleColorMode?: () => void;
+  onToggleAssistant?: () => void;
 }
 
 export function useKeyboardShortcuts({
@@ -31,6 +32,7 @@ export function useKeyboardShortcuts({
   requestIntent,
   onToggleNav,
   onToggleColorMode,
+  onToggleAssistant,
 }: KeyboardShortcutsProps) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -92,6 +94,13 @@ export function useKeyboardShortcuts({
       if (modifier && e.shiftKey && (e.key === "l" || e.key === "L") && !e.altKey) {
         e.preventDefault();
         onToggleColorMode?.();
+        return;
+      }
+
+      // Ctrl+Shift+A: side browser (ChatGPT, Gemini, …) next to the work
+      if (modifier && e.shiftKey && (e.key === "a" || e.key === "A") && !e.altKey) {
+        e.preventDefault();
+        onToggleAssistant?.();
         return;
       }
 

@@ -418,7 +418,7 @@ pub fn get_storage_info(
         .path()
         .app_data_dir()
         .map_err(|e| format!("Failed to resolve app data dir: {}", e))?;
-    let attachments_dir = app_data_dir.join("attachments");
+    let attachments_dir = crate::vault::attachments_root(&app_data_dir);
 
     let database_path = db.path.clone();
     let database_bytes = database_path

@@ -2,6 +2,7 @@ import { FC, useState, useEffect, useRef, KeyboardEvent } from "react";
 import { PanelLeftClose, Plus, Search, Trash2, X } from "lucide-react";
 import { KnowledgeRecordSummary, TagItem } from "./types";
 import { stripMarkdownPreview } from "./markdownFormat.ts";
+import { visibleNoteTags } from "../reader/noteSaveState.ts";
 
 interface RecordListPanelProps {
   isOpen: boolean;
@@ -47,6 +48,8 @@ export const RecordListPanel: FC<RecordListPanelProps> = ({
   onDeleteRecord,
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
+  // Internal reader-note link tags are bookkeeping, not filters people use.
+  const filterTags = tags.filter((t) => visibleNoteTags([t.name]).length > 0);
   const [focusedIndex, setFocusedIndex] = useState(-1);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -141,7 +144,7 @@ export const RecordListPanel: FC<RecordListPanelProps> = ({
             )}
           </label>
 
-          {tags.length > 0 && (
+          {filterTags.length > 0 && (
             <div className="kd-tag-filter" role="group" aria-label="Filter by tag">
               <button
                 type="button"
@@ -150,7 +153,7 @@ export const RecordListPanel: FC<RecordListPanelProps> = ({
               >
                 All
               </button>
-              {tags.map((t) => (
+              {filterTags.map((t) => (
                 <button
                   key={t.id}
                   type="button"

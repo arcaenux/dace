@@ -1,3 +1,4 @@
+pub mod assistant;
 pub mod attachments;
 pub mod backup;
 pub mod db;
@@ -7,6 +8,7 @@ pub mod migration;
 pub mod reader;
 pub mod settings;
 pub mod terminal;
+pub mod vault;
 
 use tauri::Manager;
 
@@ -67,7 +69,12 @@ fn destroy_window(window: tauri::Window) -> Result<(), String> {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_process::init())
         .setup(|app| {
+            // Signed self-updates from GitHub Releases (desktop only).
+            #[cfg(desktop)]
+            app.handle()
+                .plugin(tauri_plugin_updater::Builder::new().build())?;
             // Resolve OS-standard application data directory
             let app_data_dir = app
                 .path()
@@ -134,7 +141,8 @@ pub fn run() {
                 .map_err(|e| format!("Failed to initialize database: {}", e))?;
 
             // Initialize Content-Addressed Attachment Storage & run startup reconciliation
-            let attachments_dir = app_data_dir.join("attachments");
+            // Documents live in the chosen vault folder, or the app folder by default.
+            let attachments_dir = vault::attachments_root(&app_data_dir);
             let storage = AttachmentStorage::new(&attachments_dir)
                 .map_err(|e| format!("Failed to initialize attachment storage {:?}: {}", attachments_dir, e))?;
             storage.run_reconciliation();
@@ -149,6 +157,7 @@ pub fn run() {
 
             app.manage(database);
             app.manage(storage);
+            app.manage(vault::VaultState::new(&app_data_dir));
             app.manage(std::sync::Arc::new(terminal::TerminalState::new()));
             Ok(())
         })
@@ -166,6 +175,15 @@ pub fn run() {
             settings::get_storage_info,
             settings::get_app_info,
             settings::pick_backup_directory,
+            vault::get_vault_info,
+            vault::pick_vault_folder,
+            vault::set_vault_location,
+            assistant::assistant_show,
+            assistant::assistant_navigate,
+            assistant::assistant_set_bounds,
+            assistant::assistant_hide,
+            assistant::assistant_reload,
+            assistant::assistant_current_url,
             fonts::list_system_fonts,
             terminal::get_terminal_environment,
             terminal::spawn_terminal_session,

@@ -14,6 +14,7 @@ import { RecordRelationshipsPanel } from "./RecordRelationshipsPanel";
 import { RecordAttachmentsPanel } from "../attachments/RecordAttachmentsPanel";
 import { RecordExcerptsSection } from "../reader/RecordExcerptsSection";
 import { KnowledgeGraphView } from "../graph/KnowledgeGraphView";
+import { visibleNoteTags } from "../reader/noteSaveState.ts";
 
 export interface DeskOutlineItem {
   level: number;
@@ -162,7 +163,7 @@ export const KnowledgeContextPanel: FC<KnowledgeContextPanelProps> = ({
                   </>
                 )}
                 <dt>Tags</dt>
-                <dd>{record.tags.length > 0 ? record.tags.map((tag) => `#${tag}`).join("  ") : "None"}</dd>
+                <dd>{visibleNoteTags(record.tags).length > 0 ? visibleNoteTags(record.tags).map((tag) => `#${tag}`).join("  ") : "None"}</dd>
               </dl>
             )}
 
