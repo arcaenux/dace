@@ -12,14 +12,18 @@
   "app": {
     "windows": [
       {
+        "label": "main",
         "title": "Dace",
-        "width": 800,
-        "height": 600,
+        "width": 1280,
+        "height": 820,
+        "minWidth": 960,
+        "minHeight": 600,
+        "center": true,
         "decorations": false
       }
     ],
     "security": {
-      "csp": "default-src 'self'; connect-src 'self' ipc: http://ipc.localhost http://localhost:1420 ws://localhost:1420; img-src 'self' asset: http://asset.localhost data: blob:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; worker-src 'self' blob:"
+      "csp": "default-src 'self'; connect-src 'self' ipc: http://ipc.localhost http://localhost:1420 ws://localhost:1420; img-src 'self' asset: http://asset.localhost data: blob:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; worker-src 'self' blob:; frame-src 'self' blob:"
     }
   },
   "bundle": {
@@ -32,5 +36,16 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ]
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDFCNDdGNTQ2MTg2MTY2OEMKUldTTVptRVlSdlZIR3dON2pBK21OdmdCN0R6WXlNZ29SaVQvVlFkTTM5bHFKbnhYMXE0S1lRSWIK",
+      "endpoints": [
+        "https://github.com/arcaenux/dace/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
+    }
   }
 }

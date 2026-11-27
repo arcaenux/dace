@@ -51,6 +51,7 @@ Thumbs.db
 *.sqlite3
 
 # Dace backup archives (user-generated, not for source control)
+*.dacebackup
 *.ndarchive
 
 # Generated screenshots and verification artefacts

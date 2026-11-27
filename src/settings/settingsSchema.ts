@@ -1,5 +1,6 @@
 import type {
   AppSettings,
+  ColorMode,
   DefaultActivity,
   Density,
   EditorFormat,
@@ -17,6 +18,7 @@ const DEFAULT_ACTIVITIES: DefaultActivity[] = [
   "reader",
   "knowledge-graph",
 ];
+const COLOR_MODES: ColorMode[] = ["light", "dark"];
 const DENSITIES: Density[] = ["comfortable", "compact"];
 const READER_MODES: ReaderModeSetting[] = ["reading", "research", "writing"];
 const EDITOR_FORMATS: EditorFormat[] = ["markdown", "plain-text"];
@@ -29,6 +31,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
     confirmDestructiveActions: true,
   },
   appearance: {
+    colorMode: "light",
     density: "comfortable",
     textScale: 1,
     reducedMotion: false,
@@ -121,6 +124,7 @@ export function normalizeSettings(input: unknown): AppSettings {
           : defaults.general.confirmDestructiveActions,
     },
     appearance: {
+      colorMode: pick(appearance.colorMode, COLOR_MODES, defaults.appearance.colorMode),
       density: pick(appearance.density, DENSITIES, defaults.appearance.density),
       textScale: clampNumber(appearance.textScale, 0.85, 1.25, defaults.appearance.textScale),
       reducedMotion:

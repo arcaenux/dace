@@ -11,8 +11,8 @@ use crate::attachments::storage::AttachmentStorage;
 use crate::db::Database;
 
 use super::archive::{
-    write_ndarchive, ArchiveFile, AttachmentEntry, BackupManifest, BackupTotals, DatabaseEntry,
-    NDARCHIVE_FORMAT_VERSION, NDARCHIVE_MAGIC,
+    write_backup, ArchiveFile, AttachmentEntry, BackupManifest, BackupTotals, DatabaseEntry,
+    validate_backup, BACKUP_FORMAT_VERSION, BACKUP_MAGIC, LEGACY_BACKUP_FORMAT, LEGACY_BACKUP_MAGIC,
 };
 use super::restore::{
     apply_pending_restore, apply_pending_restore_with_hook, confirm_startup_restore,
@@ -165,7 +165,7 @@ fn create_rich_archive(source: &Path) -> (PathBuf, SeedInfo) {
     let db = Database::init(&db_path).expect("init source db");
     let storage = AttachmentStorage::new(&attachments_dir).expect("init source storage");
     let seed = seed_rich_environment(&db, &attachments_dir);
-    let archive = source.join("rich.ndarchive");
+    let archive = source.join("rich.dacebackup");
     create_backup_with_progress(&db, &storage, &archive, None).expect("create rich backup");
     drop(storage);
     drop(db);
@@ -196,8 +196,8 @@ fn make_manifest(db_bytes: &[u8], attachments: Vec<AttachmentEntry>) -> BackupMa
     let database_bytes = db_bytes.len() as u64;
     let attachment_bytes: u64 = attachments.iter().map(|a| a.size).sum();
     BackupManifest {
-        format: "dace-ndarchive".to_string(),
-        format_version: NDARCHIVE_FORMAT_VERSION,
+        format: "dace-backup".to_string(),
+        format_version: BACKUP_FORMAT_VERSION,
         app_version: "0.1.0".to_string(),
         schema_version: 4,
         created_at: chrono::Utc::now().to_rfc3339(),
@@ -437,7 +437,7 @@ fn test_restore_empty_database_replaces_existing_data() {
     let source_storage = source.path().join("attachments");
     let db = Database::init(&source_db).expect("init empty db");
     let storage = AttachmentStorage::new(&source_storage).expect("init storage");
-    let archive = source.path().join("empty.ndarchive");
+    let archive = source.path().join("empty.dacebackup");
     create_backup_with_progress(&db, &storage, &archive, None).expect("empty backup");
     drop(storage);
     drop(db);
@@ -469,7 +469,7 @@ fn test_restore_large_attachment() {
         insert_record(&conn, "large-record", "Large", "payload");
         insert_managed_attachment(&conn, &attachments_dir, "large-att", "large.bin", &data)
     };
-    let archive = source.path().join("large.ndarchive");
+    let archive = source.path().join("large.dacebackup");
     create_backup_with_progress(&db, &storage, &archive, None).expect("large backup");
     drop(storage);
     drop(db);
@@ -488,8 +488,8 @@ fn test_restore_large_attachment() {
 #[test]
 fn test_inspect_rejects_invalid_archive() {
     let temp = TempDirGuard::new("restore-invalid");
-    let archive = temp.path().join("garbage.ndarchive");
-    fs::write(&archive, b"this is definitely not an ndarchive").expect("write garbage");
+    let archive = temp.path().join("garbage.dacebackup");
+    fs::write(&archive, b"this is definitely not a Dace backup").expect("write garbage");
     let err = inspect_archive(&archive).expect_err("invalid archive must be rejected");
     assert!(
         err.to_lowercase().contains("magic") || err.to_lowercase().contains("header"),
@@ -501,10 +501,10 @@ fn test_inspect_rejects_invalid_archive() {
 #[test]
 fn test_inspect_rejects_unsupported_format_version() {
     let temp = TempDirGuard::new("restore-version");
-    let archive = temp.path().join("future.ndarchive");
+    let archive = temp.path().join("future.dacebackup");
     {
         let mut file = File::create(&archive).expect("create");
-        file.write_all(NDARCHIVE_MAGIC).unwrap();
+        file.write_all(BACKUP_MAGIC).unwrap();
         file.write_all(&2u32.to_le_bytes()).unwrap();
         file.write_all(&0u64.to_le_bytes()).unwrap();
     }
@@ -517,13 +517,43 @@ fn test_inspect_rejects_unsupported_format_version() {
 }
 
 #[test]
+fn test_legacy_ndarchive_backups_still_validate() {
+    // Backups made before the Dace rename carry the old header and format
+    // name; they must keep restoring.
+    let temp = TempDirGuard::new("restore-legacy");
+    let db = b"legacy database bytes".to_vec();
+    let mut manifest = make_manifest(&db, Vec::new());
+    manifest.format = LEGACY_BACKUP_FORMAT.to_string();
+    let payload = write_payload(temp.path(), "payload/db", &db);
+    let archive = temp.path().join("old-library.ndarchive");
+    write_backup(
+        &archive,
+        &manifest,
+        &[archive_file(
+            "database/dace.db",
+            payload,
+            manifest.database.sha256.clone(),
+            db.len() as u64,
+        )],
+    )
+    .expect("write archive");
+    let mut bytes = fs::read(&archive).expect("read archive");
+    assert_eq!(&bytes[..14], BACKUP_MAGIC, "new backups use the Dace header");
+    bytes[..14].copy_from_slice(LEGACY_BACKUP_MAGIC);
+    fs::write(&archive, &bytes).expect("rewrite header");
+
+    let read = validate_backup(&archive).expect("legacy backup must still validate");
+    assert_eq!(read.format, LEGACY_BACKUP_FORMAT);
+}
+
+#[test]
 fn test_inspect_rejects_corrupted_database() {
     let temp = TempDirGuard::new("restore-corrupt-db");
     let fake_db = b"not a sqlite database at all".to_vec();
     let manifest = make_manifest(&fake_db, Vec::new());
     let db_payload = write_payload(temp.path(), "payload/db", &fake_db);
-    let archive = temp.path().join("corrupt-db.ndarchive");
-    write_ndarchive(
+    let archive = temp.path().join("corrupt-db.dacebackup");
+    write_backup(
         &archive,
         &manifest,
         &[archive_file(
@@ -554,8 +584,8 @@ fn test_inspect_rejects_missing_attachment_entry() {
         vec![attachment_entry("aa/missing.txt", &missing_bytes, "att-missing")],
     );
     let db_payload = write_payload(temp.path(), "payload/db", &fake_db);
-    let archive = temp.path().join("missing-att.ndarchive");
-    write_ndarchive(
+    let archive = temp.path().join("missing-att.dacebackup");
+    write_backup(
         &archive,
         &manifest,
         &[archive_file(
@@ -579,8 +609,8 @@ fn test_inspect_rejects_checksum_mismatch() {
     let mut manifest = make_manifest(&db_bytes, Vec::new());
     manifest.database.sha256 = wrong_hash.clone();
     let db_payload = write_payload(temp.path(), "payload/db", &db_bytes);
-    let archive = temp.path().join("checksum.ndarchive");
-    write_ndarchive(
+    let archive = temp.path().join("checksum.dacebackup");
+    write_backup(
         &archive,
         &manifest,
         &[archive_file(
@@ -609,8 +639,8 @@ fn test_inspect_rejects_path_traversal_in_manifest() {
     manifest.totals.attachment_bytes = 1;
     manifest.totals.total_bytes = manifest.totals.database_bytes + 1;
 
-    let archive = temp.path().join("traversal.ndarchive");
-    write_ndarchive(&archive, &manifest, &[]).expect("write manifest-only archive");
+    let archive = temp.path().join("traversal.dacebackup");
+    write_backup(&archive, &manifest, &[]).expect("write manifest-only archive");
     let err = inspect_archive(&archive).expect_err("traversal path must be rejected");
     assert!(
         err.to_lowercase().contains("unsafe") || err.to_lowercase().contains("traversal"),
@@ -627,8 +657,8 @@ fn test_inspect_rejects_duplicate_manifest_paths() {
     let first = attachment_entry("aa/duplicate.txt", &bytes, "att-1");
     let second = attachment_entry("aa/duplicate.txt", &bytes, "att-2");
     let manifest = make_manifest(&db_bytes, vec![first, second]);
-    let archive = temp.path().join("duplicate.ndarchive");
-    write_ndarchive(&archive, &manifest, &[]).expect("write manifest-only archive");
+    let archive = temp.path().join("duplicate.dacebackup");
+    write_backup(&archive, &manifest, &[]).expect("write manifest-only archive");
     let err = inspect_archive(&archive).expect_err("duplicate entries must be rejected");
     assert!(err.to_lowercase().contains("duplicate"), "unexpected error: {}", err);
 }
@@ -639,7 +669,7 @@ fn test_failed_preparation_leaves_live_data_untouched() {
     let app = TempDirGuard::new("restore-fail-prepare-app");
     let (current_db, current_seed) = create_current_environment(app.path());
 
-    let invalid = temp.path().join("bad.ndarchive");
+    let invalid = temp.path().join("bad.dacebackup");
     fs::write(&invalid, b"not an archive").expect("write invalid");
 
     let err = prepare_restore(app.path(), &invalid, Some(&current_db), None)
@@ -1090,8 +1120,8 @@ fn test_prepare_failure_during_extraction_cleans_staging() {
         vec![attachment_entry("aa/missing.txt", b"missing", "att-missing")],
     );
     let db_payload = write_payload(temp.path(), "payload/db", &fake_db);
-    let archive = temp.path().join("missing.ndarchive");
-    write_ndarchive(
+    let archive = temp.path().join("missing.dacebackup");
+    write_backup(
         &archive,
         &manifest,
         &[archive_file(
@@ -1160,7 +1190,7 @@ fn test_startup_cleanup_removes_loose_stale_staging_files() {
     let app = TempDirGuard::new("restore-loose-staging");
     let staging = app.path().join(RESTORE_STAGING_DIR);
     fs::create_dir_all(&staging).expect("create stale staging root");
-    fs::write(staging.join("stale.ndarchive"), b"leftover").expect("write stale file");
+    fs::write(staging.join("stale.dacebackup"), b"leftover").expect("write stale file");
     let stale_dir = staging.join("stale-extract");
     fs::create_dir_all(&stale_dir).expect("create stale dir");
     fs::write(stale_dir.join("payload"), b"leftover").expect("write stale payload");

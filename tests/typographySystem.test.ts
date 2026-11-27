@@ -3,20 +3,23 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 
-test("1. Typography tokens use Aptos as the base for app and text", () => {
+test("1. Typography tokens pair Waldenburg Light 300 display with Inter and installed device fonts", () => {
   const tokensCss = fs.readFileSync(path.resolve("src/styles/tokens.css"), "utf-8");
 
+  assert.ok(tokensCss.includes("--dace-display-font:"), "must expose the display serif font stack");
   assert.ok(tokensCss.includes("--dace-app-font:"), "must expose the app font hook");
   assert.ok(tokensCss.includes("--dace-text-font:"), "must expose the text font hook");
   assert.ok(tokensCss.includes("--font-code:"), "must expose a monospace stack");
-  assert.match(tokensCss, /--dace-app-font:[^;]*Aptos/, "app font must default to Aptos");
-  assert.match(tokensCss, /--dace-text-font:[^;]*Aptos/, "text font must default to Aptos");
+  assert.match(tokensCss, /--dace-display-font:[^;]*Waldenburg/, "display font must feature Waldenburg");
+  assert.match(tokensCss, /--font-weight-display:\s*300/, "display weight must stay editorial light (300)");
+  assert.match(tokensCss, /--dace-app-font:[^;]*Inter/, "app font must default to Inter");
+  assert.match(tokensCss, /--dace-text-font:[^;]*Inter/, "text font must default to Inter");
 
   assert.ok(tokensCss.includes("--font-interface: var(--font-app)"));
   assert.ok(tokensCss.includes("--font-sans: var(--font-app)"));
-  assert.ok(tokensCss.includes("--font-display: var(--font-app)"));
+  assert.ok(tokensCss.includes("--font-display: var(--dace-display-font)"));
   assert.ok(tokensCss.includes("--font-editorial: var(--font-text)"));
-  assert.ok(tokensCss.includes("--font-quotation: var(--font-text)"));
+  assert.ok(tokensCss.includes("--font-quotation: var(--font-display)"));
   assert.ok(tokensCss.includes("--font-label: var(--font-app)"));
   assert.ok(tokensCss.includes("--font-mono: var(--font-code)"));
 

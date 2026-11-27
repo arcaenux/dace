@@ -1,3 +1,4 @@
+import { ArrowLeft } from "lucide-react";
 import { FC, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { AttachmentSummary, getViewerType } from "../attachments/types.ts";
 import * as attApi from "../attachments/attachmentsApi.ts";
@@ -251,6 +252,11 @@ export const ResearchReaderView: FC<ResearchReaderViewProps> = ({
       return;
     }
 
+    if (intent.type === "import-attachment") {
+      void handleImportRef.current();
+      return;
+    }
+
     setReaderMode(intent.mode);
   }, [intent, onConsumeIntent, handleSaveNote, setReaderMode]);
 
@@ -270,6 +276,9 @@ export const ResearchReaderView: FC<ResearchReaderViewProps> = ({
       onShowNotice(`Import failed: ${err?.message || err}`);
     }
   };
+
+  const handleImportRef = useRef(handleImport);
+  handleImportRef.current = handleImport;
 
   const handlePickDocument = (document: AttachmentSummary) => {
     // The hydration effect restores this document's own page/zoom/scroll
@@ -372,6 +381,7 @@ export const ResearchReaderView: FC<ResearchReaderViewProps> = ({
       setSelectedHighlightId(id);
       setAnnotationRequestId(null);
       revealWriting();
+      setDrawerTab("passages");
     },
     [revealWriting]
   );
@@ -380,8 +390,8 @@ export const ResearchReaderView: FC<ResearchReaderViewProps> = ({
     (id: string) => {
       setSelectedHighlightId(id);
       setAnnotationRequestId(id);
-      setDrawerTab("highlights");
       revealWriting();
+      setDrawerTab("passages");
     },
     [revealWriting]
   );
@@ -533,6 +543,7 @@ export const ResearchReaderView: FC<ResearchReaderViewProps> = ({
             onSaveNote={() => void handleSaveNote()}
             onSpeedRead={() => handleSpeedRead()}
             isNarrow={layout.isNarrow}
+            onDeleteDocument={handleDeleteDocument}
           />
         </div>
 
@@ -551,10 +562,10 @@ export const ResearchReaderView: FC<ResearchReaderViewProps> = ({
               </div>
             ) : !activeAttachment ? (
               <div className="reader-surface-state">
-                <h2>No Research Documents in Library</h2>
-                <p>Import a PDF, Markdown paper, or text document to begin reading and annotating.</p>
-                <button className="reader-primary-btn" onClick={handleImport}>
-                  Import Research Document
+                <h2>No documents yet</h2>
+                <p>Import a PDF, Markdown or text file to read, highlight and write beside it.</p>
+                <button type="button" className="reader-primary-btn" onClick={handleImport}>
+                  Import document <kbd>Ctrl O</kbd>
                 </button>
               </div>
             ) : viewerType === "markdown" || viewerType === "text" ? (
@@ -629,14 +640,15 @@ export const ResearchReaderView: FC<ResearchReaderViewProps> = ({
             >
               {layout.mode === "writing" && activeAttachment && (
                 <div className="reader-writing-source">
-                  <span className="reader-section-label">Writing workspace</span>
                   <button
+                    type="button"
                     onClick={() => layout.setMode(layout.isNarrow ? "reading" : "research")}
-                    title="Return to the source document"
+                    title={`Back to document — ${activeAttachment.file_name}`}
+                    aria-label="Back to document"
                     data-tauri-drag-region="false"
                   >
+                    <ArrowLeft size={13} strokeWidth={1.8} aria-hidden="true" />
                     <span>{activeAttachment.file_name}</span>
-                    <span>Back to document →</span>
                   </button>
                 </div>
               )}

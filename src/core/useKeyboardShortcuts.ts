@@ -15,6 +15,8 @@ interface KeyboardShortcutsProps {
   setActiveActivity: (act: WorkspaceActivityId) => void;
   requestIntent: (request: WorkspaceIntentRequest) => void;
   onToggleNav?: () => void;
+  onToggleColorMode?: () => void;
+  onToggleAssistant?: () => void;
 }
 
 export function useKeyboardShortcuts({
@@ -29,6 +31,8 @@ export function useKeyboardShortcuts({
   setActiveActivity,
   requestIntent,
   onToggleNav,
+  onToggleColorMode,
+  onToggleAssistant,
 }: KeyboardShortcutsProps) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -83,6 +87,20 @@ export function useKeyboardShortcuts({
       if (modifier && (e.key === "b" || e.key === "B") && !e.shiftKey && !e.altKey) {
         e.preventDefault();
         onToggleNav?.();
+        return;
+      }
+
+      // 3.2. Ctrl+Shift+L (or Cmd+Shift+L): Toggle Light / Dark Appearance
+      if (modifier && e.shiftKey && (e.key === "l" || e.key === "L") && !e.altKey) {
+        e.preventDefault();
+        onToggleColorMode?.();
+        return;
+      }
+
+      // Ctrl+Shift+A: side browser (ChatGPT, Gemini, …) next to the work
+      if (modifier && e.shiftKey && (e.key === "a" || e.key === "A") && !e.altKey) {
+        e.preventDefault();
+        onToggleAssistant?.();
         return;
       }
 
@@ -208,5 +226,6 @@ export function useKeyboardShortcuts({
     setActiveActivity,
     requestIntent,
     onToggleNav,
+    onToggleColorMode,
   ]);
 }

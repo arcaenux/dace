@@ -4,8 +4,17 @@ import { useSettings } from "./SettingsContext";
 import { listSystemFonts } from "./fontsApi";
 import type { SystemFont } from "./fonts";
 import { pickBackupDirectory } from "./settingsApi";
+import { isTauriEnvironment } from "../focus/tauriWindow.ts";
+import { getVaultInfo, pickVaultFolder, restartApp, setVaultLocation, type VaultInfo } from "./vaultApi";
+import {
+  checkForUpdate,
+  describeUpdateError,
+  installUpdateAndRestart,
+  type AvailableUpdate,
+} from "./updaterApi";
 import type {
   AppSettings,
+  ColorMode,
   DefaultActivity,
   Density,
   EditorFormat,
@@ -13,6 +22,181 @@ import type {
   SettingsSectionId,
   StartupBehavior,
 } from "./types";
+
+type UpdateState =
+  | { kind: "idle" }
+  | { kind: "checking" }
+  | { kind: "current" }
+  | { kind: "available"; update: AvailableUpdate }
+  | { kind: "installing"; percent: number | null }
+  | { kind: "error"; message: string };
+
+/** Check, download and install signed updates without leaving Settings. */
+function UpdatePanel({ isDesktop }: { isDesktop: boolean }) {
+  const [state, setState] = useState<UpdateState>({ kind: "idle" });
+
+  const runCheck = async () => {
+    setState({ kind: "checking" });
+    try {
+      const appUpdate = await checkForUpdate();
+      setState(appUpdate ? { kind: "available", update: appUpdate } : { kind: "current" });
+    } catch (err) {
+      setState({ kind: "error", message: describeUpdateError(err) });
+    }
+  };
+
+  const runInstall = async () => {
+    setState({ kind: "installing", percent: null });
+    try {
+      await installUpdateAndRestart(({ downloaded, total }) => {
+        setState({ kind: "installing", percent: total ? Math.round((downloaded / total) * 100) : null });
+      });
+    } catch (err) {
+      setState({ kind: "error", message: describeUpdateError(err) });
+    }
+  };
+
+  const status =
+    !isDesktop
+      ? "Updates are available in the desktop app."
+      : state.kind === "checking"
+        ? "Checking…"
+        : state.kind === "current"
+          ? "You're on the latest version."
+          : state.kind === "available"
+            ? `Version ${state.update.version} is available.`
+            : state.kind === "installing"
+              ? state.percent === null
+                ? "Downloading…"
+                : `Downloading… ${state.percent}%`
+              : state.kind === "error"
+                ? state.message
+                : "Dace checks GitHub Releases for signed updates.";
+
+  return (
+    <div className="settings-update">
+      <div className="settings-readout">
+        <span>Updates</span>
+        <strong aria-live="polite">{status}</strong>
+      </div>
+      {state.kind === "available" && state.update.notes && (
+        <p className="settings-note settings-update-notes">{state.update.notes}</p>
+      )}
+      {isDesktop && (
+        <div className="settings-action-row">
+          {state.kind === "available" ? (
+            <button type="button" className="settings-primary" onClick={() => void runInstall()}>
+              Install {state.update.version} and restart
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => void runCheck()}
+              disabled={state.kind === "checking" || state.kind === "installing"}
+            >
+              Check for updates
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Choose where documents and readable note files live. */
+function VaultPanel() {
+  const [info, setInfo] = useState<VaultInfo | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [needsRestart, setNeedsRestart] = useState(false);
+  const isDesktop = isTauriEnvironment();
+
+  const refresh = useCallback(async () => {
+    try {
+      setInfo(await getVaultInfo());
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : String(err));
+    }
+  }, []);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  const apply = async (path: string | null) => {
+    setBusy(true);
+    setMessage(null);
+    try {
+      const result = await setVaultLocation(path);
+      await refresh();
+      const parts = [
+        path ? `Vault set. ${result.notesWritten} notes written as Markdown files.` : "Documents will be kept in Dace's own folder again.",
+        result.documentsCopied > 0 ? `${result.documentsCopied} documents copied.` : "",
+        result.restartRequired ? `Your previous copy is untouched at ${result.previousDocumentsDir}.` : "",
+      ];
+      setMessage(parts.filter(Boolean).join(" "));
+      setNeedsRestart(result.restartRequired);
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const choose = async () => {
+    const picked = await pickVaultFolder(info?.path ?? null);
+    if (picked) await apply(picked);
+  };
+
+  if (!isDesktop) {
+    return (
+      <div className="settings-readout settings-vault">
+        <span>Vault folder</span>
+        <strong>Available in the desktop app.</strong>
+      </div>
+    );
+  }
+
+  return (
+    <div className="settings-vault">
+      <div className="settings-readout">
+        <span>Vault folder</span>
+        <strong>{info?.path ?? "Dace's own folder (default)"}</strong>
+      </div>
+      <p className="settings-note">
+        Imported documents are kept in <code>Documents</code> and every note is also saved as a readable
+        Markdown file in <code>Notes</code>. Pick a synced folder (OneDrive, Dropbox) to keep copies elsewhere.
+      </p>
+      {info && (
+        <p className="settings-note settings-vault-paths">
+          Documents: {info.documentsDir}
+          {info.notesDir ? <><br />Notes: {info.notesDir}</> : null}
+        </p>
+      )}
+      <div className="settings-action-row">
+        <button type="button" className="settings-primary" onClick={() => void choose()} disabled={busy}>
+          {busy ? "Working…" : info?.path ? "Change vault folder…" : "Choose vault folder…"}
+        </button>
+        {info?.path && (
+          <button type="button" onClick={() => void apply(null)} disabled={busy}>
+            Use Dace's own folder
+          </button>
+        )}
+        {needsRestart && (
+          <button type="button" onClick={() => void restartApp()}>
+            Restart Dace now
+          </button>
+        )}
+      </div>
+      {message && (
+        <p className="settings-note" role="status">
+          {message}
+          {needsRestart ? " Restart Dace to finish switching." : ""}
+        </p>
+      )}
+    </div>
+  );
+}
 
 interface SettingsViewProps {
   onExportBackup: () => void;
@@ -222,7 +406,26 @@ export function SettingsView({ onExportBackup, onRestoreBackup }: SettingsViewPr
       case "appearance":
         return (
           <>
-            <Field label="Interface density" description="Dace keeps one permanent visual identity.">
+            <Field label="Colour mode" description="Light or dark appearance (Ctrl+Shift+L).">
+              <div className="settings-segmented">
+                {(["light", "dark"] as ColorMode[]).map((colorMode) => (
+                  <button
+                    key={colorMode}
+                    type="button"
+                    className={settings.appearance.colorMode === colorMode ? "is-active" : ""}
+                    onClick={() =>
+                      patch((current) => ({
+                        ...current,
+                        appearance: { ...current.appearance, colorMode },
+                      }))
+                    }
+                  >
+                    {colorMode}
+                  </button>
+                ))}
+              </div>
+            </Field>
+            <Field label="Interface density" description="Controls chrome spacing across workspaces.">
               <div className="settings-segmented">
                 {(["comfortable", "compact"] as Density[]).map((density) => (
                   <button
@@ -503,10 +706,7 @@ export function SettingsView({ onExportBackup, onRestoreBackup }: SettingsViewPr
                 {storageInfo?.attachmentCount ?? 0} files · {formatBytes(storageInfo?.attachmentBytes ?? 0)}
               </strong>
             </div>
-            <div className="settings-readout">
-              <span>Attachment vault</span>
-              <strong>{storageInfo?.attachmentsDir ?? "Not available"}</strong>
-            </div>
+            <VaultPanel />
             <div className="settings-readout">
               <span>Schema / search</span>
               <strong>
@@ -581,6 +781,7 @@ export function SettingsView({ onExportBackup, onRestoreBackup }: SettingsViewPr
             <div className="settings-readout"><span>Platform</span><strong>{appInfo?.platform ?? "unknown"}</strong></div>
             <div className="settings-readout"><span>Architecture</span><strong>{appInfo?.architecture ?? "unknown"}</strong></div>
             <div className="settings-readout"><span>Build</span><strong>{appInfo?.buildMode ?? "unknown"}</strong></div>
+            <UpdatePanel isDesktop={isTauriEnvironment()} />
           </div>
         );
     }

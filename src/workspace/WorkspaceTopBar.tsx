@@ -1,17 +1,23 @@
 import { FC, RefObject } from "react";
-import { Command, Keyboard, Search } from "lucide-react";
-import logoUrl from "../assets/brand/logo.png";
+import { Command, Keyboard, MessagesSquare, Moon, Search, Sun } from "lucide-react";
+import logoDarkUrl from "../assets/brand/logo.png";
+import logoLightUrl from "../assets/brand/logo-light.png";
 import { WorkspaceActivityId } from "../core/types.ts";
+import type { ColorMode } from "../settings/types.ts";
 
 interface WorkspaceTopBarProps {
   activeActivity: WorkspaceActivityId;
   isFocusSpace: boolean;
   hidden?: boolean;
+  colorMode: ColorMode;
+  onToggleColorMode: () => void;
   onOpenCommands: () => void;
   onOpenShortcuts: () => void;
   onSearch: () => void;
   commandsTriggerRef?: RefObject<HTMLButtonElement | null>;
   shortcutsTriggerRef?: RefObject<HTMLButtonElement | null>;
+  isAssistantOpen?: boolean;
+  onToggleAssistant?: () => void;
 }
 
 const activityNames: Record<WorkspaceActivityId, string> = {
@@ -27,12 +33,18 @@ export const WorkspaceTopBar: FC<WorkspaceTopBarProps> = ({
   activeActivity,
   isFocusSpace,
   hidden = false,
+  colorMode,
+  onToggleColorMode,
   onOpenCommands,
   onOpenShortcuts,
   onSearch,
   commandsTriggerRef,
   shortcutsTriggerRef,
+  isAssistantOpen = false,
+  onToggleAssistant,
 }) => {
+  const logoSrc = colorMode === "light" ? logoLightUrl : logoDarkUrl;
+
   if (isFocusSpace || hidden) return null;
 
   return (
@@ -40,7 +52,7 @@ export const WorkspaceTopBar: FC<WorkspaceTopBarProps> = ({
       <div className="topbar-left" data-tauri-drag-region>
         <div className="topbar-brand">
           <div className="topbar-brand-line">
-            <img src={logoUrl} alt="" className="topbar-brand-logo" width={24} height={24} aria-hidden="true" />
+            <img src={logoSrc} alt="" className="topbar-brand-logo" width={24} height={24} aria-hidden="true" />
             <span className="topbar-brand-name">DACE</span>
             {activeActivity !== "workspace" && (
               <>
@@ -93,6 +105,37 @@ export const WorkspaceTopBar: FC<WorkspaceTopBarProps> = ({
           data-tauri-drag-region="false"
         >
           <Keyboard size={14} strokeWidth={1.6} aria-hidden="true" />
+        </button>
+
+        {onToggleAssistant && (
+          <button
+            type="button"
+            className={`topbar-icon-btn topbar-icon-btn-quiet ${isAssistantOpen ? "is-active" : ""}`}
+            onClick={onToggleAssistant}
+            aria-label={isAssistantOpen ? "Close side browser" : "Open side browser (ChatGPT, Gemini…)"}
+            aria-pressed={Boolean(isAssistantOpen)}
+            title="Side browser: ChatGPT, Gemini… (Ctrl+Shift+A)"
+            data-dismiss-ignore
+            data-tauri-drag-region="false"
+          >
+            <MessagesSquare size={14} strokeWidth={1.6} aria-hidden="true" />
+          </button>
+        )}
+
+        <button
+          type="button"
+          className="topbar-icon-btn topbar-icon-btn-quiet"
+          onClick={onToggleColorMode}
+          aria-label={colorMode === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+          title={`Switch to ${colorMode === "dark" ? "Light" : "Dark"} Mode (Ctrl+Shift+L)`}
+          data-dismiss-ignore
+          data-tauri-drag-region="false"
+        >
+          {colorMode === "dark" ? (
+            <Sun size={14} strokeWidth={1.6} aria-hidden="true" />
+          ) : (
+            <Moon size={14} strokeWidth={1.6} aria-hidden="true" />
+          )}
         </button>
       </div>
     </div>

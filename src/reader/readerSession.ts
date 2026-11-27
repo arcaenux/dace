@@ -1,4 +1,5 @@
-export type ReaderDrawerTab = "highlights" | "outline" | "knowledge" | "info";
+/** "highlights" is the note page; "passages" lists highlights and annotations. */
+export type ReaderDrawerTab = "highlights" | "passages" | "outline" | "knowledge" | "info";
 
 export interface ReaderSessionState {
   currentPage: number;

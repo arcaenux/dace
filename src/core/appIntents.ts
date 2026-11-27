@@ -25,7 +25,7 @@ export type KnowledgeDeskIntent = Extract<
 
 export type ResearchReaderIntent = Extract<
   WorkspaceIntent,
-  { type: "reader-mode" | "save-active" }
+  { type: "reader-mode" | "save-active" | "import-attachment" }
 >;
 
 export type ShellIntent = Extract<WorkspaceIntent, { type: "export-backup" | "restore-backup" }>;
@@ -40,6 +40,7 @@ const KNOWLEDGE_DESK_INTENT_TYPES: ReadonlySet<WorkspaceIntent["type"]> = new Se
 const RESEARCH_READER_INTENT_TYPES: ReadonlySet<WorkspaceIntent["type"]> = new Set([
   "reader-mode",
   "save-active",
+  "import-attachment",
 ]);
 
 const SHELL_INTENT_TYPES: ReadonlySet<WorkspaceIntent["type"]> = new Set([
@@ -89,8 +90,11 @@ export function intentTargetActivity(
   activeActivity: WorkspaceActivityId
 ): WorkspaceActivityId | null {
   switch (intent.type) {
-    case "new-record":
     case "import-attachment":
+      // Importing from the Reader stays in the Reader; elsewhere the desk
+      // imports and (by preference) opens the document.
+      return activeActivity === "reader" ? "reader" : "knowledge-desk";
+    case "new-record":
     case "search-records":
       return "knowledge-desk";
     case "reader-mode":

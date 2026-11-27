@@ -26,12 +26,15 @@ assignees: ''
 
 ## Environment
 
-- **OS:** <!-- e.g. Windows 11 22H2 -->
-- **Dace version:** <!-- e.g. 0.1.0-alpha, or commit SHA -->
+- **OS:** <!-- e.g. Windows 11 24H2, Ubuntu 24.04 -->
+- **Dace version:** <!-- Settings → About, or the commit SHA if you built it yourself -->
+- **Where it happened:** <!-- e.g. Knowledge Desk, Research Reader, side browser, Settings -->
 
-## Console output
+## Error messages
 
-<!-- Open DevTools (Ctrl+Shift+I in the Dace window) and paste any errors here. -->
+<!-- Paste any error or notice Dace showed. If you run a development build
+     (`npm run tauri dev`), you can also open DevTools with Ctrl+Shift+I and
+     paste console errors; release builds do not include DevTools. -->
 
 ```
 paste output here

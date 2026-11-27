@@ -26,7 +26,8 @@ html[data-reduced-motion="true"] *::after {
 
 .settings-view {
   display: grid;
-  grid-template-columns: minmax(180px, 220px) minmax(0, 1fr);
+  /* The nav column grows by the rail curve's overhang so no label sits under it. */
+  grid-template-columns: calc(200px + var(--rail-safe-left, 0px) * 1.4) minmax(0, 1fr);
   height: 100%;
   min-height: 0;
   background: var(--bg-app);
@@ -37,7 +38,7 @@ html[data-reduced-motion="true"] *::after {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: var(--space-4) var(--space-3) var(--space-4) calc(var(--rail-safe-left, 0px) + var(--space-3));
+  padding: var(--space-4) var(--space-3) var(--space-4) calc(var(--rail-safe-left, 0px) * 2.4 + var(--space-2));
   border-right: 1px solid var(--border-dim);
   overflow-y: auto;
 }
@@ -115,9 +116,10 @@ html[data-reduced-motion="true"] *::after {
 .settings-header h1 {
   margin: 0;
   font-family: var(--font-display);
-  font-size: var(--type-section);
-  font-weight: var(--font-weight-heading);
+  font-size: 28px;
+  font-weight: 300;
   letter-spacing: var(--letter-spacing-display);
+  color: var(--text-bright);
 }
 
 .settings-header-actions {
@@ -142,10 +144,10 @@ html[data-reduced-motion="true"] *::after {
 }
 
 .settings-content button {
-  padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--border-dim);
-  border-radius: 3px;
-  background: var(--bg-surface-elevated);
+  padding: 7px 14px;
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-pill);
+  background: var(--bg-surface);
   color: var(--text-primary);
   cursor: pointer;
 }
@@ -163,7 +165,7 @@ html[data-reduced-motion="true"] *::after {
   background: var(--accent-primary);
   border-color: var(--accent-primary);
   color: var(--accent-contrast);
-  font-weight: var(--font-weight-semibold);
+  font-weight: var(--font-weight-medium);
 }
 
 .settings-panel {
@@ -220,10 +222,10 @@ html[data-reduced-motion="true"] *::after {
 .settings-field-control input[type="text"],
 .settings-field-control input:not([type]) {
   max-width: 260px;
-  padding: var(--space-2);
-  border: 1px solid var(--border-dim);
-  border-radius: 3px;
-  background: var(--bg-surface-elevated);
+  padding: 8px 12px;
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
   color: var(--text-primary);
 }
 
@@ -318,16 +320,43 @@ html[data-reduced-motion="true"] *::after {
 
 .settings-inline-control input {
   max-width: 260px;
-  padding: var(--space-2);
-  border: 1px solid var(--border-dim);
-  border-radius: 3px;
-  background: var(--bg-surface-elevated);
+  padding: 8px 12px;
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
   color: var(--text-muted);
 }
 
 .settings-action-row {
   display: flex;
   gap: var(--space-3);
+}
+
+.settings-vault {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  grid-column: 1 / -1;
+}
+
+.settings-vault code {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+}
+
+.settings-vault-paths {
+  overflow-wrap: anywhere;
+}
+
+.settings-update {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  grid-column: 1 / -1;
+}
+
+.settings-update-notes {
+  white-space: pre-wrap;
 }
 
 .settings-note {

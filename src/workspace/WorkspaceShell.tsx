@@ -54,6 +54,8 @@ import {
 import { useSettings } from "../settings/SettingsContext";
 import { SettingsView } from "../settings/SettingsView";
 import { TerminalView } from "../terminal/TerminalView";
+import { checkForUpdate } from "../settings/updaterApi";
+import { AssistantPanel } from "../assistant/AssistantPanel";
 import type { DefaultActivity } from "../settings/types";
 
 const PERSISTABLE_ACTIVITIES: DefaultActivity[] = [
@@ -89,6 +91,22 @@ export const WorkspaceShell: FC = () => {
   const closeErrorDialogRef = useRef<HTMLDivElement>(null);
   const [activeOverlay, setActiveOverlay] = useState<OverlayType>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  // Side browser (ChatGPT, Gemini…) docked beside whatever is open.
+  const [isAssistantOpen, setIsAssistantOpen] = useState<boolean>(() => {
+    try {
+      return window.localStorage.getItem("dace.assistant.open") === "1";
+    } catch {
+      return false;
+    }
+  });
+  const toggleAssistant = useCallback(() => setIsAssistantOpen((current) => !current), []);
+  useEffect(() => {
+    try {
+      window.localStorage.setItem("dace.assistant.open", isAssistantOpen ? "1" : "0");
+    } catch {
+      // Storage unavailable: the panel just won't reopen on launch.
+    }
+  }, [isAssistantOpen]);
   const [isPanelOpen, setIsPanelOpen] = useState<boolean>(false);
   const [isRailCollapsed, setIsRailCollapsed] = useState<boolean>(() => {
     if (typeof window !== "undefined") {
@@ -244,6 +262,27 @@ export const WorkspaceShell: FC = () => {
       }, durationMs);
     }
   }, []);
+
+  // One quiet update check per launch; failures (offline, no release yet,
+  // unsigned dev build) stay silent — Settings › About reports details.
+  useEffect(() => {
+    if (!isTauriEnvironment()) return;
+    let cancelled = false;
+    const timer = window.setTimeout(async () => {
+      try {
+        const available = await checkForUpdate();
+        if (!cancelled && available) {
+          showNotice(`Dace ${available.version} is available — install it from Settings › About`, 9000);
+        }
+      } catch {
+        // Silent by design.
+      }
+    }, 8000);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [showNotice]);
 
   const finishSaveAndClose = useCallback(async () => {
     const result = await attemptClose(saveRegistryRef.current, {
@@ -457,12 +496,24 @@ export const WorkspaceShell: FC = () => {
     });
   }, [isRailSuppressed]);
 
+  const toggleColorMode = useCallback(() => {
+    const nextMode = settings.appearance.colorMode === "dark" ? "light" : "dark";
+    void updateSettings((current) => ({
+      ...current,
+      appearance: { ...current.appearance, colorMode: nextMode },
+    }));
+    showNotice(nextMode === "dark" ? "Switched to Dark Mode" : "Switched to Light Mode");
+  }, [settings.appearance.colorMode, updateSettings, showNotice]);
+
   const commandList = useMemo(() => {
     return buildCommandList({
       activeActivity,
       setActiveActivity: selectActivity,
       requestIntent,
       onToggleNav: toggleRail,
+      colorMode: settings.appearance.colorMode,
+      onToggleColorMode: toggleColorMode,
+      onToggleAssistant: toggleAssistant,
       isFocusSpace,
       enterFocusSpace,
       exitFocusSpace,
@@ -481,6 +532,8 @@ export const WorkspaceShell: FC = () => {
     selectActivity,
     requestIntent,
     toggleRail,
+    settings.appearance.colorMode,
+    toggleColorMode,
   ]);
 
   useKeyboardShortcuts({
@@ -495,6 +548,8 @@ export const WorkspaceShell: FC = () => {
     setActiveActivity: selectActivity,
     requestIntent,
     onToggleNav: toggleRail,
+    onToggleColorMode: toggleColorMode,
+    onToggleAssistant: toggleAssistant,
   });
 
   const deskIntent = intentQueue.find(isTargetedKnowledgeDeskIntent) ?? null;
@@ -504,7 +559,7 @@ export const WorkspaceShell: FC = () => {
 
   return (
     <div
-      className={`dace-app nova-app reader-nav-${readerChrome.navigation} reader-header-${readerChrome.header} ${
+      className={`dace-app reader-nav-${readerChrome.navigation} reader-header-${readerChrome.header} ${
         isRailVisible ? "rail-visible" : "rail-hidden"
       }`}
     >
@@ -512,11 +567,15 @@ export const WorkspaceShell: FC = () => {
         activeActivity={activeActivity}
         isFocusSpace={isFocusSpace}
         hidden={readerChrome.header === "hidden"}
+        colorMode={settings.appearance.colorMode}
+        onToggleColorMode={toggleColorMode}
         onOpenCommands={() => openOverlay("command-palette")}
         onOpenShortcuts={() => openOverlay("shortcut-reference")}
         onSearch={() => requestIntent({ type: "search-records" })}
         commandsTriggerRef={commandsTriggerRef}
         shortcutsTriggerRef={shortcutsTriggerRef}
+        isAssistantOpen={isAssistantOpen}
+        onToggleAssistant={toggleAssistant}
       />
 
       <WindowControls isFocusSpace={isFocusSpace} />
@@ -674,6 +733,12 @@ export const WorkspaceShell: FC = () => {
             </div>
         </ContextualPanel>
       </main>
+        <AssistantPanel
+          open={isAssistantOpen && !isFocusSpace}
+          suspended={activeOverlay !== null || closeError !== null}
+          onClose={() => setIsAssistantOpen(false)}
+          onShowNotice={showNotice}
+        />
       </div>
 
       <CommandPalette

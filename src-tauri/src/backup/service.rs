@@ -6,8 +6,8 @@ use crate::attachments::storage::AttachmentStorage;
 use crate::db::Database;
 
 use super::archive::{
-    sanitize_archive_path, sha256_file, validate_ndarchive, write_ndarchive, ArchiveFile,
-    AttachmentEntry, BackupManifest, BackupTotals, DatabaseEntry, NDARCHIVE_FORMAT_VERSION,
+    sanitize_archive_path, sha256_file, validate_backup, write_backup, ArchiveFile,
+    AttachmentEntry, BackupManifest, BackupTotals, DatabaseEntry, BACKUP_FORMAT, BACKUP_FORMAT_VERSION,
 };
 use super::BackupResult;
 
@@ -100,7 +100,7 @@ pub fn create_backup_with_progress(
     let dest = if destination_path.extension().and_then(|e| e.to_str()).is_some() {
         destination_path.to_path_buf()
     } else {
-        destination_path.with_extension("ndarchive")
+        destination_path.with_extension("dacebackup")
     };
 
     if let Some(parent) = dest.parent() {
@@ -251,8 +251,8 @@ pub fn create_backup_with_progress(
             .to_string();
 
         let manifest = BackupManifest {
-            format: "dace-ndarchive".to_string(),
-            format_version: NDARCHIVE_FORMAT_VERSION,
+            format: BACKUP_FORMAT.to_string(),
+            format_version: BACKUP_FORMAT_VERSION,
             app_version: env!("CARGO_PKG_VERSION").to_string(),
             schema_version,
             created_at: chrono::Utc::now().to_rfc3339(),
@@ -272,8 +272,8 @@ pub fn create_backup_with_progress(
         };
 
         report("archive", 0, 1, "Writing backup archive…");
-        let tmp_archive = dest.with_extension(format!("ndarchive.tmp-{}", uuid::Uuid::new_v4()));
-        let written = match write_ndarchive(&tmp_archive, &manifest, &archive_files) {
+        let tmp_archive = dest.with_extension(format!("dacebackup.tmp-{}", uuid::Uuid::new_v4()));
+        let written = match write_backup(&tmp_archive, &manifest, &archive_files) {
             Ok(size) => size,
             Err(e) => {
                 let _ = fs::remove_file(&tmp_archive);
@@ -282,7 +282,7 @@ pub fn create_backup_with_progress(
         };
 
         report("validate", 0, 1, "Validating backup archive…");
-        if let Err(e) = validate_ndarchive(&tmp_archive) {
+        if let Err(e) = validate_backup(&tmp_archive) {
             let _ = fs::remove_file(&tmp_archive);
             return Err(format!("Archive validation failed: {}", e));
         }

@@ -14,12 +14,10 @@
 .dace-app .workspace-error-card {
   width: min(520px, 100%);
   padding: 36px 32px;
-  border: 1px solid rgba(var(--status-danger-rgb, 220, 60, 60), 0.22);
-  border-radius: 14px;
-  background:
-    radial-gradient(ellipse at 50% -20%, rgba(220, 60, 60, 0.04), transparent 55%),
-    rgba(11, 11, 11, 0.98);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(var(--status-danger-rgb, 220, 60, 60), 0.25);
+  border-radius: var(--radius-xl);
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-elevated);
   display: flex;
   flex-direction: column;
   gap: var(--space-4, 16px);
@@ -67,22 +65,22 @@
 .dace-app .workspace-error-btn {
   display: inline-flex;
   align-items: center;
-  padding: 7px 16px;
-  border: 1px solid rgba(var(--neutral-300-rgb), 0.18);
-  border-radius: 7px;
-  background: rgba(20, 20, 20, 0.7);
-  color: var(--text-secondary);
-  font-family: var(--font-label);
-  font-size: var(--type-mono, 11px);
-  letter-spacing: 0.06em;
+  padding: 8px 18px;
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--text-primary);
+  font-family: var(--font-interface);
+  font-size: var(--type-small);
+  font-weight: 500;
   cursor: pointer;
   transition: border-color var(--duration-fast), color var(--duration-fast), background-color var(--duration-fast);
 }
 
 .dace-app .workspace-error-btn:hover {
-  border-color: rgba(var(--neutral-300-rgb), 0.3);
-  color: var(--text-primary);
-  background: rgba(30, 30, 30, 0.8);
+  border-color: var(--border-active);
+  color: var(--accent-text);
+  background: var(--state-hover);
 }
 
 .dace-app .workspace-error-btn.primary {
@@ -113,8 +111,9 @@
 .dace-app .workspace-error-stack {
   margin: 10px 0 0;
   padding: 12px;
-  border-radius: 6px;
-  background: rgba(0, 0, 0, 0.5);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
   font-family: var(--font-mono);
   font-size: var(--type-micro);
   line-height: 1.6;

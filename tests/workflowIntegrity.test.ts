@@ -250,8 +250,8 @@ test("10. Focus Space removes window chrome and top bar drag handles", () => {
   assert.match(topBar, /className="topbar-meta" data-tauri-drag-region="false"/);
   assert.equal(
     (topBar.match(/data-tauri-drag-region="false"/g) ?? []).length,
-    4,
-    "Top bar action area and all three buttons must opt out of window dragging"
+    6,
+    "Top bar action area and all five buttons (incl. the side browser) must opt out of window dragging"
   );
   assert.match(focus, /data-tauri-drag-region="false"/);
 });
@@ -317,4 +317,47 @@ test("14. Reader layouts keep the top bar and navigation rail stable", () => {
     reader,
     /\.dace-app\.reader-nav-compact \.workspace-rail\.is-compact \.rail-nav-item\s*\{[^}]*left:\s*29px[^}]*transform:\s*translate\(-50%,\s*-50%\)/s
   );
+});
+
+test("15. Light and dark modes use editorial palette tokens and toggle via Ctrl+Shift+L", () => {
+  const tokens = fs.readFileSync(path.resolve("src/styles/tokens.css"), "utf-8");
+  const context = fs.readFileSync(path.resolve("src/settings/SettingsContext.tsx"), "utf-8");
+  const shortcuts = fs.readFileSync(path.resolve("src/core/useKeyboardShortcuts.ts"), "utf-8");
+  const ref = fs.readFileSync(path.resolve("src/overlays/ShortcutReference.tsx"), "utf-8");
+  const commands = buildCommandList({
+    ...makeCommandContext(),
+    colorMode: "light",
+    onToggleColorMode: () => {},
+  });
+
+  assert.match(tokens, /:root\[data-appearance="light"\]/);
+  assert.match(tokens, /:root\[data-appearance="dark"\]/);
+  assert.match(tokens, /#F5F5F5/i);
+  assert.match(tokens, /#0C0A09/i);
+  assert.match(tokens, /--brand-blue:\s*rgb\(var\(--brand-blue-rgb\)\)/);
+  assert.ok(context.includes("root.dataset.appearance = settings.appearance.colorMode"));
+  assert.match(shortcuts, /onToggleColorMode\?\.\(\)/);
+  assert.match(ref, /Ctrl \+ Shift \+ L/);
+
+  const themeCmd = commands.find((c) => c.id === "appearance:toggle-theme");
+  assert.ok(themeCmd, "Theme toggle command must be registered");
+  assert.strictEqual(themeCmd?.shortcut, "Ctrl+Shift+L");
+  assert.strictEqual(themeCmd?.available, true);
+});
+
+test("16. Light appearance uses a blue-gradient logo with a lightened left fold", () => {
+  const lightLogo = path.resolve("src/assets/brand/logo-light.png");
+  assert.ok(fs.existsSync(lightLogo), "Light-mode logo asset must exist");
+  assert.ok(fs.statSync(lightLogo).size > 0, "Light-mode logo asset must not be empty");
+
+  const tokens = fs.readFileSync(path.resolve("src/styles/tokens.css"), "utf-8");
+  const railStyles = fs.readFileSync(path.resolve("src/styles/cinematic.css"), "utf-8");
+  const topBar = fs.readFileSync(path.resolve("src/workspace/WorkspaceTopBar.tsx"), "utf-8");
+  const toolbar = fs.readFileSync(path.resolve("src/reader/ReaderToolbar.tsx"), "utf-8");
+
+  assert.match(tokens, /--brand-logo-url:\s*url\("\.\.\/assets\/brand\/logo-light\.png"\)/);
+  assert.match(tokens, /--brand-logo-url:\s*url\("\.\.\/assets\/brand\/logo\.png"\)/);
+  assert.match(railStyles, /\.rail-brand-mark\s*\{[^}]*background:\s*var\(--brand-logo-url\)/s);
+  assert.match(topBar, /colorMode\s*===\s*"light"\s*\?\s*logoLightUrl\s*:\s*logoDarkUrl/);
+  assert.match(toolbar, /colorMode\s*===\s*"light"\s*\?\s*logoLightUrl\s*:\s*logoDarkUrl/);
 });

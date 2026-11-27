@@ -3,21 +3,27 @@ import {
   RefObject,
   memo,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
 } from "react";
 import {
-  BookOpen,
   Check,
   ChevronRight,
-  Heading2,
+  Hash,
+  Highlighter,
+  Info,
   Link2,
-  List,
-  ListChecks,
-  Quote,
-  Tag,
+  ListTree,
+  MessageSquarePlus,
+  MoreHorizontal,
+  PenLine,
+  Trash2,
   X,
+  type LucideIcon,
 } from "lucide-react";
+import { useDismissable } from "../core/useDismissable";
+import { RichTextEditor, type RichTextEditorHandle } from "../editor/RichTextEditor.tsx";
 import { Highlight, OutlineItem } from "./types.ts";
 import { AttachmentSummary } from "../attachments/types.ts";
 import * as readerApi from "./readerApi.ts";
@@ -27,7 +33,7 @@ import { KnowledgeGraphView } from "../graph/KnowledgeGraphView.tsx";
 import { NoteExcerpt } from "./noteExcerpts.ts";
 import { ReaderNoteSaveStatus } from "./useReaderNote.ts";
 
-type ReaderDrawerTab = "highlights" | "outline" | "knowledge" | "info";
+import type { ReaderDrawerTab } from "./readerSession.ts";
 
 interface ReaderDrawerProps {
   isOpen: boolean;
@@ -97,11 +103,13 @@ interface HighlightsPanelProps {
   onShowNotice: (msg: string) => void;
 }
 
-const TABS: { id: ReaderDrawerTab; label: string; icon: typeof BookOpen }[] = [
-  { id: "highlights", label: "Notes", icon: BookOpen },
-  { id: "outline", label: "Outline", icon: List },
-  { id: "knowledge", label: "Knowledge", icon: Link2 },
-  { id: "info", label: "Info", icon: Heading2 },
+/** One tool at a time; "highlights" is the note page (kept for saved sessions). */
+const DRAWER_VIEWS: { id: ReaderDrawerTab; label: string; icon: LucideIcon }[] = [
+  { id: "highlights", label: "Note", icon: PenLine },
+  { id: "passages", label: "Passages", icon: Highlighter },
+  { id: "outline", label: "Outline", icon: ListTree },
+  { id: "knowledge", label: "Links", icon: Link2 },
+  { id: "info", label: "Info", icon: Info },
 ];
 
 const formatBytes = (bytes: number) => {
@@ -128,151 +136,186 @@ const NoteEditor = memo(function NoteEditor({
   noteSaveStatus,
   noteError,
   noteExcerpts,
-  noteContentRef,
   onStartNote,
   onNoteTitleChange,
   onNoteContentChange,
   onNoteTagsChange,
   onSaveNote,
   onDeleteNote,
-  onInsertMarkdown,
   onJumpToPage,
 }: NoteEditorProps) {
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const menuTriggerRef = useRef<HTMLButtonElement>(null);
+
+  useDismissable(isMenuOpen, () => {
+    setIsMenuOpen(false);
+    setIsConfirmingDelete(false);
+  }, menuRef, { triggerRef: menuTriggerRef, group: "reader-popover" });
+
+  const bodyRef = useRef<RichTextEditorHandle>(null);
+
+  // Long titles (e.g. "Notes — <paper name>") wrap instead of being cut off.
+  const titleRef = useRef<HTMLTextAreaElement>(null);
+  useLayoutEffect(() => {
+    const title = titleRef.current;
+    if (!title) return;
+    title.style.height = "auto";
+    title.style.height = `${title.scrollHeight}px`;
+  }, [noteTitle, hasNote]);
 
   const handleDeleteNote = async () => {
     const deleted = await onDeleteNote();
-    if (deleted) setIsConfirmingDelete(false);
+    if (deleted) {
+      setIsConfirmingDelete(false);
+      setIsMenuOpen(false);
+    }
   };
 
   if (!hasNote) {
     return (
-      <div className="reader-notes-view">
-        <div className="reader-note-empty-compact">
-          <div className="reader-note-empty-copy">
-            <h2>Research note</h2>
-            <p>Start a note to capture synthesis and linked source excerpts.</p>
-          </div>
-          <button className="reader-primary-btn" onClick={onStartNote}>
-            Start note
-          </button>
-        </div>
+      <div className="rd-note-empty">
+        <p className="rd-note-empty-title">No note for this document yet</p>
+        <p className="rd-note-empty-sub">Write your synthesis beside the source; excerpts you add link back to their page.</p>
+        <button type="button" className="rd-text-btn is-primary" onClick={onStartNote}>
+          <PenLine size={13} strokeWidth={1.8} aria-hidden="true" />
+          Start note
+        </button>
       </div>
     );
   }
 
   return (
-    <div className="reader-notes-view">
-      <div className="reader-note-head">
-        <div>
-          <span className="reader-section-label">Active research note</span>
+    <div className="rd-note">
+      <div className="rd-note-tools">
+        <span className="rd-spacer" />
+
+        <button
+          type="button"
+          className={`rd-save status-${noteSaveStatus}`}
+          onClick={onSaveNote}
+          title={noteSaveStatus === "error" ? noteError || "Retry save" : "Save now (Ctrl+S)"}
+          aria-live="polite"
+        >
+          <span className="rd-save-dot" />
+          {saveStatusLabel(noteSaveStatus, noteSaveStatus === "error" ? "Save failed" : null)}
+        </button>
+
+        <div className="rd-menu-anchor" ref={menuRef}>
+          <button
+            ref={menuTriggerRef}
+            type="button"
+            className="rd-icon rd-icon-sm"
+            onClick={() => setIsMenuOpen((open) => !open)}
+            aria-haspopup="menu"
+            aria-expanded={isMenuOpen}
+            title="More note actions"
+            aria-label="More note actions"
+            data-dismiss-ignore
+          >
+            <MoreHorizontal size={14} strokeWidth={1.7} aria-hidden="true" />
+          </button>
+          {isMenuOpen && (
+            <div className="reader-popover rd-menu" role="menu">
+              {isConfirmingDelete ? (
+                <>
+                  <p className="rd-menu-note">Delete this note permanently?</p>
+                  <button type="button" role="menuitem" className="reader-popover-action destructive" onClick={() => void handleDeleteNote()}>
+                    Delete note
+                  </button>
+                  <button type="button" role="menuitem" className="reader-popover-action" onClick={() => setIsConfirmingDelete(false)}>
+                    Cancel
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="reader-popover-action"
+                    onClick={() => {
+                      onSaveNote();
+                      setIsMenuOpen(false);
+                    }}
+                  >
+                    <Check size={13} aria-hidden="true" /> Save now
+                  </button>
+                  <div className="reader-popover-divider" />
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="reader-popover-action destructive"
+                    onClick={() => setIsConfirmingDelete(true)}
+                  >
+                    <Trash2 size={13} aria-hidden="true" /> Delete note…
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="rd-note-page">
+        <textarea
+          ref={titleRef}
+          className="rd-note-title"
+          rows={1}
+          value={noteTitle}
+          onChange={(event) => onNoteTitleChange(event.target.value.replace(/[\r\n]+/g, " "))}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              bodyRef.current?.focus();
+            }
+          }}
+          placeholder="Untitled note"
+          aria-label="Note title"
+        />
+        <label className="rd-note-tags">
+          <Hash size={11} strokeWidth={1.8} aria-hidden="true" />
           <input
-            className="reader-note-title"
-            value={noteTitle}
-            onChange={(event) => onNoteTitleChange(event.target.value)}
-            placeholder="Untitled note"
-            aria-label="Note title"
+            value={noteTags.join(", ")}
+            onChange={(event) =>
+              onNoteTagsChange(
+                event.target.value
+                  .split(",")
+                  .map((tag) => tag.trim())
+                  .filter(Boolean)
+              )
+            }
+            placeholder="Add tags"
+            aria-label="Note tags"
           />
-          <label className="reader-note-tags">
-            <Tag size={11} strokeWidth={1.8} aria-hidden="true" />
-            <input
-              value={noteTags.join(", ")}
-              onChange={(event) =>
-                onNoteTagsChange(
-                  event.target.value
-                    .split(",")
-                    .map((tag) => tag.trim())
-                    .filter(Boolean)
-                )
-              }
-              placeholder="Add tags, separated by commas"
-              aria-label="Note tags"
-            />
-          </label>
-        </div>
-        <div className={`reader-save-status status-${noteSaveStatus}`}>
-          <span className="reader-save-dot" />
-          {saveStatusLabel(noteSaveStatus, noteError)}
-        </div>
-      </div>
+        </label>
 
-      <div className="reader-format-bar" aria-label="Note formatting">
-        <button onClick={() => onInsertMarkdown("## ")} title="Heading">
-          <Heading2 size={13} /> Heading
-        </button>
-        <button onClick={() => onInsertMarkdown("- ")} title="List item">
-          <List size={13} /> List
-        </button>
-        <button onClick={() => onInsertMarkdown("- [ ] ")} title="Checklist item">
-          <ListChecks size={13} /> Task
-        </button>
-        <button onClick={() => onInsertMarkdown("> ")} title="Quote">
-          <Quote size={13} /> Quote
-        </button>
-        <button onClick={() => onInsertMarkdown("[", "](https://)")} title="Link">
-          <Link2 size={13} /> Link
-        </button>
-      </div>
-
-      {noteExcerpts.length > 0 && (
-        <section className="reader-source-passages">
-          <span className="reader-section-label">Source passages</span>
-          <div className="reader-source-chips">
+        {noteExcerpts.length > 0 && (
+          <div className="rd-source-chips" aria-label="Source passages">
             {noteExcerpts.map((excerpt) => (
               <button
                 key={excerpt.id}
-                className="reader-source-chip"
+                type="button"
+                className="rd-source-chip"
                 onClick={() => onJumpToPage(excerpt.page, excerpt.attachmentId)}
                 title={excerpt.text}
               >
-                <span>p. {excerpt.page}</span>
-                <span>{excerpt.text.slice(0, 42)}{excerpt.text.length > 42 ? "…" : ""}</span>
-                <ChevronRight size={12} />
+                <span className="rd-source-page">p. {excerpt.page}</span>
+                <span className="rd-source-text">{excerpt.text}</span>
               </button>
             ))}
           </div>
-        </section>
-      )}
-
-      <textarea
-        ref={noteContentRef}
-        className="reader-note-editor"
-        value={noteContent}
-        onChange={(event) => onNoteContentChange(event.target.value)}
-        placeholder="Write your research notes. Use headings, lists and source references to structure your thinking…"
-        aria-label="Note content"
-        spellCheck={false}
-      />
-
-      <div className="reader-note-footer">
-        {isConfirmingDelete ? (
-          <>
-            <span>Delete this note permanently?</span>
-            <div className="reader-inline-actions">
-              <button className="card-action-link danger" onClick={() => void handleDeleteNote()}>
-                Delete
-              </button>
-              <button className="card-action-link" onClick={() => setIsConfirmingDelete(false)}>
-                Cancel
-              </button>
-            </div>
-          </>
-        ) : (
-          <>
-            <span>Markdown-style notes · autosaved to Knowledge Desk</span>
-            <div className="reader-inline-actions">
-              <button
-                className="card-action-link danger"
-                onClick={() => setIsConfirmingDelete(true)}
-              >
-                Delete note
-              </button>
-              <button className="reader-tertiary-btn" onClick={onSaveNote}>
-                <Check size={12} /> Save now
-              </button>
-            </div>
-          </>
         )}
+
+        <div className="rd-note-body">
+          <RichTextEditor
+            ref={bodyRef}
+            value={noteContent}
+            onChange={onNoteContentChange}
+            placeholder="Write your research notes… Select text to format it."
+            ariaLabel="Note content"
+          />
+        </div>
       </div>
     </div>
   );
@@ -359,43 +402,45 @@ const HighlightsPanel = memo(function HighlightsPanel({
   };
 
   return (
-    <section className="reader-highlights-section">
-      <div className="reader-section-heading">
-        <span className="reader-section-label">Passages & annotations</span>
-        <span>{highlights.length}</span>
-      </div>
-      <div className="reader-filter-row">
-        {["all", "important", "question", "insight", "definition"].map((type) => (
-          <button
-            key={type}
-            className={`toolbar-hl-btn ${filterType === type ? "active" : ""}`}
-            onClick={() => setFilterType(type)}
-          >
-            {type.charAt(0).toUpperCase() + type.slice(1)}
-          </button>
-        ))}
+    <section className="rd-passages" aria-label="Passages and annotations">
+      <div className="rd-filter" role="group" aria-label="Filter passages">
+        {["all", "important", "question", "insight", "definition"].map((type) => {
+          const count =
+            type === "all" ? highlights.length : highlights.filter((item) => item.highlight_type === type).length;
+          return (
+            <button
+              key={type}
+              type="button"
+              className={filterType === type ? "is-active" : ""}
+              onClick={() => setFilterType(type)}
+            >
+              {type !== "all" && <span className={`hl-dot ${type}`} aria-hidden="true" />}
+              {type.charAt(0).toUpperCase() + type.slice(1)}
+              {count > 0 && <span className="rd-filter-count">{count}</span>}
+            </button>
+          );
+        })}
       </div>
 
       {filteredHighlights.length === 0 ? (
-        <div className="reader-inline-empty">
-          No {filterType !== "all" ? filterType : ""} highlights recorded yet.
-          <br />
-          Select text in the document to highlight or annotate.
-        </div>
+        <p className="rd-empty">
+          {highlights.length === 0
+            ? "Select text in the document to highlight a passage."
+            : `No ${filterType} passages yet.`}
+        </p>
       ) : (
         filteredHighlights.map((highlight) => (
-          <div
+          <article
             key={highlight.id}
-            className={`annotation-card ${selectedHighlightId === highlight.id ? "selected" : ""}`}
+            className={`rd-passage ${selectedHighlightId === highlight.id ? "is-selected" : ""}`}
             onClick={() => onSelectHighlight(highlight.id)}
           >
-            <div className="card-header">
-              <span className="card-tag">
-                <span className={`hl-dot ${highlight.highlight_type}`} />
-                <span style={{ color: "var(--text-bright)" }}>{highlight.highlight_type}</span>
-              </span>
+            <div className="rd-passage-head">
+              <span className={`hl-dot ${highlight.highlight_type}`} aria-hidden="true" />
+              <span className="rd-passage-type">{highlight.highlight_type}</span>
               <button
-                className="card-page-btn"
+                type="button"
+                className="rd-passage-page"
                 onClick={(event) => {
                   event.stopPropagation();
                   onJumpToPage(highlight.page_number);
@@ -404,76 +449,89 @@ const HighlightsPanel = memo(function HighlightsPanel({
               >
                 p. {highlight.page_number}
               </button>
+              <span className="rd-spacer" />
+              <div className="rd-passage-actions" onClick={(event) => event.stopPropagation()}>
+                <button
+                  type="button"
+                  className="rd-icon rd-icon-sm"
+                  onClick={() => handleStartEditNote(highlight)}
+                  title={highlight.annotation ? "Edit annotation" : "Add annotation"}
+                  aria-label={highlight.annotation ? "Edit annotation" : "Add annotation"}
+                >
+                  <MessageSquarePlus size={13} strokeWidth={1.7} aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  className="rd-icon rd-icon-sm"
+                  onClick={() => onOpenConnectModal(highlight)}
+                  title="Connect to a knowledge record"
+                  aria-label="Connect to a knowledge record"
+                >
+                  <Link2 size={13} strokeWidth={1.7} aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  className="rd-icon rd-icon-sm is-danger"
+                  onClick={() => setDeleteRequest({ id: highlight.id, kind: "highlight" })}
+                  title="Delete highlight"
+                  aria-label="Delete highlight"
+                >
+                  <Trash2 size={13} strokeWidth={1.7} aria-hidden="true" />
+                </button>
+              </div>
             </div>
 
             {highlight.is_stale && (
-              <div className="card-stale-notice">Anchor from earlier document version (hash mismatch)</div>
+              <p className="rd-stale">Anchored to an earlier version of this document.</p>
             )}
 
-            <div className="card-quote">"{highlight.selected_text}"</div>
+            <blockquote className="rd-passage-quote">{highlight.selected_text}</blockquote>
 
             {editingHighlightId === highlight.id ? (
-              <div style={{ marginTop: "8px" }} onClick={(event) => event.stopPropagation()}>
+              <div className="rd-annotation-edit" onClick={(event) => event.stopPropagation()}>
                 <textarea
-                  className="card-note-edit"
+                  className="rd-annotation-input"
                   value={editNoteContent}
                   onChange={(event) => setEditNoteContent(event.target.value)}
-                  placeholder="Write your reflection, question, or note…"
+                  placeholder="Your reflection, question, or note…"
                   autoFocus
                 />
-                <div className="reader-inline-actions">
-                  <button className="card-action-link" onClick={() => setEditingHighlightId(null)}>
+                <div className="rd-inline-actions">
+                  {highlight.annotation && (
+                    <button
+                      type="button"
+                      className="rd-link is-danger"
+                      onClick={() => setDeleteRequest({ id: highlight.id, kind: "annotation" })}
+                    >
+                      Remove
+                    </button>
+                  )}
+                  <span className="rd-spacer" />
+                  <button type="button" className="rd-link" onClick={() => setEditingHighlightId(null)}>
                     Cancel
                   </button>
-                  <button className="card-action-link primary" onClick={() => handleSaveAnnotation(highlight)}>
+                  <button type="button" className="rd-text-btn is-primary is-small" onClick={() => handleSaveAnnotation(highlight)}>
                     Save
                   </button>
                 </div>
               </div>
             ) : (
-              highlight.annotation && <div className="card-note-area">{highlight.annotation.content}</div>
+              highlight.annotation && <p className="rd-annotation">{highlight.annotation.content}</p>
             )}
 
-            <div className="card-actions" onClick={(event) => event.stopPropagation()}>
-              {deleteRequest?.id === highlight.id ? (
-                <div className="reader-inline-actions">
-                  <span>Delete {deleteRequest.kind}?</span>
-                  <button
-                    className="card-action-link danger"
-                    onClick={() => void handleConfirmDelete(highlight)}
-                  >
-                    Confirm
-                  </button>
-                  <button className="card-action-link" onClick={() => setDeleteRequest(null)}>
-                    Cancel
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <button className="card-action-link" onClick={() => handleStartEditNote(highlight)}>
-                    {highlight.annotation ? "Edit Note" : "+ Note"}
-                  </button>
-                  {highlight.annotation && (
-                    <button
-                      className="card-action-link danger"
-                      onClick={() => setDeleteRequest({ id: highlight.id, kind: "annotation" })}
-                    >
-                      Delete note
-                    </button>
-                  )}
-                  <button className="card-action-link" onClick={() => onOpenConnectModal(highlight)}>
-                    Connect
-                  </button>
-                  <button
-                    className="card-action-link danger"
-                    onClick={() => setDeleteRequest({ id: highlight.id, kind: "highlight" })}
-                  >
-                    Delete highlight
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
+            {deleteRequest?.id === highlight.id && (
+              <div className="rd-inline-actions rd-confirm" onClick={(event) => event.stopPropagation()}>
+                <span>Delete {deleteRequest.kind}?</span>
+                <span className="rd-spacer" />
+                <button type="button" className="rd-link" onClick={() => setDeleteRequest(null)}>
+                  Cancel
+                </button>
+                <button type="button" className="rd-link is-danger" onClick={() => void handleConfirmDelete(highlight)}>
+                  Delete
+                </button>
+              </div>
+            )}
+          </article>
         ))
       )}
     </section>
@@ -594,145 +652,146 @@ export const ReaderDrawer: FC<ReaderDrawerProps> = ({
 
   if (!isOpen) return null;
 
+  const activeView = DRAWER_VIEWS.find((view) => view.id === activeTab) ?? DRAWER_VIEWS[0];
+
   return (
-    <aside className="reader-drawer" aria-label="Research writing workspace">
-      <div className="reader-drawer-tabs">
-        {TABS.map((tab) => {
-          const Icon = tab.icon;
-          return (
-            <button
-              key={tab.id}
-              className={`drawer-tab ${activeTab === tab.id ? "active" : ""}`}
-              onClick={() => onTabChange(tab.id)}
-              data-reader-tab={tab.id}
-            >
-              <Icon size={12} strokeWidth={1.8} />
-              <span>{tab.label}</span>
-            </button>
-          );
-        })}
-        <button
-          className="drawer-close-btn"
-          onClick={onClose}
-          aria-label="Return to reading mode"
-          title="Return to reading"
-        >
-          <X size={14} />
-        </button>
+    <aside className="reader-drawer rd-drawer" aria-label="Research writing workspace">
+      <div className="rd-head">
+        <span className="rd-head-title">{activeView.label}</span>
+        <div className="rd-head-tools" role="tablist" aria-label="Writing tools">
+          {DRAWER_VIEWS.map(({ id, label, icon: Icon }) => {
+            const count = id === "passages" ? highlights.length : 0;
+            return (
+              <button
+                key={id}
+                type="button"
+                role="tab"
+                className={`rd-icon ${activeTab === id ? "is-active" : ""}`}
+                onClick={() => onTabChange(id)}
+                aria-selected={activeTab === id}
+                data-reader-tab={id}
+                title={count > 0 ? `${label} (${count})` : label}
+                aria-label={label}
+              >
+                <Icon size={15} strokeWidth={1.6} aria-hidden="true" />
+                {count > 0 && <span className="rd-badge" aria-hidden="true" />}
+              </button>
+            );
+          })}
+          <span className="rd-rule" aria-hidden="true" />
+          <button
+            type="button"
+            className="rd-icon"
+            onClick={onClose}
+            aria-label="Return to reading mode"
+            title="Close (return to reading)"
+          >
+            <X size={15} strokeWidth={1.6} aria-hidden="true" />
+          </button>
+        </div>
       </div>
 
-      <div className="reader-drawer-content" ref={contentScrollRef}>
+      <div className={`reader-drawer-content rd-body view-${activeTab}`} ref={contentScrollRef}>
         {activeTab === "highlights" && (
-          <>
-            <NoteEditor
-              hasNote={hasNote}
-              noteTitle={noteTitle}
-              noteContent={noteContent}
-              noteTags={noteTags}
-              noteSaveStatus={noteSaveStatus}
-              noteError={noteError}
-              noteExcerpts={noteExcerpts}
-              noteContentRef={noteContentRef}
-              onStartNote={onStartNote}
-              onNoteTitleChange={onNoteTitleChange}
-              onNoteContentChange={onNoteContentChange}
-              onNoteTagsChange={onNoteTagsChange}
-              onSaveNote={onSaveNote}
-              onDeleteNote={onDeleteNote}
-              onInsertMarkdown={onInsertMarkdown}
-              onJumpToPage={onJumpToPage}
-            />
-            <HighlightsPanel
-              highlights={highlights}
-              selectedHighlightId={selectedHighlightId}
-              annotationRequestId={annotationRequestId}
-              onSelectHighlight={onSelectHighlight}
-              onJumpToPage={onJumpToPage}
-              onOpenConnectModal={onOpenConnectModal}
-              onHighlightDeleted={onHighlightDeleted}
-              onHighlightUpdated={onHighlightUpdated}
-              onShowNotice={onShowNotice}
-            />
-          </>
+          <NoteEditor
+            hasNote={hasNote}
+            noteTitle={noteTitle}
+            noteContent={noteContent}
+            noteTags={noteTags}
+            noteSaveStatus={noteSaveStatus}
+            noteError={noteError}
+            noteExcerpts={noteExcerpts}
+            noteContentRef={noteContentRef}
+            onStartNote={onStartNote}
+            onNoteTitleChange={onNoteTitleChange}
+            onNoteContentChange={onNoteContentChange}
+            onNoteTagsChange={onNoteTagsChange}
+            onSaveNote={onSaveNote}
+            onDeleteNote={onDeleteNote}
+            onInsertMarkdown={onInsertMarkdown}
+            onJumpToPage={onJumpToPage}
+          />
+        )}
+
+        {activeTab === "passages" && (
+          <HighlightsPanel
+            highlights={highlights}
+            selectedHighlightId={selectedHighlightId}
+            annotationRequestId={annotationRequestId}
+            onSelectHighlight={onSelectHighlight}
+            onJumpToPage={onJumpToPage}
+            onOpenConnectModal={onOpenConnectModal}
+            onHighlightDeleted={onHighlightDeleted}
+            onHighlightUpdated={onHighlightUpdated}
+            onShowNotice={onShowNotice}
+          />
         )}
 
         {activeTab === "outline" && (
-          <div className="reader-outline-view">
+          <nav className="rd-outline" aria-label="Document outline">
             {outline.length === 0 ? (
-              <div className="reader-inline-empty">
-                No embedded bookmarks or headings detected in this document.
-              </div>
+              <p className="rd-empty">No bookmarks or headings found in this document.</p>
             ) : (
-              <div className="reader-outline-list">
+              <ol>
                 {outline.map((item, index) => (
-                  <div key={`${item.title}-${index}`} className="reader-outline-group">
-                    <button
-                      className="reader-outline-item"
-                      onClick={() => item.pageNumber && onJumpToPage(item.pageNumber)}
-                    >
-                      <span>{item.title}</span>
-                      {item.pageNumber && <span>p. {item.pageNumber}</span>}
+                  <li key={`${item.title}-${index}`}>
+                    <button type="button" onClick={() => item.pageNumber && onJumpToPage(item.pageNumber)} title={item.title}>
+                      <span className="rd-outline-text">{item.title}</span>
+                      {item.pageNumber && <span className="rd-outline-page">{item.pageNumber}</span>}
                     </button>
-                    {item.items?.map((sub, subIndex) => (
-                      <button
-                        key={`${sub.title}-${subIndex}`}
-                        className="reader-outline-item nested"
-                        onClick={() => sub.pageNumber && onJumpToPage(sub.pageNumber)}
-                      >
-                        <span>{sub.title}</span>
-                        {sub.pageNumber && <span>p. {sub.pageNumber}</span>}
-                      </button>
-                    ))}
-                  </div>
+                    {item.items && item.items.length > 0 && (
+                      <ol>
+                        {item.items.map((sub, subIndex) => (
+                          <li key={`${sub.title}-${subIndex}`}>
+                            <button type="button" onClick={() => sub.pageNumber && onJumpToPage(sub.pageNumber)} title={sub.title}>
+                              <span className="rd-outline-text">{sub.title}</span>
+                              {sub.pageNumber && <span className="rd-outline-page">{sub.pageNumber}</span>}
+                            </button>
+                          </li>
+                        ))}
+                      </ol>
+                    )}
+                  </li>
                 ))}
-              </div>
+              </ol>
             )}
-          </div>
+          </nav>
         )}
 
         {activeTab === "knowledge" && (
-          <div className="reader-knowledge-view">
-            <p className="reader-view-intro">
-              Knowledge records referencing this document or its anchored excerpts:
-            </p>
+          <div className="rd-links">
             {attachment.record_count === 0 ? (
-              <div className="reader-inline-empty">
+              <p className="rd-empty">
                 No knowledge records currently reference this document.
                 <br />
-                Use <strong>Connect</strong> on any passage to create a linked note.
-              </div>
+                Use <strong>Connect</strong> on a passage to link it to a record.
+              </p>
             ) : isLoadingLinkedRecords ? (
-              <div className="reader-inline-empty">Loading linked records…</div>
+              <p className="rd-empty">Loading linked records…</p>
             ) : linkedRecords.length === 0 ? (
-              <div className="reader-inline-empty">
-                No linked knowledge records could be resolved for this document.
-              </div>
+              <p className="rd-empty">No linked knowledge records could be resolved for this document.</p>
             ) : (
               <>
-                <p className="reader-view-intro">
-                  This document is linked to <strong>{linkedRecords.length}</strong> knowledge record
-                  {linkedRecords.length === 1 ? "" : "s"}.
-                </p>
-                <div className="reader-linked-records">
+                <ul className="rd-link-list">
                   {linkedRecords.map((record) => (
-                    <button
-                      key={record.id}
-                      className="reader-linked-record"
-                      disabled={!onNavigateToRecord}
-                      onClick={() => {
-                        if (onNavigateToRecord && record.id.trim()) {
-                          onNavigateToRecord(record.id);
-                        }
-                      }}
-                      title={record.title}
-                    >
-                      <span>{record.title}</span>
-                      <ChevronRight size={13} />
-                    </button>
+                    <li key={record.id}>
+                      <button
+                        type="button"
+                        disabled={!onNavigateToRecord}
+                        onClick={() => {
+                          if (onNavigateToRecord && record.id.trim()) {
+                            onNavigateToRecord(record.id);
+                          }
+                        }}
+                        title={record.title}
+                      >
+                        <span>{record.title}</span>
+                        <ChevronRight size={13} aria-hidden="true" />
+                      </button>
+                    </li>
                   ))}
-                </div>
-                <div className="reader-embedded-graph">
-                  <span className="reader-section-label">Connected graph</span>
+                </ul>
+                <div className="reader-embedded-graph rd-graph">
                   <KnowledgeGraphView
                     embedded
                     focusRecordId={linkedRecords[0]?.id ?? null}
@@ -746,65 +805,44 @@ export const ReaderDrawer: FC<ReaderDrawerProps> = ({
         )}
 
         {activeTab === "info" && (
-          <div className="reader-info-view">
-            <div className="reader-info-row">
-              <span className="detail-meta-label">File name</span>
-              <span>{attachment.file_name}</span>
-            </div>
-            <div className="reader-info-row">
-              <span className="detail-meta-label">Format / MIME</span>
-              <span>{attachment.mime_type}</span>
-            </div>
-            <div className="reader-info-row">
-              <span className="detail-meta-label">File size</span>
-              <span>{formatBytes(attachment.file_size)}</span>
-            </div>
-            <div className="reader-info-row">
-              <span className="detail-meta-label">Added</span>
-              <span>{new Date(attachment.created_at).toLocaleString()}</span>
-            </div>
-            <div className="reader-info-row">
-              <span className="detail-meta-label">Highlights & excerpts</span>
-              <span>{highlights.length} recorded</span>
-            </div>
-            <div className="reader-info-row">
-              <span className="detail-meta-label">SHA-256</span>
-              <code>{attachment.sha256_hash}</code>
-            </div>
-            <div className="reader-note-footer">
+          <div className="rd-info">
+            <dl>
+              <dt>File</dt>
+              <dd>{attachment.file_name}</dd>
+              <dt>Format</dt>
+              <dd>{attachment.mime_type}</dd>
+              <dt>Size</dt>
+              <dd>{formatBytes(attachment.file_size)}</dd>
+              <dt>Added</dt>
+              <dd>{new Date(attachment.created_at).toLocaleString()}</dd>
+              <dt>Passages</dt>
+              <dd>{highlights.length}</dd>
+              <dt>SHA-256</dt>
+              <dd><code>{attachment.sha256_hash}</code></dd>
+            </dl>
+            <div className="rd-inline-actions rd-danger-zone">
               {isConfirmingDocumentDelete ? (
                 <>
-                  <span>
-                    Permanently delete from vault? All linked highlights and annotations will be removed.
-                  </span>
-                  <div className="reader-inline-actions">
-                    <button
-                      className="card-action-link danger"
-                      onClick={async () => {
-                        const deleted = await onDeleteDocument(attachment.id);
-                        if (deleted) setIsConfirmingDocumentDelete(false);
-                      }}
-                    >
-                      Delete file
-                    </button>
-                    <button
-                      className="card-action-link"
-                      onClick={() => setIsConfirmingDocumentDelete(false)}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <span>Manage this imported file</span>
+                  <span>Delete from vault with all its highlights and annotations?</span>
+                  <span className="rd-spacer" />
+                  <button type="button" className="rd-link" onClick={() => setIsConfirmingDocumentDelete(false)}>
+                    Cancel
+                  </button>
                   <button
-                    className="card-action-link danger"
-                    onClick={() => setIsConfirmingDocumentDelete(true)}
+                    type="button"
+                    className="rd-link is-danger"
+                    onClick={async () => {
+                      const deleted = await onDeleteDocument(attachment.id);
+                      if (deleted) setIsConfirmingDocumentDelete(false);
+                    }}
                   >
-                    Delete file from vault
+                    Delete file
                   </button>
                 </>
+              ) : (
+                <button type="button" className="rd-link is-danger" onClick={() => setIsConfirmingDocumentDelete(true)}>
+                  Delete file from vault…
+                </button>
               )}
             </div>
           </div>

@@ -2,83 +2,114 @@
 
 All notable changes to Dace are documented here.
 
-The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
-Dace uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and Dace uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
 ## [Unreleased]
 
 ### Added
-- Settings view with persistent preferences for typography, layout, startup behaviour, and backup paths
-- App font and text font preferences populated from fonts installed on the device via a native font-enumeration command
-- Workspace navigation utility (`workspaceNavigation.ts`) with URL-hash routing
-- Settings system test suite (5 tests covering defaults, validation, clamping, and equality)
-- Folded-ribbon Dace logo integrated into the top bar and application window
-- Multi-resolution Tauri app icons and web favicons regenerated from the new brand mark
-- Workspace breadcrumb navigation in the top bar (`DACE / <Workspace>`)
-- Quiet neutral Knowledge Graph canvas without decorative grid or ambient texture
-- `outsideClickGraceMs` on Command Palette and Shortcut Reference overlays to prevent spurious close on open
-- Restrained motion layer with short opacity transitions, no ambient animation, and reduced-motion handling that makes nonessential motion instant
-- Command Palette and Shortcut Reference now use flex layouts with internally scrollable lists and corrected text tracking
-- Focus Space no longer exposes the frameless window drag strip or minimize/maximize controls that could swallow top-bar clicks
-- Speed Reader for selected passages, full text/Markdown documents, highlights, and the current PDF page, with keyboard controls, WPM/chunk preferences, and progress tracking (`Ctrl+Shift+R`)
-- Quiet UI regression suite covering typography floors, label tracking, anti-slop styling rules, and concrete product copy
+
+**Writing**
+- Rich-text editor for Knowledge Desk records and Reader notes: text is written
+  and shown formatted, never as Markdown symbols
+- Selection toolbar for formatting: bold, italic, underline, strikethrough,
+  highlight, inline code, links, headings, bulleted, numbered and check lists,
+  quotes, and clear formatting
+- Typed Markdown still converts once complete (`# `, `- `, `> `, `**bold**`,
+  `*italic*`, `==highlight==`); notes are still stored as Markdown
+
+**Library and data**
+- Vault folder (Settings → Documents & storage): imported documents live in
+  `<vault>/Documents`, and every note is mirrored as a readable Markdown file
+  in `<vault>/Notes`, kept in sync on save, rename and delete
+- Delete a note from its library row and an imported document from the
+  Reader's document picker
+- Backups are saved as `.dacebackup` files; older `.ndarchive` backups still
+  restore
+
+**Reading and research**
+- Side browser (`Ctrl+Shift+A`): ChatGPT, Gemini, Perplexity or any site
+  docked beside notes and papers, resizable, with sign-ins remembered
+- Reader drawer with Note, Passages, Outline, Links and Info views
+- Speed Reader for selected passages, documents, highlights and the current
+  PDF page (`Ctrl+Shift+R`)
+
+**App**
+- Signed automatic updates from GitHub Releases, with Check for updates and
+  Install and restart in Settings → About
+- Light and dark mode (`Ctrl+Shift+L`), with a light-mode logo variant
+- Settings for typography, layout, startup, editor, documents and backups,
+  including app and text fonts chosen from the fonts installed on the device
+- Workspace breadcrumb in the top bar (`DACE / <Workspace>`) and hash-based
+  routing between workspaces
+- Builds for Linux (`.deb`, `.rpm`, AppImage) alongside Windows (MSI, setup)
+- CI that runs the frontend tests, type-check, production build and backend
+  tests on Windows and Linux for every push and pull request
+- Release workflow that builds installers, signed update packages and
+  `latest.json` into a draft GitHub release when a version tag is pushed
+  (see `RELEASING.md`)
 
 ### Changed
-- Typography: Aptos as the base for interface and reading text, with user-selectable device fonts; terminal keeps a monospace stack and follows monospace app-font choices
-- Command Palette and Shortcut Reference now dismiss when clicking the dark backdrop area
-- `closeOverlay` and `openOverlay` are now stable `useCallback` references, stopping unnecessary `commandList` rebuilds every render
-- Overlay backdrop z-index raised to `var(--z-backdrop)` (1000) so it renders above native window controls (z=500)
-- Quiet-notice toast z-index updated to `var(--z-toast)` (1200) to remain above open overlays
-- Speed Reader redesigned as a quiet reading instrument: flat solid surfaces, a stable focus point with ORP highlighting, explicit progress/time readout, restrained controls, and real modal semantics
-- Whole-app quiet UI pass: flat solid surfaces, hairline structure, one accent, compact radii, dense chrome, roomy documents, and concrete copy instead of generic discovery language
+- Knowledge Desk: docked library, a single slim bar above the page, a page that
+  grows with its text, and one side tool at a time
+- Research Reader: quiet toolbar, icon-driven drawer, full-height note page,
+  and a Writing layout with a small link back to the document
+- Home: large clock with the greeting above and the date beneath, beside one
+  clean area for continuing and recent work
+- Dark mode uses neutral graphite greys instead of warm brown
+- The window opens at 1280×820, centred, with a 960×600 minimum
+- Quiet visual style across the app: flat surfaces, hairline structure, one
+  accent colour, an 11px minimum text size and a measured reading column
+- Command Palette and Shortcut Reference close when the backdrop is clicked
+  and have scrollable lists
 
 ### Fixed
-- Modal backdrop clicks no longer fall through to window controls behind the overlay
-- Command palette actions called stale `closeOverlay` closure — now resolved via stable `useCallback`
-- Opening a modal then immediately clicking outside no longer triggers a spurious dismiss (grace period added)
-- Delete actions now report failures and reliably remove Knowledge Desk records, reader notes, relationships, attachments/files, and stale record selections
-- Reader writing mode now shows a return bar to its source document
-- Sidebar rail nav icons no longer slide or scale on hover/press
-- Speed Reader timing scales WPM by chunk size and global shortcuts no longer fire behind modal surfaces
-- A failed physical attachment delete now preserves the library row so the operation remains retryable
-- Reader layouts keep the top bar and navigation rail stable; compact rail icons and focus halo stay aligned with the dock
-- Brand logo is aligned consistently in the top bar and reader toolbar across every reader view
-- Speed Reader no longer dismisses itself from the toolbar click that opened it
-- Old logo backup removed from version control, with a regression guard against tracked copies
-- Typography floor raised to 11px with one 0.08em uppercase-label recipe, tabular metadata figures, and a measured 65ch reading column
-- Gradients, glass blur, glow, spring motion, hover lift, decorative hero art, and oversized radii removed across all workspaces and overlays
+- PDFs could not open in release builds (the content security policy blocked
+  loading the file); documents are now passed directly and previews use local
+  blob URLs
+- "Delete record" did nothing: a dialog opened from a menu click was closed by
+  that same click
+- "New record" from Home opened a different note
+- `Ctrl+O` in the Reader jumped to the Knowledge Desk and attached the file to
+  the note open there
+- The document picker was hidden behind the note in the Reader's Writing layout
+- Content, including Settings labels, slid under the navigation rail's curve,
+  and the main area could scroll sideways to expose hidden panels
+- Internal reader-note link tags appeared as tag chips and filters
+- Bold applied after a double-click included the trailing space
+- The clock showed a slashed zero
+- Delete actions report failures, and a failed file delete keeps the library
+  entry so it can be retried
+- Modal backdrops no longer let clicks fall through to the window controls
+- Remaining traces of the app's previous name were removed (data from older
+  installs is still migrated automatically)
 
 ---
 
-## [0.1.0-alpha] — 2026-11-23
+## [0.1.0-alpha] — 2026-11-23 (not tagged)
 
 ### Added
-- Complete rebrand from internal codename to **Dace** with automatic legacy data migration
-- **Knowledge Desk** — author, search, tag, and navigate SQLite-backed knowledge records
-- **Research Reader** — PDF import, highlight passages, write study notes, connect excerpts to records
-- **Knowledge Graph** — interactive force-directed graph of records and relationships
-- **Terminal** — native PTY shell embedded in the workspace (Windows, via `portable-pty`)
-- **Backup & Restore** — one-click encrypted archive export with SHA-256 fingerprint verification before restore
-- **Focus Space** — distraction-free full-screen environment (Tauri fullscreen + custom overlay)
-- **Command Palette** (`Ctrl+K`) with filtered command list, keyboard navigation, and intent routing
-- **Shortcut Reference** (`Ctrl+Shift+P`) with full action inventory
-- **Contextual Panel** — slide-in workspace detail drawer
-- **Managed Attachments** — content-addressed document storage with deduplication
-- Workspace intent system for type-safe cross-view communication
-- Save participant registry with flush-before-close lifecycle guarantees
-- Autosave debounce for knowledge records and reader notes
-- Hash-based URL routing for direct workspace deep-links
-- Persistent `lastActiveActivity` via settings for `remember-last` startup behaviour
-- P0 verification GitHub Actions workflow (frontend + Rust, Windows runner)
+- Rebrand to **Dace** with automatic migration of data from installs made under
+  the previous name
+- **Knowledge Desk**: write, search, tag and link SQLite-backed records
+- **Research Reader**: import PDFs, highlight passages, write study notes and
+  connect excerpts to records
+- **Knowledge Graph**: interactive force-directed graph of records and their
+  relationships
+- **Terminal**: shell embedded in the workspace (via `portable-pty`)
+- **Backup and restore**: one-click archive export with SHA-256 fingerprints,
+  validated before restore
+- **Focus Space**: distraction-free full-screen mode
+- **Command Palette** (`Ctrl+K`) and **Shortcut Reference** (`Ctrl+Shift+P`)
+- **Managed documents**: content-addressed storage with de-duplication
+- Workspace intents for cross-view communication, and a save registry that
+  flushes unsaved work before the window closes
+- Autosave for records and reader notes
 
 ### Infrastructure
-- Tauri v2 desktop shell with custom decorations and drag region
-- SQLite via `rusqlite` (bundled) — single portable `.db` file, user-owned
-- Rust test suite: 57 tests across backup, restore, records, attachments, terminal, and graph
-- Frontend test suite: 83 tests via Node native test runner (no test framework dependency)
-- Production release profile with LTO, `codegen-units = 1`, and binary stripping
-
-[Unreleased]: https://github.com/arcaenux/dace/compare/v0.1.0-alpha...HEAD
-[0.1.0-alpha]: https://github.com/arcaenux/dace/releases/tag/v0.1.0-alpha
+- Tauri 2 desktop shell with custom window decorations
+- SQLite via `rusqlite` (bundled) in a single user-owned database file
+- Rust and frontend test suites (Node's built-in test runner)
+- Release profile with LTO and `codegen-units = 1`
