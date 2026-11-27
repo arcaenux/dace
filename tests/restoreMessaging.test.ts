@@ -16,17 +16,17 @@ test("inspection progress names the archive and reports the active stage", () =>
       stage: "fingerprint",
       current: 0,
       total: 1,
-      message: "Copying and fingerprinting research.ndarchive…",
+      message: "Copying and fingerprinting research.dacebackup…",
     }),
-    "Copying and fingerprinting research.ndarchive…"
+    "Copying and fingerprinting research.dacebackup…"
   );
   assert.equal(inspectionProgressMessage(null), "Inspecting backup archive…");
 });
 
 test("inspection success states that integrity checks passed", () => {
   assert.equal(
-    inspectionSuccessMessage("C:\\Backups\\research.ndarchive"),
-    "Integrity checks passed for research.ndarchive. Review the restore summary."
+    inspectionSuccessMessage("C:\\Backups\\research.dacebackup"),
+    "Integrity checks passed for research.dacebackup. Review the restore summary."
   );
   assert.equal(archiveFileName("/tmp/old.backup"), "old.backup");
 });
@@ -43,7 +43,7 @@ test("startup outcome notices distinguish verified success from failure", () => 
   const success: RestoreOutcome = {
     success: true,
     message: "Restore completed and verified at startup.",
-    archive_path: "/tmp/backup.ndarchive",
+    archive_path: "/tmp/backup.dacebackup",
     record_count: 12,
     attachment_count: 3,
     recovery_dir: "/tmp/recovery",

@@ -8,6 +8,7 @@ export interface CommandContext {
   onToggleNav?: () => void;
   colorMode?: "light" | "dark";
   onToggleColorMode?: () => void;
+  onToggleAssistant?: () => void;
   isFocusSpace: boolean;
   enterFocusSpace: () => Promise<void>;
   exitFocusSpace: () => Promise<void>;
@@ -24,8 +25,8 @@ export function buildCommandList(ctx: CommandContext): CommandItem[] {
   const commands: CommandItem[] = [
     {
       id: "nav:workspace",
-      name: "Open Workspace",
-      description: "Return to the central intellectual workspace",
+      name: "Open Home",
+      description: "Go to Home: the clock, recent work and workspaces",
       category: "Navigation",
       shortcut: "Alt+1",
       available: true,
@@ -37,7 +38,7 @@ export function buildCommandList(ctx: CommandContext): CommandItem[] {
     {
       id: "nav:knowledge-desk",
       name: "Open Knowledge Desk",
-      description: "Author, organize, and search personal knowledge records in SQLite",
+      description: "Write, organise and search your notes",
       category: "Navigation",
       shortcut: "Alt+2",
       available: true,
@@ -48,8 +49,8 @@ export function buildCommandList(ctx: CommandContext): CommandItem[] {
     },
     {
       id: "knowledge:new-record",
-      name: "Create Knowledge Record",
-      description: "Initialize a new atomic record in SQLite",
+      name: "New Record",
+      description: "Create a new note in the Knowledge Desk",
       category: "Workspace",
       shortcut: "Ctrl+N",
       available: true,
@@ -60,8 +61,8 @@ export function buildCommandList(ctx: CommandContext): CommandItem[] {
     },
     {
       id: "attachments:import-document",
-      name: "Import Research Document",
-      description: "Import and preserve an external file in content-addressed managed storage",
+      name: "Import Document",
+      description: "Import a PDF, Markdown or text file into your library",
       category: "Workspace",
       shortcut: "Ctrl+O",
       available: true,
@@ -73,7 +74,7 @@ export function buildCommandList(ctx: CommandContext): CommandItem[] {
     {
       id: "workspace:export-backup",
       name: "Export Backup",
-      description: "Create a complete .ndarchive backup of your database and managed attachments",
+      description: "Create a complete .dacebackup of your notes, database and documents",
       category: "Workspace",
       available: true,
       execute: () => {
@@ -84,7 +85,7 @@ export function buildCommandList(ctx: CommandContext): CommandItem[] {
     {
       id: "workspace:restore-backup",
       name: "Restore Backup",
-      description: "Validate a .ndarchive and safely replace this library after a recovery snapshot",
+      description: "Validate a .dacebackup and safely replace this library after a recovery snapshot",
       category: "Workspace",
       available: true,
       execute: () => {
@@ -94,8 +95,8 @@ export function buildCommandList(ctx: CommandContext): CommandItem[] {
     },
     {
       id: "knowledge:search-records",
-      name: "Search Knowledge Records",
-      description: "Query knowledge records by title or content in SQLite",
+      name: "Search Records",
+      description: "Search your notes by title or content",
       category: "Workspace",
       shortcut: "Ctrl+Shift+F",
       available: true,
@@ -106,8 +107,8 @@ export function buildCommandList(ctx: CommandContext): CommandItem[] {
     },
     {
       id: "knowledge:save-record",
-      name: "Save Current Record",
-      description: "Explicitly flush and commit active record to SQLite",
+      name: "Save Now",
+      description: "Save the open record or reader note immediately",
       category: "Workspace",
       shortcut: "Ctrl+S",
       available: true,
@@ -124,8 +125,8 @@ export function buildCommandList(ctx: CommandContext): CommandItem[] {
       id: "focus:toggle",
       name: ctx.isFocusSpace ? "Exit Focus Space" : "Enter Focus Space",
       description: ctx.isFocusSpace
-        ? "Restore standard windowed workspace chrome"
-        : "Immerse in full-screen distraction-free environment",
+        ? "Return to the normal window"
+        : "Full-screen, distraction-free reading and writing",
       category: "Focus Space",
       shortcut: "F11",
       available: true,
@@ -136,8 +137,8 @@ export function buildCommandList(ctx: CommandContext): CommandItem[] {
     },
     {
       id: "nav:toggle-rail",
-      name: "Toggle Curved Sidebar",
-      description: "Open or hide the curved navigation rail over the active view",
+      name: "Show or Hide Navigation",
+      description: "Show or hide the navigation rail",
       category: "Navigation",
       shortcut: "Ctrl+B",
       available: Boolean(ctx.onToggleNav),
@@ -149,7 +150,7 @@ export function buildCommandList(ctx: CommandContext): CommandItem[] {
     {
       id: "appearance:toggle-theme",
       name: ctx.colorMode === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode",
-      description: "Toggle between the warm editorial light and obsidian dark colour modes",
+      description: "Switch between the light and dark appearance",
       category: "Appearance",
       shortcut: "Ctrl+Shift+L",
       available: Boolean(ctx.onToggleColorMode),
@@ -159,9 +160,21 @@ export function buildCommandList(ctx: CommandContext): CommandItem[] {
       },
     },
     {
+      id: "assistant:toggle",
+      name: "Show or Hide Side Browser",
+      description: "ChatGPT, Gemini or another site beside your work",
+      category: "Workspace",
+      shortcut: "Ctrl+Shift+A",
+      available: Boolean(ctx.onToggleAssistant),
+      execute: () => {
+        ctx.closeOverlay();
+        ctx.onToggleAssistant?.();
+      },
+    },
+    {
       id: "help:shortcuts",
-      name: "Show Shortcuts and Actions",
-      description: "Display keyboard shortcut discovery reference",
+      name: "Keyboard Shortcuts",
+      description: "Show every keyboard shortcut",
       category: "System",
       shortcut: "Ctrl+Shift+P",
       available: true,
@@ -172,7 +185,7 @@ export function buildCommandList(ctx: CommandContext): CommandItem[] {
     {
       id: "nav:knowledge-graph",
       name: "Open Knowledge Graph",
-      description: "Explore the interactive knowledge graph and conceptual relationships",
+      description: "See how your records connect",
       category: "Navigation",
       shortcut: "Alt+3",
       available: true,
@@ -184,7 +197,7 @@ export function buildCommandList(ctx: CommandContext): CommandItem[] {
     {
       id: "nav:reader",
       name: "Open Research Reader",
-      description: "Read research papers, highlight passages, and connect annotations to knowledge",
+      description: "Read documents, highlight passages and write notes beside them",
       category: "Navigation",
       shortcut: "Alt+4",
       available: true,
@@ -196,7 +209,7 @@ export function buildCommandList(ctx: CommandContext): CommandItem[] {
     {
       id: "reader:layout-reading",
       name: "Reader: Reading Layout",
-      description: "Maximise the document surface for uninterrupted reading",
+      description: "Show only the document",
       category: "Workspace",
       shortcut: "Alt+Shift+1",
       available: true,
@@ -208,7 +221,7 @@ export function buildCommandList(ctx: CommandContext): CommandItem[] {
     {
       id: "reader:layout-research",
       name: "Reader: Research Layout",
-      description: "Show the document and writing workspace side by side",
+      description: "Show the document and your note side by side",
       category: "Workspace",
       shortcut: "Alt+Shift+2",
       available: true,
@@ -220,7 +233,7 @@ export function buildCommandList(ctx: CommandContext): CommandItem[] {
     {
       id: "reader:layout-writing",
       name: "Reader: Writing Layout",
-      description: "Expand the research notes while keeping source references",
+      description: "Show your note full width, with a link back to the document",
       category: "Workspace",
       shortcut: "Alt+Shift+3",
       available: true,
@@ -232,7 +245,7 @@ export function buildCommandList(ctx: CommandContext): CommandItem[] {
     {
       id: "nav:terminal",
       name: "Open Terminal",
-      description: "Open a real local shell in an integrated PTY workspace",
+      description: "Open a shell inside Dace",
       category: "Navigation",
       shortcut: "Alt+6",
       available: true,
@@ -244,7 +257,7 @@ export function buildCommandList(ctx: CommandContext): CommandItem[] {
     {
       id: "system:settings",
       name: "Open Settings",
-      description: "Configure startup, workspace, editor, storage and backup preferences",
+      description: "Startup, appearance, editor, storage, backup and update preferences",
       category: "System",
       shortcut: "Alt+5",
       available: true,

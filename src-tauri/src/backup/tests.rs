@@ -9,7 +9,7 @@ use uuid::Uuid;
 use crate::attachments::storage::AttachmentStorage;
 use crate::db::Database;
 
-use super::archive::{validate_ndarchive, BackupManifest, NDARCHIVE_FORMAT_VERSION};
+use super::archive::{validate_backup, BackupManifest, BACKUP_FORMAT_VERSION};
 use super::service::{create_backup_with_progress, snapshot_database};
 
 struct TempDirGuard {
@@ -68,7 +68,7 @@ fn insert_attachment_row(
 }
 
 fn read_archive_manifest(path: &Path) -> BackupManifest {
-    validate_ndarchive(path).expect("archive should validate")
+    validate_backup(path).expect("archive should validate")
 }
 
 fn find_entry_data(archive_path: &Path, wanted: &str) -> Option<Vec<u8>> {
@@ -76,7 +76,7 @@ fn find_entry_data(archive_path: &Path, wanted: &str) -> Option<Vec<u8>> {
     let mut file = File::open(archive_path).expect("open archive");
     let mut magic = [0u8; 14];
     file.read_exact(&mut magic).ok()?;
-    if &magic != super::archive::NDARCHIVE_MAGIC {
+    if &magic != super::archive::BACKUP_MAGIC {
         return None;
     }
     let mut ver = [0u8; 4];
@@ -117,7 +117,7 @@ fn test_empty_database_backup_and_manifest_validation() {
     let db = Database::init(&db_path).expect("init db");
     let storage = AttachmentStorage::new(&attachments_dir).expect("init storage");
 
-    let dest = temp.path().join("empty.ndarchive");
+    let dest = temp.path().join("empty.dacebackup");
     let result = create_backup_with_progress(&db, &storage, &dest, None).expect("backup should succeed");
 
     assert!(Path::new(&result.archive_path).exists(), "archive file must exist");
@@ -125,8 +125,8 @@ fn test_empty_database_backup_and_manifest_validation() {
     assert!(result.archive_size > 0);
 
     let manifest = read_archive_manifest(Path::new(&result.archive_path));
-    assert_eq!(manifest.format, "dace-ndarchive");
-    assert_eq!(manifest.format_version, NDARCHIVE_FORMAT_VERSION);
+    assert_eq!(manifest.format, "dace-backup");
+    assert_eq!(manifest.format_version, BACKUP_FORMAT_VERSION);
     assert_eq!(manifest.attachments.len(), 0);
     assert_eq!(manifest.totals.attachment_count, 0);
     assert_eq!(manifest.database.archive_path, "database/dace.db");
@@ -179,7 +179,7 @@ fn test_database_snapshot_consistency_and_wal_committed_transactions() {
 
     // Backup archive also contains consistent DB
     let storage = AttachmentStorage::new(&attachments_dir).expect("init storage");
-    let dest = temp.path().join("wal.ndarchive");
+    let dest = temp.path().join("wal.dacebackup");
     create_backup_with_progress(&db, &storage, &dest, None).expect("backup");
     let db_bytes = find_entry_data(&dest, "database/dace.db").expect("db in archive");
     let archive_db_path = temp.path().join("from-archive.db");
@@ -225,7 +225,7 @@ fn test_attachment_inclusion_sha256_verification_and_manifest_correctness() {
         ).expect("link");
     }
 
-    let dest = temp.path().join("att.ndarchive");
+    let dest = temp.path().join("att.dacebackup");
     let result = create_backup_with_progress(&db, &storage, &dest, None).expect("backup");
     assert_eq!(result.attachment_count, 2);
 
@@ -244,7 +244,7 @@ fn test_attachment_inclusion_sha256_verification_and_manifest_correctness() {
     assert_eq!(sha256_hex_bytes(&entry2), hash2);
 
     // Validation must pass (covers archive validation requirement)
-    validate_ndarchive(&dest).expect("validate ok");
+    validate_backup(&dest).expect("validate ok");
 }
 
 #[test]
@@ -269,14 +269,14 @@ fn test_missing_and_corrupted_attachments_fail_backup_without_publishing_archive
 
     // Corrupted content
     fs::write(&full, b"tampered content").expect("tamper");
-    let dest_corrupt = temp.path().join("corrupt.ndarchive");
+    let dest_corrupt = temp.path().join("corrupt.dacebackup");
     let err = create_backup_with_progress(&db, &storage, &dest_corrupt, None).expect_err("must fail");
     assert!(err.to_lowercase().contains("corrupt") || err.to_lowercase().contains("checksum") || err.to_lowercase().contains("integrity"), "error should report corruption: {}", err);
     assert!(!dest_corrupt.exists(), "failed backup must not publish archive");
 
     // Missing file
     fs::remove_file(&full).expect("remove");
-    let dest_missing = temp.path().join("missing.ndarchive");
+    let dest_missing = temp.path().join("missing.dacebackup");
     let err = create_backup_with_progress(&db, &storage, &dest_missing, None).expect_err("must fail");
     assert!(err.to_lowercase().contains("missing"), "error should report missing file: {}", err);
     assert!(!dest_missing.exists(), "failed backup must not publish archive");
@@ -296,7 +296,7 @@ fn test_interrupted_backup_cleanup_no_published_archive() {
         insert_attachment_row(&conn, "a1", "gone.txt", "text/plain", 5, &"00".repeat(32), "00/missing.txt");
     }
 
-    let dest = temp.path().join("cleanup.ndarchive");
+    let dest = temp.path().join("cleanup.dacebackup");
     let _ = create_backup_with_progress(&db, &storage, &dest, None).expect_err("should fail");
     assert!(!dest.exists(), "no final archive on failure");
 
@@ -306,7 +306,7 @@ fn test_interrupted_backup_cleanup_no_published_archive() {
         .flatten()
         .filter(|e| {
             let name = e.file_name().to_string_lossy().to_string();
-            name.contains(".ndarchive.tmp-") || name.starts_with(".dace-backup-")
+            name.contains(".dacebackup.tmp-") || name.starts_with(".dace-backup-")
         })
         .collect();
     assert!(leftovers.is_empty(), "temporary backup artifacts must be cleaned up: {:?}", leftovers);
@@ -338,7 +338,7 @@ fn test_large_attachment_handling() {
         insert_attachment_row(&conn, "a-large", "large.bin", "application/octet-stream", data.len() as i64, &hash, &rel);
     }
 
-    let dest = temp.path().join("large.ndarchive");
+    let dest = temp.path().join("large.dacebackup");
     let result = create_backup_with_progress(&db, &storage, &dest, None).expect("large backup should succeed");
     assert_eq!(result.attachment_count, 1);
 

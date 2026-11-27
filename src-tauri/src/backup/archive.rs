@@ -5,10 +5,17 @@ use std::fs::File;
 use std::io::{Read, Write};
 use std::path::{Component, Path, PathBuf};
 
-pub const NDARCHIVE_MAGIC: &[u8; 14] = b"DACE_NDARCHIVE";
-pub const NDARCHIVE_FORMAT_VERSION: u32 = 1;
-pub const NDARCHIVE_DATABASE_PATH: &str = "database/dace.db";
-pub const NDARCHIVE_ATTACHMENTS_PREFIX: &str = "attachments/";
+/// File header written at the start of every Dace backup.
+pub const BACKUP_MAGIC: &[u8; 14] = b"DACE_BACKUP_V1";
+/// Format name recorded in every backup manifest.
+pub const BACKUP_FORMAT: &str = "dace-backup";
+/// Header and format name used by backups made before the Dace rename.
+/// Only ever read, never written, so existing backups stay restorable.
+pub const LEGACY_BACKUP_MAGIC: &[u8; 14] = b"DACE_NDARCHIVE";
+pub const LEGACY_BACKUP_FORMAT: &str = "dace-ndarchive";
+pub const BACKUP_FORMAT_VERSION: u32 = 1;
+pub const BACKUP_DATABASE_PATH: &str = "database/dace.db";
+pub const BACKUP_ATTACHMENTS_PREFIX: &str = "attachments/";
 
 // Defensive resource limits for hostile or corrupt archives.
 const MAX_MANIFEST_BYTES: u64 = 64 * 1024 * 1024;
@@ -143,7 +150,7 @@ fn hex_to_bytes(hex: &str) -> Result<[u8; 32], String> {
     Ok(out)
 }
 
-pub fn write_ndarchive(
+pub fn write_backup(
     dest_path: &Path,
     manifest: &BackupManifest,
     files: &[ArchiveFile],
@@ -154,9 +161,9 @@ pub fn write_ndarchive(
     let manifest_json = serde_json::to_vec_pretty(manifest)
         .map_err(|e| format!("Failed to serialize manifest: {}", e))?;
 
-    file.write_all(NDARCHIVE_MAGIC)
+    file.write_all(BACKUP_MAGIC)
         .map_err(|e| format!("Failed to write archive magic: {}", e))?;
-    file.write_all(&NDARCHIVE_FORMAT_VERSION.to_le_bytes())
+    file.write_all(&BACKUP_FORMAT_VERSION.to_le_bytes())
         .map_err(|e| format!("Failed to write format version: {}", e))?;
     file.write_all(&(manifest_json.len() as u64).to_le_bytes())
         .map_err(|e| format!("Failed to write manifest length: {}", e))?;
@@ -219,7 +226,7 @@ fn read_manifest(
     let mut magic = [0u8; 14];
     file.read_exact(&mut magic)
         .map_err(|e| format!("Failed to read archive magic: {}", e))?;
-    if &magic != NDARCHIVE_MAGIC {
+    if &magic != BACKUP_MAGIC && &magic != LEGACY_BACKUP_MAGIC {
         return Err("Invalid archive magic/header".to_string());
     }
 
@@ -227,7 +234,7 @@ fn read_manifest(
     file.read_exact(&mut ver_buf)
         .map_err(|e| format!("Failed to read format version: {}", e))?;
     let version = u32::from_le_bytes(ver_buf);
-    if version != NDARCHIVE_FORMAT_VERSION {
+    if version != BACKUP_FORMAT_VERSION {
         return Err(format!("Unsupported archive format version: {}", version));
     }
 
@@ -252,7 +259,8 @@ fn read_manifest(
 fn validate_manifest(
     manifest: &BackupManifest,
 ) -> Result<HashMap<String, ExpectedEntry>, String> {
-    if manifest.format != "dace-ndarchive" || manifest.format_version != NDARCHIVE_FORMAT_VERSION {
+    let known_format = manifest.format == BACKUP_FORMAT || manifest.format == LEGACY_BACKUP_FORMAT;
+    if !known_format || manifest.format_version != BACKUP_FORMAT_VERSION {
         return Err("Manifest format metadata mismatch".to_string());
     }
     if manifest.app_version.trim().is_empty() {
@@ -269,10 +277,10 @@ fn validate_manifest(
     if db_path != manifest.database.archive_path {
         return Err("Manifest database path is not normalized".to_string());
     }
-    if db_path != NDARCHIVE_DATABASE_PATH {
+    if db_path != BACKUP_DATABASE_PATH {
         return Err(format!(
             "Archive is missing the required database entry (expected {})",
-            NDARCHIVE_DATABASE_PATH
+            BACKUP_DATABASE_PATH
         ));
     }
     let db_sha = hex_to_bytes(&manifest.database.sha256)?;
@@ -307,7 +315,7 @@ fn validate_manifest(
                 attachment.relative_path
             ));
         }
-        let canonical = format!("{}{}", NDARCHIVE_ATTACHMENTS_PREFIX, relative_path);
+        let canonical = format!("{}{}", BACKUP_ATTACHMENTS_PREFIX, relative_path);
         if canonical != archive_path {
             return Err(format!(
                 "Manifest attachment path '{}' does not match its relative path '{}'",
@@ -501,14 +509,14 @@ fn scan_archive(
 
 /// Fully validates an archive (magic, version, manifest, per-entry size and SHA-256,
 /// duplicate/traversal paths, inventory completeness) without writing files.
-pub fn validate_ndarchive(path: &Path) -> Result<BackupManifest, String> {
+pub fn validate_backup(path: &Path) -> Result<BackupManifest, String> {
     scan_archive(path, None)
 }
 
 /// Fully validates an archive and extracts every entry into `dest_dir`, preserving
 /// archive-relative paths. The destination is created if necessary. On failure the
 /// caller is responsible for removing any partially extracted staging directory.
-pub fn extract_ndarchive(path: &Path, dest_dir: &Path) -> Result<BackupManifest, String> {
+pub fn extract_backup(path: &Path, dest_dir: &Path) -> Result<BackupManifest, String> {
     std::fs::create_dir_all(dest_dir)
         .map_err(|e| format!("Failed to create extraction directory {:?}: {}", dest_dir, e))?;
     scan_archive(path, Some(dest_dir))

@@ -772,7 +772,7 @@ export const KnowledgeGraphView: FC<KnowledgeGraphViewProps> = ({
       onKeyDown={handleKeyDown}
       aria-label={embedded ? "Record relationship graph" : "Knowledge Graph Workspace"}
     >
-      {/* 1. High-Performance Astronomical Canvas */}
+      {/* 1. Graph canvas */}
       <canvas
         ref={canvasRef}
         className="knowledge-graph-canvas"
@@ -783,7 +783,7 @@ export const KnowledgeGraphView: FC<KnowledgeGraphViewProps> = ({
         onWheel={handleWheel}
       />
 
-      {/* 2. Floating Search Field (Astronomical Glass Bar) */}
+      {/* 2. Floating search field */}
       <div ref={graphSearchRef} className="graph-floating-search-bar">
         <div className="graph-search-input-wrap">
           <span className="search-icon">✦</span>

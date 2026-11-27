@@ -1,4 +1,4 @@
-//! Safe restore of `.ndarchive` v1 backups.
+//! Safe restore of Dace backups (`.dacebackup`, and legacy `.ndarchive` files).
 //!
 //! Restores never write into the live application data directory while the app is
 //! running. The archive is fully validated and extracted into a staging directory,
@@ -19,8 +19,8 @@ use crate::attachments::storage::AttachmentStorage;
 use crate::db::{Database, SCHEMA_VERSION};
 
 use super::archive::{
-    extract_ndarchive, safe_join, sanitize_archive_path, sha256_file, BackupManifest,
-    NDARCHIVE_DATABASE_PATH,
+    extract_backup, safe_join, sanitize_archive_path, sha256_file, BackupManifest,
+    BACKUP_DATABASE_PATH,
 };
 use super::service::ProgressCallback;
 
@@ -137,7 +137,7 @@ pub(crate) fn snapshot_archive(
 ) -> Result<(PathBuf, u64, String), String> {
     fs::create_dir_all(dest_dir)
         .map_err(|e| format!("Failed to create archive snapshot directory {:?}: {}", dest_dir, e))?;
-    let snapshot = dest_dir.join("archive.ndarchive");
+    let snapshot = dest_dir.join("archive.dacebackup");
     report(
         progress,
         "fingerprint",
@@ -380,7 +380,7 @@ fn inspect_extracted(
     archive_sha256: &str,
     on_progress: Option<&dyn Fn(&str, usize, usize, &str)>,
 ) -> Result<RestorePreview, String> {
-    let db_path = safe_join(extract_dir, NDARCHIVE_DATABASE_PATH)?;
+    let db_path = safe_join(extract_dir, BACKUP_DATABASE_PATH)?;
     if !db_path.exists() {
         return Err("Archive does not contain the required database file".to_string());
     }
@@ -538,7 +538,7 @@ pub fn inspect_archive_with_progress(
         let (stable_archive, archive_size, archive_sha256) =
             snapshot_archive(archive_path, &inspect_dir, progress)?;
         report(progress, "extract", "Extracting archive into isolated inspection area…");
-        let manifest = extract_ndarchive(&stable_archive, &inspect_dir)?;
+        let manifest = extract_backup(&stable_archive, &inspect_dir)?;
         report(progress, "verify", "Verifying database and attachment integrity…");
         inspect_extracted(
             &inspect_dir,
@@ -681,7 +681,7 @@ fn prepare_restore_inner(
 
     let result = (|| {
         report(progress, "validate", "Validating backup archive…");
-        let manifest = extract_ndarchive(archive_path, &staging_dir)?;
+        let manifest = extract_backup(archive_path, &staging_dir)?;
 
         report(progress, "verify", "Verifying restored database and attachments…");
         let preview = inspect_extracted(
@@ -976,7 +976,7 @@ fn apply_files(
         .map_err(|e| format!("Failed to prepare attachment swap: {}", e))?;
     call_hook("after-active-attachments-moved")?;
 
-    let staged_db = staging_dir.join(NDARCHIVE_DATABASE_PATH);
+    let staged_db = staging_dir.join(BACKUP_DATABASE_PATH);
     if !staged_db.exists() {
         return Err("Staged database is missing; cannot complete restore".to_string());
     }

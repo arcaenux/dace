@@ -513,6 +513,7 @@ export const WorkspaceShell: FC = () => {
       onToggleNav: toggleRail,
       colorMode: settings.appearance.colorMode,
       onToggleColorMode: toggleColorMode,
+      onToggleAssistant: toggleAssistant,
       isFocusSpace,
       enterFocusSpace,
       exitFocusSpace,

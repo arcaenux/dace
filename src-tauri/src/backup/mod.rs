@@ -34,8 +34,8 @@ pub async fn export_backup(
                 let picked = rfd::FileDialog::new()
                     .set_title("Export Dace Backup")
                     .set_directory(&path)
-                    .add_filter("Dace Backup Archive", &["ndarchive"])
-                    .set_file_name("dace-backup.ndarchive")
+                    .add_filter("Dace backup", &["dacebackup"])
+                    .set_file_name("dace-backup.dacebackup")
                     .save_file();
                 picked.ok_or_else(|| "Backup export cancelled.".to_string())?
             } else {
@@ -45,8 +45,8 @@ pub async fn export_backup(
         _ => {
             let picked = rfd::FileDialog::new()
                 .set_title("Export Dace Backup")
-                .add_filter("Dace Backup Archive", &["ndarchive"])
-                .set_file_name("dace-backup.ndarchive")
+                .add_filter("Dace backup", &["dacebackup"])
+                .set_file_name("dace-backup.dacebackup")
                 .save_file();
             picked.ok_or_else(|| "Backup export cancelled.".to_string())?
         }
@@ -74,7 +74,8 @@ pub async fn export_backup(
     .map_err(|e| format!("Backup task failed: {}", e))?
 }
 
-/// Validates a `.ndarchive` and returns a preview without touching live data.
+/// Validates a backup (`.dacebackup`, or legacy `.ndarchive`) and returns a
+/// preview without touching live data.
 /// When no path is supplied, a native file picker is shown.
 #[tauri::command]
 pub async fn inspect_backup_archive(
@@ -86,7 +87,8 @@ pub async fn inspect_backup_archive(
         _ => {
             let picked = rfd::FileDialog::new()
                 .set_title("Select Dace Backup to Restore")
-                .add_filter("Dace Backup Archive", &["ndarchive"])
+                // Older backups used the ".ndarchive" extension; they still restore.
+                .add_filter("Dace backup", &["dacebackup", "ndarchive"])
                 .pick_file();
             picked.ok_or_else(|| "Restore cancelled.".to_string())?
         }

@@ -406,7 +406,7 @@ export function SettingsView({ onExportBackup, onRestoreBackup }: SettingsViewPr
       case "appearance":
         return (
           <>
-            <Field label="Colour mode" description="Toggle between warm paper light and obsidian dark (Ctrl+Shift+L).">
+            <Field label="Colour mode" description="Light or dark appearance (Ctrl+Shift+L).">
               <div className="settings-segmented">
                 {(["light", "dark"] as ColorMode[]).map((colorMode) => (
                   <button

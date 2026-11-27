@@ -23,9 +23,11 @@ Thank you for your interest in contributing. This document covers everything you
 
 | Tool | Version |
 |------|---------|
-| Node.js | 20 LTS or 22 LTS |
+| Node.js | 22.6 or newer (the test runner uses `--experimental-strip-types`) |
 | Rust | stable (via [rustup](https://rustup.rs)) |
 | Git | any recent version |
+| Windows | Microsoft Edge WebView2 (preinstalled on Windows 10 and 11) |
+| Linux | `libwebkit2gtk-4.1-dev`, `libappindicator3-dev`, `librsvg2-dev`, `patchelf`, `libgtk-3-dev` |
 
 ### First-time setup
 
@@ -54,7 +56,8 @@ cargo test --manifest-path src-tauri/Cargo.toml
 npx tsc --noEmit
 ```
 
-All three must pass with zero errors and zero failing tests.
+All three must pass with zero errors and zero failing tests. CI runs the same
+checks on Windows and Linux for every pull request.
 
 ---
 
@@ -98,7 +101,7 @@ Dace follows [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.
 
 ### Scope examples
 
-`ui`, `shell`, `reader`, `knowledge-desk`, `graph`, `terminal`, `backup`, `settings`, `overlays`, `tokens`, `rust`, `ci`
+`ui`, `shell`, `editor`, `reader`, `knowledge-desk`, `graph`, `assistant`, `vault`, `terminal`, `backup`, `settings`, `overlays`, `tokens`, `rust`, `ci`
 
 ### Examples
 
@@ -115,25 +118,27 @@ docs: add architecture overview to CONTRIBUTING
 
 ### TypeScript / React
 
-- **No default exports** except for React component files where the framework encourages it.
-- **`useCallback` for all callbacks passed as props or into `useMemo`/`useEffect` dependencies** — prevents stale closures and unnecessary re-renders.
-- **Prefer `useRef` for mutable state that must not cause re-renders** (timers, previous values, imperative handles).
-- **CSS modules are not used** — all styles live in `src/styles/` as plain CSS with design token variables. Do not add inline `style={{}}` for layout or colour decisions that belong in tokens.
-- **No `any` without a comment explaining why.**
-- **No `// eslint-disable`** unless accompanied by a brief justification and a task to remove it.
+- **Named exports.** Everything except the root `App.tsx` uses named exports; follow suit.
+- **`useCallback` for callbacks passed as props or used in hook dependencies**, to avoid stale closures and needless re-renders.
+- **`useRef` for mutable values that must not re-render** (timers, previous values, imperative handles).
+- **Styles live in `src/styles/`** as plain CSS (no CSS modules). Avoid inline `style={{}}` for colours or spacing that belong in tokens.
+- **Avoid `any`.** Where it is unavoidable, add a short comment saying why.
+- **Writing surfaces** use the shared editor in `src/editor/`. Notes are stored as Markdown; keep any new formatting round-trippable to Markdown.
 
 ### Rust
 
-- Run `cargo clippy` before committing. Zero warnings in the output expected.
-- Run `cargo fmt` — formatting is not negotiable.
-- All public functions that cross the Tauri boundary (`#[tauri::command]`) must have a corresponding integration test in the Rust test suite or the Node test suite.
-- Error types returned from commands must be `String` (serialisable) — do not return opaque types.
+- Run `cargo fmt` before committing.
+- Run `cargo clippy` and do not introduce new warnings. (The existing code still has some; fixing them is welcome as a separate change.)
+- Commands that do window or webview work (adding or moving a webview) must be `async`, so they never block the main thread.
+- Add tests for new `#[tauri::command]` logic, in the Rust suite or the Node suite.
+- Commands return `Result<T, String>` so errors reach the frontend as readable messages.
 
 ### CSS / Design Tokens
 
-- **All colours, spacing, font sizes, z-indices, and durations must reference a token** from `src/styles/tokens.css`. Never hardcode hex or pixel values.
-- **No `!important`** outside of explicit browser-reset contexts.
-- **z-index values** must use the `--z-*` token scale. If a new layer is needed, add it to the token file and update this document.
+- **Prefer tokens** from `src/styles/tokens.css` for colours, radii, spacing, fonts, z-indices and durations, so light and dark mode stay consistent.
+- **Text is never smaller than 11px.** The quiet-UI test suite enforces this.
+- **`quiet-ui.css` is imported last** and is the authoritative visual layer. Its `!important` rules exist to override older layers; avoid adding new `!important` elsewhere and prefer a more specific selector.
+- **New layers** use the `--z-*` scale where possible.
 
 ---
 
@@ -150,7 +155,7 @@ node --experimental-strip-types --test tests/myNewSuite.test.ts
 
 ### For every Rust command
 
-Add at least one test in `src-tauri/src/` or alongside the module under test. Use `rusqlite::Connection::open_in_memory()` for database tests — never write to the filesystem in tests.
+Add at least one test alongside the module under test. Use an in-memory database (`rusqlite::Connection::open_in_memory()`) where you can. When a test needs real files (backup, restore, vault), use a unique folder in the system temp directory and remove it afterwards, as the existing suites do.
 
 ### Minimum bar for a PR
 
@@ -159,7 +164,7 @@ Add at least one test in `src-tauri/src/` or alongside the module under test. Us
 | `npx tsc --noEmit` | 0 errors |
 | `npm test` | 0 failures, all previous tests still pass |
 | `cargo test` | 0 failures |
-| `cargo clippy` | 0 warnings |
+| `cargo clippy` | no new warnings |
 
 ---
 
@@ -171,7 +176,7 @@ Before marking your PR ready for review, confirm:
 - [ ] `npm test` passes (all suites)
 - [ ] `cargo test --manifest-path src-tauri/Cargo.toml` passes
 - [ ] `npx tsc --noEmit` reports 0 errors
-- [ ] No new hardcoded colours, pixel values, or z-indices (use tokens)
+- [ ] Colours, spacing and z-indices use design tokens where possible
 - [ ] Any new Tauri command has a corresponding test
 - [ ] CHANGELOG.md updated under `[Unreleased]` if the change is user-visible
 - [ ] PR title follows the Conventional Commits format
@@ -181,14 +186,15 @@ Before marking your PR ready for review, confirm:
 ## Architecture Overview
 
 ```
-WorkspaceShell          # Root React component — owns all state, intents, overlays
-  ├── WorkspaceTopBar   # Breadcrumb, search, command palette trigger, shortcut trigger
-  ├── WorkspaceRail     # Activity sidebar navigation
-  ├── <Activity>        # One of: WorkspaceIntro, KnowledgeDesk, KnowledgeGraphView,
+WorkspaceShell          # Root React component: owns activity, intents, overlays
+  ├── WorkspaceTopBar   # Breadcrumb, search, commands, shortcuts, side browser, theme
+  ├── WorkspaceRail     # Workspace navigation
+  ├── <Activity>        # One of: WorkspaceIntro (Home), KnowledgeDesk, KnowledgeGraphView,
   │                     #         ResearchReaderView, SettingsView, TerminalView
-  ├── CommandPalette    # Ctrl+K overlay — filtered command list
-  ├── ShortcutReference # Ctrl+Shift+P overlay — shortcut inventory
-  └── ContextualPanel   # Slide-in workspace detail drawer
+  ├── AssistantPanel    # Side browser (a native child webview over a reserved slot)
+  ├── CommandPalette    # Ctrl+K overlay
+  ├── ShortcutReference # Ctrl+Shift+P overlay
+  └── ContextualPanel   # Slide-in workspace details
 ```
 
 ### Intent system
@@ -203,6 +209,14 @@ requestIntent({ type: "new-record" })
   → KnowledgeDesk consumes it via onConsumeIntent
 ```
 
+### Writing editor
+
+`src/editor/RichTextEditor.tsx` wraps Tiptap. It loads and saves Markdown, so
+everything that reads note text (outline, search, previews, backups, the vault's
+Markdown files) keeps working. Reader excerpts link back to their source with a
+hidden `dace-excerpt` comment line; the `excerptMarker` node keeps those lines
+intact through editing.
+
 ### Save lifecycle
 
 The `SaveParticipantRegistry` in `src/core/saveRegistry.ts` coordinates flushing unsaved state before the application window closes. Each view that holds dirty state registers a participant; the shell calls `attemptClose()` which serialises all flushes before forwarding the close to Tauri.
@@ -212,7 +226,7 @@ The `SaveParticipantRegistry` in `src/core/saveRegistry.ts` coordinates flushing
 ```
 Rust Tauri commands (src-tauri/src/)
   ↕  invoke / JSON
-TypeScript API modules (src/*/api.ts, src/backup/backupApi.ts, …)
+TypeScript API modules (knowledgeApi.ts, attachmentsApi.ts, readerApi.ts, vaultApi.ts, …)
   ↕  props / callbacks / intents
 React components (src/knowledge/, src/reader/, …)
 ```
@@ -226,6 +240,7 @@ Please open a [GitHub Issue](https://github.com/arcaenux/dace/issues) and includ
 - Operating system and version
 - Steps to reproduce
 - Expected behaviour vs actual behaviour
-- Any console output or error messages (open DevTools in Tauri with `Ctrl+Shift+I`)
+- Your Dace version (**Settings → About**)
+- Any error messages. In a development build (`npm run tauri dev`) you can open DevTools with `Ctrl+Shift+I` or right-click → Inspect; release builds do not include DevTools.
 
-For security issues, do not open a public issue — email the maintainer directly.
+For security issues, do not open a public issue. Follow [SECURITY.md](SECURITY.md).
